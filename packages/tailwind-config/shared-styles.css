@@ -1,0 +1,108 @@
+@import "tailwindcss" source(none);
+@import "@repo/design-tokens/css";
+
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-status-success: var(--status-success);
+  --color-status-success-foreground: var(--status-success-foreground);
+  --color-status-success-muted: var(--status-success-muted);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-attention: var(--status-attention);
+  --color-status-attention-foreground: var(--status-attention-foreground);
+  --color-status-attention-muted: var(--status-attention-muted);
+  --color-status-attention-border: var(--status-attention-border);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-foreground: var(--status-danger-foreground);
+  --color-status-danger-muted: var(--status-danger-muted);
+  --color-status-danger-border: var(--status-danger-border);
+  --color-status-info: var(--status-info);
+  --color-status-info-foreground: var(--status-info-foreground);
+  --color-status-info-muted: var(--status-info-muted);
+  --color-status-info-border: var(--status-info-border);
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-foreground: var(--status-pending-foreground);
+  --color-status-pending-muted: var(--status-pending-muted);
+  --color-status-pending-border: var(--status-pending-border);
+  --color-readiness-ready: var(--readiness-ready);
+  --color-readiness-ready-foreground: var(--readiness-ready-foreground);
+  --color-readiness-ready-muted: var(--readiness-ready-muted);
+  --color-readiness-ready-border: var(--readiness-ready-border);
+  --color-readiness-attention: var(--readiness-attention);
+  --color-readiness-attention-foreground: var(--readiness-attention-foreground);
+  --color-readiness-attention-muted: var(--readiness-attention-muted);
+  --color-readiness-attention-border: var(--readiness-attention-border);
+  --color-readiness-blocked: var(--readiness-blocked);
+  --color-readiness-blocked-foreground: var(--readiness-blocked-foreground);
+  --color-readiness-blocked-muted: var(--readiness-blocked-muted);
+  --color-readiness-blocked-border: var(--readiness-blocked-border);
+  --color-readiness-not-started: var(--readiness-not-started);
+  --color-readiness-not-started-foreground: var(--readiness-not-started-foreground);
+  --color-readiness-not-started-muted: var(--readiness-not-started-muted);
+  --color-readiness-not-started-border: var(--readiness-not-started-border);
+
+  --font-sans: var(--font-ui);
+  --font-serif: var(--font-display);
+  --font-mono: var(--font-code);
+
+  --spacing: var(--space-unit);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-card: var(--elevation-card);
+  --shadow-popover: var(--elevation-popover);
+}
+
+@source "../../apps/web/app";
+@source "../../apps/storybook/.storybook";
+@source "../ui/src";
+@source "../kit/src";
+
+@layer base {
+  html {
+    background: var(--background);
+    color: var(--foreground);
+  }
+
+  body {
+    min-height: 100vh;
+  }
+}

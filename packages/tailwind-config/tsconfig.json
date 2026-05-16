@@ -1,0 +1,4 @@
+{
+  "extends": "../typescript-config/node-library.json",
+  "include": ["shared-styles.css.d.ts"]
+}
