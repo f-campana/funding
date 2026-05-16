@@ -1,0 +1,21 @@
+{
+  "extends": "../../packages/typescript-config/next.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "next.config.ts",
+    "postcss.config.mjs",
+    "playwright.config.ts",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "i18n/**/*.ts",
+    "messages/**/*.json",
+    "tests/**/*.ts",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

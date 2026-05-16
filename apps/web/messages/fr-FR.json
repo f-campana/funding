@@ -1,0 +1,53 @@
+{
+  "HomePage": {
+    "caseStudyBody": "La route suivante monte le package kit dans Next.js avec les tokens, les polices, les traductions et les frontieres de route de l'application.",
+    "caseStudyTitle": "Surface de demo active",
+    "dealLink": "Ouvrir le deal Northstar Energy",
+    "heading": "Funding, etude frontend de marches prives",
+    "intro": "Cette application valide l'integration du shell Next.js avec les couches core, domain, design tokens, UI et kit du workspace.",
+    "status": "Demo locale, sans donnees live ni formulaire d'engagement."
+  },
+  "DealPage": {
+    "backLink": "Retour a l'accueil",
+    "heading": "Tableau de bord Northstar Energy",
+    "intro": "Vue d'integration statique pour verifier le rendu du dashboard compose par @repo/kit dans l'application Next.js."
+  },
+  "DealLayout": {
+    "backLink": "Retour a l'accueil",
+    "closingReview": "Closing review",
+    "heading": "Tableau de bord Northstar Energy",
+    "lastUpdated": "Derniere mise a jour",
+    "lifecycle": "Cycle de vie",
+    "tabs": {
+      "about": "About",
+      "commitments": "Commitments",
+      "documents": "Documents"
+    },
+    "tabsLabel": "Deal sections",
+    "vehicle": "Vehicle",
+    "workspace": "Espace deal",
+    "workspaceLabel": "Espace deal Northstar"
+  },
+  "RootLoading": {
+    "label": "Chargement de l'application"
+  },
+  "DealLoading": {
+    "label": "Chargement du deal"
+  },
+  "RootError": {
+    "body": "Le shell n'a pas pu afficher cette page. Vous pouvez relancer le rendu sans perdre de donnees.",
+    "heading": "Erreur d'application",
+    "reset": "Reessayer"
+  },
+  "DealError": {
+    "body": "Le tableau de bord du deal n'a pas pu etre affiche. Relancez le rendu ou revenez a l'accueil.",
+    "heading": "Erreur sur le deal",
+    "homeLink": "Retour a l'accueil",
+    "reset": "Reessayer"
+  },
+  "NotFound": {
+    "body": "Cette route n'est pas disponible dans la surface de demo actuelle.",
+    "heading": "Deal introuvable",
+    "homeLink": "Retour a l'accueil"
+  }
+}
