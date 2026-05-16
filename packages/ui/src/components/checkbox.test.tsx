@@ -18,6 +18,7 @@ describe('Checkbox', () => {
 
     expect(checkbox).toHaveAttribute('data-slot', 'checkbox')
     expect(checkbox).toHaveAttribute('data-state', 'unchecked')
+    expect(checkbox).toHaveClass('cursor-pointer')
     expect(container.querySelector('[data-slot="checkbox-indicator"]')).not.toBeInTheDocument()
   })
 
@@ -34,6 +35,7 @@ describe('Checkbox', () => {
     expect(checkbox).toBeDisabled()
     expect(checkbox).toHaveAttribute('aria-checked', 'true')
     expect(checkbox).toHaveAttribute('data-state', 'checked')
+    expect(checkbox).toHaveClass('disabled:cursor-not-allowed')
     expect(container.querySelector('[data-slot="checkbox-indicator"]')).toBeInTheDocument()
   })
 

@@ -10,7 +10,7 @@ export type CheckboxProps = ComponentProps<typeof CheckboxPrimitive.Root>
 export const Checkbox = ({ className, ...props }: CheckboxProps) => (
   <CheckboxPrimitive.Root
     className={cn(
-      'peer group size-4 shrink-0 rounded-[4px] border border-input bg-background text-primary-foreground outline-none transition-colors motion-reduce:transition-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary',
+      'peer group size-4 shrink-0 cursor-pointer rounded-[4px] border border-input bg-background text-primary-foreground outline-none transition-colors motion-reduce:transition-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary',
       className,
     )}
     data-slot="checkbox"

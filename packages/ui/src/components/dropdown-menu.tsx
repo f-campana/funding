@@ -9,7 +9,17 @@ export const DropdownMenu = DropdownMenuPrimitive.Root
 
 export const DropdownMenuPortal = DropdownMenuPrimitive.Portal
 
-export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
+export type DropdownMenuTriggerProps = ComponentProps<typeof DropdownMenuPrimitive.Trigger>
+
+export const DropdownMenuTrigger = ({ className, ...props }: DropdownMenuTriggerProps) => (
+  <DropdownMenuPrimitive.Trigger
+    className={cn(
+      'cursor-pointer disabled:cursor-not-allowed data-[disabled]:cursor-not-allowed',
+      className,
+    )}
+    {...props}
+  />
+)
 
 export const DropdownMenuGroup = DropdownMenuPrimitive.Group
 
@@ -56,7 +66,7 @@ export const DropdownMenuItem = ({
 }: DropdownMenuItemProps) => (
   <DropdownMenuPrimitive.Item
     className={cn(
-      'relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors motion-reduce:transition-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors motion-reduce:transition-none focus:bg-accent focus:text-accent-foreground data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
       inset && 'pl-8',
       variant === 'destructive' &&
         'text-destructive focus:bg-destructive/10 focus:text-destructive',
@@ -80,7 +90,7 @@ export const DropdownMenuCheckboxItem = ({
 }: DropdownMenuCheckboxItemProps) => (
   <DropdownMenuPrimitive.CheckboxItem
     className={cn(
-      'relative flex cursor-default select-none items-center rounded-sm py-1.5 pr-2 pl-8 text-sm outline-none transition-colors motion-reduce:transition-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pr-2 pl-8 text-sm outline-none transition-colors motion-reduce:transition-none focus:bg-accent focus:text-accent-foreground data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
       className,
     )}
     data-slot="dropdown-menu-checkbox-item"
@@ -117,7 +127,7 @@ export const DropdownMenuRadioItem = ({
 }: DropdownMenuRadioItemProps) => (
   <DropdownMenuPrimitive.RadioItem
     className={cn(
-      'relative flex cursor-default select-none items-center rounded-sm py-1.5 pr-2 pl-8 text-sm outline-none transition-colors motion-reduce:transition-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pr-2 pl-8 text-sm outline-none transition-colors motion-reduce:transition-none focus:bg-accent focus:text-accent-foreground data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
       className,
     )}
     data-slot="dropdown-menu-radio-item"

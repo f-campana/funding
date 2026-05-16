@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from '../test/axe'
@@ -10,6 +10,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './dropdown-menu'
@@ -59,6 +61,39 @@ describe('DropdownMenu', () => {
     await user.click(screen.getByRole('menuitemcheckbox', { name: 'Needs attention' }))
 
     expect(onCheckedChange).toHaveBeenCalledWith(true)
+  })
+
+  it('uses pointer affordance for enabled triggers and menu items', () => {
+    const onDisabledSelect = vi.fn()
+
+    render(
+      <DropdownMenu open>
+        <DropdownMenuTrigger>Open menu</DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem>Export</DropdownMenuItem>
+          <DropdownMenuItem disabled onSelect={onDisabledSelect}>
+            Disabled export
+          </DropdownMenuItem>
+          <DropdownMenuCheckboxItem checked={false}>Needs attention</DropdownMenuCheckboxItem>
+          <DropdownMenuRadioGroup value="8">
+            <DropdownMenuRadioItem value="8">8 rows</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>,
+    )
+
+    expect(screen.getByText('Open menu').closest('button')).toHaveClass('cursor-pointer')
+    expect(screen.getByRole('menuitem', { name: 'Export' })).toHaveClass('cursor-pointer')
+    expect(screen.getByRole('menuitem', { name: 'Disabled export' })).toHaveClass(
+      'data-[disabled]:cursor-not-allowed',
+    )
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Needs attention' })).toHaveClass(
+      'cursor-pointer',
+    )
+    expect(screen.getByRole('menuitemradio', { name: '8 rows' })).toHaveClass('cursor-pointer')
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Disabled export' }))
+    expect(onDisabledSelect).not.toHaveBeenCalled()
   })
 
   it('has no accessibility violations in an open menu', async () => {
