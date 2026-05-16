@@ -1,0 +1,66 @@
+{
+  "name": "@repo/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./money": {
+      "types": "./src/money/index.ts",
+      "import": "./src/money/index.ts"
+    },
+    "./ids": {
+      "types": "./src/ids.ts",
+      "import": "./src/ids.ts"
+    },
+    "./commitment-flow": {
+      "types": "./src/commitment-flow/index.ts",
+      "import": "./src/commitment-flow/index.ts"
+    },
+    "./spv": {
+      "types": "./src/spv/index.ts",
+      "import": "./src/spv/index.ts"
+    },
+    "./reconciliation": {
+      "types": "./src/reconciliation/index.ts",
+      "import": "./src/reconciliation/index.ts"
+    },
+    "./deals": {
+      "types": "./src/deals/index.ts",
+      "import": "./src/deals/index.ts"
+    },
+    "./commitments": {
+      "types": "./src/commitments/index.ts",
+      "import": "./src/commitments/index.ts"
+    },
+    "./documents": {
+      "types": "./src/documents/index.ts",
+      "import": "./src/documents/index.ts"
+    },
+    "./status-tone": {
+      "types": "./src/status-tone.ts",
+      "import": "./src/status-tone.ts"
+    }
+  },
+  "dependencies": {
+    "@repo/core": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/test-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@vitest/coverage-v8": "^4.1.5",
+    "fast-check": "^4.7.0",
+    "vitest": "^4.1.5"
+  },
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "biome check ./src",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  }
+}
