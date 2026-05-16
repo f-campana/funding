@@ -1,10 +1,19 @@
-import { DealRebuildPlaceholder } from '../deal-rebuild-placeholder'
+import { notFound } from 'next/navigation'
 
-export default function DealAboutPage() {
-  return (
-    <DealRebuildPlaceholder
-      description="The overview surface is paused while the deal workspace is rebuilt without legacy runtime dependencies."
-      sectionLabel="About"
-    />
-  )
+import { getDealOperationsData } from '../data'
+import { DealAboutOverview } from '../deal-about-overview'
+
+type DealAboutPageProps = {
+  params: Promise<{ dealId: string }>
+}
+
+export default async function DealAboutPage({ params }: DealAboutPageProps) {
+  const { dealId } = await params
+  const data = getDealOperationsData(dealId)
+
+  if (!data) {
+    notFound()
+  }
+
+  return <DealAboutOverview data={data} />
 }

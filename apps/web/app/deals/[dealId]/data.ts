@@ -1,22 +1,21 @@
-const dealOperationsRouteData = {
-  deal: {
-    closingReviewDateLabel: 'Rebuild paused',
-    description:
-      'Temporary workspace shell while the deal experience is rebuilt from accepted kit baselines.',
-    id: 'northstar-energy',
-    lastUpdatedLabel: 'Static shell',
-    statusLabel: 'Rebuild in progress',
-    title: 'Northstar Energy SPV',
-    vehicleLabel: 'SPV',
-  },
-} as const
+import { type DealOperationalCenterDTO, getDealOperationalCenter } from '@/server/deals'
 
-export type DealOperationsRouteData = typeof dealOperationsRouteData
+export type DealOperationsRouteData = DealOperationalCenterDTO
 
 export function isSupportedDealId(dealId: string): boolean {
-  return dealId === dealOperationsRouteData.deal.id
+  return getDealOperationsData(dealId) !== null
 }
 
 export function getDealOperationsData(dealId: string): DealOperationsRouteData | null {
-  return isSupportedDealId(dealId) ? dealOperationsRouteData : null
+  const result = getDealOperationalCenter({ dealId })
+
+  if (result.isOk()) {
+    return result.value
+  }
+
+  if (result.error._tag === 'UnsupportedDeal') {
+    return null
+  }
+
+  throw new Error(`Unable to load deal operational center: ${result.error._tag}`)
 }

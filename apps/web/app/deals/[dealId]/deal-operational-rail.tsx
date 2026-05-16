@@ -1,4 +1,12 @@
+import { DealProgressPanel } from '@repo/kit'
+
 import type { DealOperationsRouteData } from './data'
+import {
+  formatDateTimeLabel,
+  formatMoney,
+  getReadinessLabel,
+  mapDealProgressPanelProps,
+} from './deal-operational-adapters'
 
 type DealOperationalRailProps = {
   readonly data: DealOperationsRouteData
@@ -11,29 +19,28 @@ export function DealOperationalRail({ data }: DealOperationalRailProps) {
       className="grid content-start gap-3 lg:sticky lg:top-5"
       data-slot="deal-operational-rail"
     >
-      <section className="rounded-lg border border-border bg-card p-4 text-card-foreground shadow-card">
-        <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
-          Current state
-        </p>
-        <h2 className="mt-2 text-sm font-semibold text-foreground">Workspace status</h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">{data.deal.description}</p>
-      </section>
+      <DealProgressPanel {...mapDealProgressPanelProps(data)} className="max-w-none" />
 
       <section className="rounded-lg border border-border bg-background p-4 shadow-card">
-        <h2 className="text-sm font-semibold text-foreground">Cleanup scope</h2>
+        <h2 className="text-sm font-semibold text-foreground">Operational snapshot</h2>
         <div className="mt-3 grid gap-2 text-sm">
-          <RailMetric label="Runtime kit imports" value="Removed" />
-          <RailMetric label="Fixture dependency" value="Removed" />
-          <RailMetric label="Live data" value="Deferred" />
+          <RailMetric label="Readiness" value={getReadinessLabel(data.rail.readinessState)} />
+          <RailMetric label="Target close" value={formatDateTimeLabel(data.rail.targetCloseDate)} />
+          <RailMetric
+            label={data.rail.capitalCallout.label}
+            value={formatMoney(data.rail.capitalCallout.value)}
+          />
         </div>
       </section>
 
       <section className="rounded-lg border border-border bg-background p-4 shadow-card">
-        <h2 className="text-sm font-semibold text-foreground">Next rebuild pass</h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Deal commitments and progress baselines stay Storybook-first until the app-owned adapter
-          is defined.
-        </p>
+        <h2 className="text-sm font-semibold text-foreground">Exception queue</h2>
+        <div className="mt-3 grid gap-2 text-sm">
+          <RailMetric label="Critical blockers" value={String(data.rail.criticalBlockerCount)} />
+          <RailMetric label="Warning blockers" value={String(data.rail.warningBlockerCount)} />
+          <RailMetric label="Document issues" value={String(data.rail.documentIssueCount)} />
+          <RailMetric label="Blocked investors" value={String(data.rail.investorsBlockedCount)} />
+        </div>
       </section>
     </aside>
   )

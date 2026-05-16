@@ -6,6 +6,7 @@
   "dependencies": {
     "@repo/core": "workspace:*",
     "@repo/domain": "workspace:*",
+    "@repo/kit": "workspace:*",
     "@repo/tailwind-config": "workspace:*",
     "@repo/ui": "workspace:*",
     "@trpc/server": "^11.17.0",

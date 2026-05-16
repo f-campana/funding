@@ -2,6 +2,7 @@ import { Badge } from '@repo/ui'
 import type { ReactNode } from 'react'
 
 import type { DealOperationsRouteData } from './data'
+import { getDealHeaderViewModel } from './deal-operational-adapters'
 
 type DealEntityHeaderProps = {
   readonly deal: DealOperationsRouteData['deal']
@@ -16,6 +17,8 @@ type DealEntityHeaderProps = {
 }
 
 export function DealEntityHeader({ deal, labels, tabs }: DealEntityHeaderProps) {
+  const header = getDealHeaderViewModel(deal)
+
   return (
     <header
       className="overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-card"
@@ -38,29 +41,29 @@ export function DealEntityHeader({ deal, labels, tabs }: DealEntityHeaderProps) 
                 className="border-status-info-border bg-status-info-muted text-status-info"
                 variant="outline"
               >
-                {deal.statusLabel}
+                {header.statusLabel}
               </Badge>
             </div>
             <div className="grid gap-1">
               <h1 className="text-2xl font-semibold tracking-normal text-foreground sm:text-3xl">
-                {deal.title}
+                {header.title}
               </h1>
               <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                {deal.description}
+                {header.description}
               </p>
             </div>
           </div>
         </div>
 
         <dl className="grid gap-3 rounded-md border border-border bg-background/80 p-3 text-sm sm:grid-cols-3 lg:min-w-[28rem]">
-          <HeaderMetric label={labels.vehicle} value={deal.vehicleLabel} />
-          <HeaderMetric label={labels.closingReview} value={deal.closingReviewDateLabel} />
-          <HeaderMetric label={labels.lastUpdated} value={deal.lastUpdatedLabel} />
+          <HeaderMetric label={labels.vehicle} value={header.vehicleLabel} />
+          <HeaderMetric label={labels.closingReview} value={header.targetCloseDateLabel} />
+          <HeaderMetric label={labels.lastUpdated} value={header.lastUpdatedLabel} />
         </dl>
       </div>
       <div className="px-4 sm:px-5">{tabs}</div>
       <span className="sr-only">
-        {labels.lifecycle}: {deal.statusLabel}
+        {labels.lifecycle}: {header.statusLabel}
       </span>
     </header>
   )
