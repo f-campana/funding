@@ -144,7 +144,7 @@ export const lockedCommitmentRows = [
         value: 'Pending',
       },
     ),
-    status: { label: 'Pending', tone: 'pending' },
+    status: { label: 'Pending action', tone: 'attention' },
   },
   {
     commitmentLabel: '$7,500,000',
@@ -232,7 +232,7 @@ export const lockedCommitmentRows = [
         value: 'Pending',
       },
     ),
-    status: { label: 'Pending', tone: 'pending' },
+    status: { label: 'Pending action', tone: 'attention' },
   },
   {
     commitmentLabel: '$14,600,000',
@@ -292,7 +292,7 @@ export const dataIssueCommitmentRows = lockedCommitmentRows.map((row) =>
           { ...row.readiness.kycKyb, tone: 'neutral', value: 'Unavailable' },
           { ...row.readiness.signature, tone: 'neutral', value: 'Unavailable' },
           { ...row.readiness.wire, tone: 'danger', value: 'Sync failed' },
-          { ...row.readiness.reconciliation, tone: 'neutral', value: 'Needs review' },
+          { ...row.readiness.reconciliation, tone: 'danger', value: 'Needs review' },
         ),
       }
     : row,
@@ -351,7 +351,7 @@ export const longTextCommitmentRows = [
     ),
     status: {
       label: 'Operations review pending with fund administrator',
-      tone: 'pending',
+      tone: 'attention',
     },
   },
   ...lockedCommitmentRows.slice(1),

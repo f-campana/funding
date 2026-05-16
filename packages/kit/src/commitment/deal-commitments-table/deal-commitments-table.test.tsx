@@ -215,11 +215,86 @@ describe('DealCommitmentsTable', () => {
     expect(screen.queryByText('Reconciled')).not.toBeInTheDocument()
     expect(screen.getByText('Expired')).toBeInTheDocument()
 
+    expect(within(getInvestorRow('Maverick Ventures')).getByText('Pending action')).toHaveAttribute(
+      'data-full-text',
+      'Pending action',
+    )
+    expect(
+      within(getInvestorRow('Maverick Ventures'))
+        .getByText('Pending action')
+        .closest('[data-slot="commitment-status-pill"]'),
+    ).toHaveAttribute('data-tone', 'attention')
+
     for (const notReceivedLabel of screen.getAllByText('Not received')) {
       expect(notReceivedLabel.closest('[data-slot="readiness-status-cell"]')).toHaveAttribute(
         'data-tone',
         'neutral',
       )
+    }
+  })
+
+  it('applies alternating tint only to real investor rows and lets row states win', () => {
+    renderCommitmentsTable()
+
+    const firstRow = getInvestorRow('Tailwind Partners')
+    const attentionAlternateRow = getInvestorRow('Pine Point Capital')
+    const thirdRow = getInvestorRow('Atlas Secure Fund')
+    const plainAlternateRow = getInvestorRow('Northbridge Advisors')
+
+    expect(firstRow).toHaveAttribute('data-row-alternate', 'false')
+    expect(firstRow).not.toHaveClass('bg-muted/10')
+    expect(attentionAlternateRow).toHaveAttribute('data-row-alternate', 'true')
+    expect(attentionAlternateRow).toHaveClass('bg-status-attention-muted/15')
+    expect(attentionAlternateRow).not.toHaveClass('bg-muted/10')
+    expect(thirdRow).toHaveAttribute('data-row-alternate', 'false')
+    expect(thirdRow).not.toHaveClass('bg-muted/10')
+    expect(plainAlternateRow).toHaveAttribute('data-row-alternate', 'true')
+    expect(plainAlternateRow).toHaveClass('bg-muted/10')
+  })
+
+  it('does not apply alternating data-row tint to skeleton, lifecycle, or group rows', () => {
+    const loadingRender = renderCommitmentsTable({
+      state: { kind: 'loading', rowCount: 3 },
+    })
+
+    for (const skeletonRow of loadingRender.container.querySelectorAll(
+      '[data-slot="commitment-row-skeleton"]',
+    )) {
+      expect(skeletonRow).not.toHaveAttribute('data-row-alternate')
+      expect(skeletonRow).not.toHaveClass('bg-muted/10')
+    }
+
+    loadingRender.unmount()
+
+    const emptyRender = render(
+      <DealCommitmentsTable
+        footer={emptyDealCommitmentsTableLabels.footer}
+        state={{
+          description: 'Invited investors and submitted commitments will appear here.',
+          kind: 'empty',
+          title: 'No commitments yet',
+          variant: 'no-data',
+        }}
+        subtitle={emptyDealCommitmentsTableLabels.subtitle}
+        title={emptyDealCommitmentsTableLabels.title}
+        toolbar={emptyDealCommitmentsTableLabels.toolbar}
+      />,
+    )
+    const stateRow = emptyRender.container.querySelector('[data-slot="commitment-table-state-row"]')
+
+    expect(stateRow).not.toHaveAttribute('data-row-alternate')
+    expect(stateRow).not.toHaveClass('bg-muted/10')
+    emptyRender.unmount()
+
+    const groupedRender = renderCommitmentsTable({
+      state: readyTableState({ group: 'status' }),
+    })
+
+    for (const groupRow of groupedRender.container.querySelectorAll(
+      '[data-slot="commitment-group-row"]',
+    )) {
+      expect(groupRow).not.toHaveAttribute('data-row-alternate')
+      expect(groupRow).not.toHaveClass('bg-muted/10')
     }
   })
 
@@ -354,6 +429,12 @@ describe('DealCommitmentsTable', () => {
 
     expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-active', 'true')
     expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-drawer-open', 'true')
+    expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-row-alternate', 'true')
+    expect(getInvestorRow('Pine Point Capital')).toHaveClass(
+      'bg-status-info-muted/42',
+      'outline-status-info-border',
+    )
+    expect(getInvestorRow('Pine Point Capital')).not.toHaveClass('bg-muted/10')
     expect(getInvestorRow('Tailwind Partners')).toHaveAttribute('data-active', 'false')
     expect(screen.getByRole('button', { name: 'Open Pine Point Capital' })).toBeInTheDocument()
     expect(container.querySelectorAll('[data-slot="commitment-drawer-connector"]')).toHaveLength(1)
@@ -383,6 +464,9 @@ describe('DealCommitmentsTable', () => {
     expect(pinePointRow).toHaveAttribute('data-disabled', 'true')
     expect(pinePointRow).toHaveAttribute('data-active', 'false')
     expect(pinePointRow).toHaveAttribute('data-batch-selected', 'false')
+    expect(pinePointRow).toHaveAttribute('data-row-alternate', 'true')
+    expect(pinePointRow).toHaveClass('cursor-not-allowed', 'bg-card', 'opacity-60', 'hover:bg-card')
+    expect(pinePointRow).not.toHaveClass('bg-muted/10')
     expect(screen.getByRole('checkbox', { name: 'Select Pine Point Capital' })).toBeDisabled()
     expect(
       container.querySelector('[data-slot="commitment-drawer-connector"]'),
@@ -406,6 +490,9 @@ describe('DealCommitmentsTable', () => {
     })
 
     expect(container.querySelectorAll('[data-slot="commitment-row-skeleton"]')).toHaveLength(8)
+    expect(
+      container.querySelectorAll('[data-slot="commitment-row-skeleton"][data-row-alternate]'),
+    ).toHaveLength(0)
     expect(container.querySelector('[data-slot="deal-commitments-table"]')).toHaveAttribute(
       'aria-busy',
       'true',
@@ -450,6 +537,9 @@ describe('DealCommitmentsTable', () => {
     expect(screen.getByText('Total committed $0')).toBeInTheDocument()
     expect(screen.queryByText('Tailwind Partners')).not.toBeInTheDocument()
     expect(container.querySelectorAll('[data-slot="commitment-investor-row"]')).toHaveLength(0)
+    expect(container.querySelector('[data-slot="commitment-table-state-row"]')).not.toHaveAttribute(
+      'data-row-alternate',
+    )
     expect(
       container.querySelector('[data-slot="commitment-drawer-connector"]'),
     ).not.toBeInTheDocument()
@@ -509,9 +599,14 @@ describe('DealCommitmentsTable', () => {
   it('renders row-level data issues as explicit fallback text distinct from business attention', () => {
     renderCommitmentsTable({ state: readyTableState({ rows: dataIssueCommitmentRows }) })
 
+    const atlasFixture = dataIssueCommitmentRows.find((row) => row.id === 'atlas-secure-fund')
     const atlasRow = getInvestorRow('Atlas Secure Fund')
     const pinePointRow = getInvestorRow('Pine Point Capital')
 
+    expect(atlasFixture?.readiness.reconciliation).toMatchObject({
+      tone: 'danger',
+      value: 'Needs review',
+    })
     expect(atlasRow).toHaveAttribute('data-data-issue', 'true')
     expect(atlasRow).toHaveAttribute('data-attention', 'false')
     expect(within(atlasRow).getByText('Readiness sync failed')).toBeInTheDocument()

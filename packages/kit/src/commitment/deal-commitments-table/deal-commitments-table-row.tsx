@@ -117,12 +117,14 @@ export const CommitmentInvestorRow = ({
   readonly onRowSelect: (row: CommitmentInvestorRowData) => void
 }) => {
   const flags = getCommitmentRowFlags(visualState)
+  const alternate = rowIndex % 2 === 1
 
   return (
     <TableRow
       aria-disabled={flags.disabled ? true : undefined}
-      className={getCommitmentRowClassName(flags)}
+      className={getCommitmentRowClassName({ ...flags, alternate })}
       data-active={flags.active ? 'true' : 'false'}
+      data-row-alternate={alternate ? 'true' : 'false'}
       data-attention={row.attention === true ? 'true' : 'false'}
       data-batch-selected={batchSelected ? 'true' : 'false'}
       data-data-issue={row.dataIssue ? 'true' : 'false'}
@@ -261,13 +263,15 @@ const getCommitmentRowFlags = (visualState: CommitmentRowVisualState) => ({
 
 const getCommitmentRowClassName = ({
   active,
+  alternate,
   attentionVisible,
   disabled,
   drawerOpen,
   hovered,
-}: ReturnType<typeof getCommitmentRowFlags>) =>
+}: ReturnType<typeof getCommitmentRowFlags> & { readonly alternate: boolean }) =>
   cn(
     'h-16 cursor-pointer border-b border-border/50 bg-card transition-colors last:border-b-0 hover:bg-status-info-muted/15 motion-reduce:transition-none',
+    alternate ? 'bg-muted/10' : null,
     attentionVisible ? 'bg-status-attention-muted/15' : null,
     hovered ? 'bg-status-info-muted/20' : null,
     active
