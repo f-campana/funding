@@ -230,6 +230,7 @@ export const WithCommitmentsTableContext = {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <DealCommitmentsTable
           footer={dealCommitmentsTableLabels.footer}
+          labels={dealCommitmentsTableLabels.labels}
           state={readyTableState()}
           subtitle={dealCommitmentsTableLabels.subtitle}
           title={dealCommitmentsTableLabels.title}

@@ -6,6 +6,7 @@ import { filterOptions, toggleFilterId } from './deal-commitments-table.model'
 import type {
   CommitmentTableFilterId,
   CommitmentTableModel,
+  DealCommitmentsTableLabels,
   DealCommitmentsTableProps,
   ReadyControls,
 } from './deal-commitments-table.types'
@@ -14,6 +15,7 @@ export const CommitmentsTableToolbar = ({
   controls,
   disabled,
   exportDisabled,
+  labels,
   model,
   onExport,
   onFilterChange,
@@ -25,6 +27,7 @@ export const CommitmentsTableToolbar = ({
   readonly controls: ReadyControls
   readonly disabled: boolean
   readonly exportDisabled: boolean
+  readonly labels: DealCommitmentsTableLabels
   readonly model: CommitmentTableModel | undefined
   readonly onExport: () => void
   readonly onFilterChange: (filterIds: readonly CommitmentTableFilterId[]) => void
@@ -34,11 +37,7 @@ export const CommitmentsTableToolbar = ({
   readonly toolbar: DealCommitmentsTableProps['toolbar']
 }) => {
   const selectedCount = model?.selectedVisibleRowIds.length ?? 0
-  const selectedLabel = toolbar.selectedLabel ?? 'selected'
-  const exportLabel =
-    selectedCount > 0
-      ? (toolbar.exportSelectedLabel ?? 'Export selected')
-      : (toolbar.exportVisibleLabel ?? toolbar.exportLabel)
+  const exportLabel = selectedCount > 0 ? toolbar.exportSelectedLabel : toolbar.exportVisibleLabel
 
   return (
     <header
@@ -71,7 +70,7 @@ export const CommitmentsTableToolbar = ({
                 className="rounded-full border border-status-info-border bg-status-info-muted px-2.5 py-0.5 text-status-info text-xs font-semibold"
                 data-slot="commitments-selected-count"
               >
-                {selectedCount} {selectedLabel}
+                {selectedCount} {toolbar.selectedLabel}
               </span>
             ) : null}
             <ToolbarButton
@@ -91,6 +90,7 @@ export const CommitmentsTableToolbar = ({
           <legend className="sr-only">{toolbar.workflowFiltersLabel}</legend>
           {filterOptions.map((option) => {
             const active = controls.activeFilterIds.includes(option.id)
+            const label = labels.filters[option.id]
 
             return (
               <Button
@@ -107,7 +107,7 @@ export const CommitmentsTableToolbar = ({
                 size="sm"
                 variant="outline"
               >
-                {option.label}
+                {label}
               </Button>
             )
           })}

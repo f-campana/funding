@@ -12,24 +12,27 @@ import type { ReactNode } from 'react'
 import { pageSizeOptions } from './deal-commitments-table.model'
 import type {
   CommitmentTableModel,
+  DealCommitmentsTableLabels,
   DealCommitmentsTableLifecycleState,
   DealCommitmentsTableProps,
 } from './deal-commitments-table.types'
 
 export const CommitmentsTableFooter = ({
   footer,
+  labels,
   model,
   onPageChange,
   onPageSizeChange,
   stateKind,
 }: {
   readonly footer: DealCommitmentsTableProps['footer']
+  readonly labels: DealCommitmentsTableLabels
   readonly model: CommitmentTableModel | undefined
   readonly onPageChange: (page: number) => void
   readonly onPageSizeChange: (pageSize: number) => void
   readonly stateKind: DealCommitmentsTableLifecycleState['kind']
 }) => {
-  const footerLabels = getFooterLabels(footer, model, stateKind)
+  const footerLabels = getFooterLabels(footer, labels, model, stateKind)
 
   return (
     <footer
@@ -59,7 +62,7 @@ export const CommitmentsTableFooter = ({
             >
               {pageSizeOptions.map((pageSize) => (
                 <DropdownMenuRadioItem key={pageSize} value={String(pageSize)}>
-                  {pageSize} rows
+                  {labels.footer.rowsPerPageOptionLabel(pageSize)}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -67,7 +70,7 @@ export const CommitmentsTableFooter = ({
         </DropdownMenu>
         <FooterMetric>{footerLabels.rangeLabel}</FooterMetric>
         <Button
-          aria-label="Previous page"
+          aria-label={labels.footer.previousPageLabel}
           className="size-8"
           disabled={!model || model.page <= 1}
           onClick={() => model && onPageChange(model.page - 1)}
@@ -77,7 +80,7 @@ export const CommitmentsTableFooter = ({
           <ChevronLeft aria-hidden="true" className="size-4" />
         </Button>
         <Button
-          aria-label="Next page"
+          aria-label={labels.footer.nextPageLabel}
           className="size-8"
           disabled={!model || model.page >= model.pageCount}
           onClick={() => model && onPageChange(model.page + 1)}
@@ -93,6 +96,7 @@ export const CommitmentsTableFooter = ({
 
 const getFooterLabels = (
   footer: DealCommitmentsTableProps['footer'],
+  labels: DealCommitmentsTableLabels,
   model: CommitmentTableModel | undefined,
   stateKind: DealCommitmentsTableLifecycleState['kind'],
 ) => {
@@ -104,10 +108,11 @@ const getFooterLabels = (
   const end = model.totalRows === 0 ? 0 : Math.min(model.page * model.pageSize, model.totalRows)
 
   return {
-    investorsLabel: `${model.totalRows} ${model.totalRows === 1 ? 'investor' : 'investors'}`,
-    rangeLabel: `${start}–${end} of ${model.totalRows}`,
-    rowsPerPageLabel: `Rows per page ${model.pageSize}`,
-    totalCommittedLabel: model.totalRows === 0 ? 'Total committed $0' : footer.totalCommittedLabel,
+    investorsLabel: labels.footer.investorsLabel(model.totalRows),
+    rangeLabel: labels.footer.rangeLabel(start, end, model.totalRows),
+    rowsPerPageLabel: labels.footer.rowsPerPageLabel(model.pageSize),
+    totalCommittedLabel:
+      model.totalRows === 0 ? labels.footer.emptyTotalCommittedLabel : footer.totalCommittedLabel,
   }
 }
 

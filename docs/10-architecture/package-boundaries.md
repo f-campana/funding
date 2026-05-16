@@ -212,16 +212,14 @@ Product-shaped composed components built on top of `ui`.
 
 Owns:
 
-- `MoneyDisplay`
-- `MetricCard`
-- `CommitmentProgress`
-- `InvestorRow`
-- `DealTermsPanel`
-- `SpvStateTracker`
-- `CommitmentForm` presentation components
-- semantic charts
-- dashboard demo blocks
-- Storybook stories for realistic product states
+- the accepted `DealCommitmentsTable` baseline
+- the accepted `DealProgressPanel` baseline
+- public props, state, action, label, and input types for those baselines
+- Storybook stories for realistic product states of accepted baselines
+
+Deleted legacy kit surfaces from earlier exploratory passes are historical and
+must not be treated as current API. New kit surfaces require an explicit future
+scope decision.
 
 May import:
 
@@ -309,7 +307,7 @@ Rules:
 
 - parse raw form input into branded integer cents in `packages/domain`
 - format money through domain utilities
-- render money through `packages/kit/MoneyDisplay`
+- render money in app or kit adapters from JSON-safe/display-ready values
 - never perform financial arithmetic in React components
 - never add different currencies without an explicit conversion step
 
@@ -470,8 +468,8 @@ import { Result } from "@repo/core";
 import { parseEuroCents } from "@repo/domain/money";
 import { Button } from "@repo/ui/button";
 
-// app can use kit
-import { CommitmentProgress } from "@repo/kit/commitment-progress";
+// app can use accepted kit baselines
+import { DealProgressPanel } from "@repo/kit";
 ```
 
 Forbidden examples:

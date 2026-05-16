@@ -10,6 +10,7 @@ export type {
   DealProgressMetric,
   DealProgressMetricTone,
   DealProgressMode,
+  DealProgressPanelLabels,
   DealProgressPanelProps,
   DealProgressPanelState,
   DealProgressSegment,
@@ -19,5 +20,4 @@ export type {
   DealProgressStatus,
   DealProgressVisibility,
   DealProgressVisualProgress,
-  NormalizedDealProgressSegment,
 } from './deal-progress-panel.types'

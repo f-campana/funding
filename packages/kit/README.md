@@ -22,12 +22,18 @@ import {
 Fixture data is not exported from this package. App routes should use app-owned
 data adapters rather than importing package fixtures.
 
+Deleted exploratory surfaces from earlier loops are not current API and should
+not be reintroduced without a dedicated future pass.
+
 ## Component Scope
 
 Accepted baselines:
 
 - `DealCommitmentsTable` — commitment operations table baseline.
 - `DealProgressPanel` — deal progress command panel baseline.
+
+Both baselines accept display-ready labels through props. Locale and translation
+ownership stays in the app layer.
 
 ## Boundary Rules
 

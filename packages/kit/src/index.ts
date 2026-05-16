@@ -14,6 +14,7 @@ export {
   type CommitmentTableSortState,
   type CommitmentTableViewValue,
   DealCommitmentsTable,
+  type DealCommitmentsTableLabels,
   type DealCommitmentsTableLifecycleState,
   type DealCommitmentsTableProps,
 } from './commitment'
@@ -29,6 +30,7 @@ export {
   type DealProgressMetricTone,
   type DealProgressMode,
   DealProgressPanel,
+  type DealProgressPanelLabels,
   type DealProgressPanelProps,
   type DealProgressPanelState,
   type DealProgressSegment,
@@ -38,5 +40,4 @@ export {
   type DealProgressStatus,
   type DealProgressVisibility,
   type DealProgressVisualProgress,
-  type NormalizedDealProgressSegment,
 } from './deal'

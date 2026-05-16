@@ -148,6 +148,38 @@ describe('DealProgressPanel', () => {
     ).toHaveClass('bg-command-segment-investable')
   })
 
+  it('renders overridden panel labels and locale-aware progress aria text', () => {
+    const localizedLabels = {
+      ...dealProgressPanelLabels,
+      capitalBreakdownLabel: 'Ventilation du capital',
+      capitalCompositionLabel: 'Composition du capital',
+      progressCappedLabel: 'plafonne',
+      progressAriaLabel: 'Progression du capital',
+      title: 'Progression',
+    }
+    const localizedState = {
+      ...segmentedProgressState,
+      capital: {
+        ...segmentedProgressState.capital,
+        progress: {
+          ...segmentedProgressState.capital.progress,
+          basisPoints: 4_250,
+          label: 'Capital engage',
+        },
+      },
+    } as const satisfies DealProgressPanelState
+
+    render(<DealProgressPanel labels={localizedLabels} locale="fr-FR" state={localizedState} />)
+
+    expect(screen.getByRole('heading', { name: 'Progression' })).toBeInTheDocument()
+    expect(screen.getByText('Composition du capital')).toBeInTheDocument()
+    expect(screen.getByText('Ventilation du capital')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Progression du capital' })).toHaveAttribute(
+      'aria-valuetext',
+      'Capital engage: 42,5%',
+    )
+  })
+
   it('keeps no-target progress semantically indeterminate', () => {
     renderPanel(noTargetKnownState)
 

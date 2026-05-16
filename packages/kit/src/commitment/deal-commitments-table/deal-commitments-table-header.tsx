@@ -1,6 +1,8 @@
 import { Checkbox, cn, TableHead, TableHeader, TableRow } from '@repo/ui'
 import type { ReactNode } from 'react'
 
+import type { DealCommitmentsTableLabels } from './deal-commitments-table.types'
+
 export const CommitmentsTableColgroup = () => (
   <colgroup>
     <col className="w-12" />
@@ -17,42 +19,44 @@ export const CommitmentsTableColgroup = () => (
 export const CommitmentsTableHeader = ({
   headerCheckboxState,
   headerSelectionDisabled,
+  labels,
   onSelectVisible,
 }: {
   readonly headerCheckboxState: boolean | 'indeterminate'
   readonly headerSelectionDisabled: boolean
+  readonly labels: DealCommitmentsTableLabels
   readonly onSelectVisible: () => void
 }) => (
   <TableHeader className="bg-card [&_tr]:border-border/60" data-slot="commitments-table-header">
     <TableRow className="h-10 border-b border-border/60 hover:bg-card">
       <TableHead className="px-3 text-center" rowSpan={2}>
         <Checkbox
-          aria-label="Select all visible commitments"
+          aria-label={labels.selection.selectAllVisibleLabel}
           checked={headerCheckboxState}
           disabled={headerSelectionDisabled}
           onCheckedChange={onSelectVisible}
         />
       </TableHead>
-      <WorkflowHeader label="Investor" rowSpan={2} />
-      <WorkflowHeader align="right" label="Commitment" rowSpan={2} />
+      <WorkflowHeader label={labels.columns.investor} rowSpan={2} />
+      <WorkflowHeader align="right" label={labels.columns.commitment} rowSpan={2} />
       <TableHead
         className="border-x border-border/30 px-3 text-center text-xs font-semibold uppercase text-muted-foreground"
         colSpan={3}
       >
-        Readiness
+        {labels.columns.readiness}
       </TableHead>
-      <WorkflowHeader label="Status" rowSpan={2} />
+      <WorkflowHeader label={labels.columns.status} rowSpan={2} />
       <TableHead
         className="px-3 text-right text-xs font-semibold uppercase text-muted-foreground"
         rowSpan={2}
       >
-        Actions
+        {labels.columns.actions}
       </TableHead>
     </TableRow>
     <TableRow className="h-9 border-b border-border/60 hover:bg-card">
-      <ReadinessGroupHeader>KYC/KYB</ReadinessGroupHeader>
-      <ReadinessGroupHeader>Signature</ReadinessGroupHeader>
-      <ReadinessGroupHeader>Wire</ReadinessGroupHeader>
+      <ReadinessGroupHeader>{labels.columns.kycKyb}</ReadinessGroupHeader>
+      <ReadinessGroupHeader>{labels.columns.signature}</ReadinessGroupHeader>
+      <ReadinessGroupHeader>{labels.columns.wire}</ReadinessGroupHeader>
     </TableRow>
   </TableHeader>
 )

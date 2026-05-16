@@ -39,6 +39,7 @@ const renderCommitmentsTable = (props: Partial<ComponentProps<typeof DealCommitm
     <DealCommitmentsTable
       {...({
         footer: dealCommitmentsTableLabels.footer,
+        labels: dealCommitmentsTableLabels.labels,
         state: readyTableState(),
         subtitle: dealCommitmentsTableLabels.subtitle,
         title: dealCommitmentsTableLabels.title,
@@ -49,7 +50,7 @@ const renderCommitmentsTable = (props: Partial<ComponentProps<typeof DealCommitm
   )
 
 const expectLifecycleState = (_state: DealCommitmentsTableLifecycleState) => undefined
-const moreActionsLabelPattern = /More actions for/u
+const openDetailsLabelPattern = /Open commitment detail for/u
 const selectTailwindLabelPattern = /Select Tailwind/u
 const sortByLabelPattern = /Sort by/u
 const forbiddenImportsPattern = /apps\/web|@repo\/app|trpc|createTRPC|router|route/u
@@ -151,6 +152,7 @@ describe('DealCommitmentsTable', () => {
         <DealCommitmentsTable
           className="w-full"
           footer={dealCommitmentsTableLabels.footer}
+          labels={dealCommitmentsTableLabels.labels}
           state={readyTableState()}
           subtitle={dealCommitmentsTableLabels.subtitle}
           title={dealCommitmentsTableLabels.title}
@@ -195,6 +197,44 @@ describe('DealCommitmentsTable', () => {
     expect(container.querySelector('[data-slot="readiness-grid"]')).not.toBeInTheDocument()
     expect(
       screen.getByText('Pine Point Capital Fund LP · Existing investor · $25M · Attention'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders overridden table labels without relying on English source copy', () => {
+    renderCommitmentsTable({
+      labels: {
+        ...dealCommitmentsTableLabels.labels,
+        columns: {
+          ...dealCommitmentsTableLabels.labels.columns,
+          actions: 'Ouvrir',
+          investor: 'Investisseur',
+          kycKyb: 'Identite',
+          readiness: 'Controle',
+        },
+        filters: {
+          ...dealCommitmentsTableLabels.labels.filters,
+          needsAttention: 'A traiter',
+        },
+        row: {
+          ...dealCommitmentsTableLabels.labels.row,
+          openDetailsLabel: (row) => `Ouvrir le dossier de ${row.investorName}`,
+        },
+        selection: {
+          selectAllVisibleLabel: 'Selectionner les engagements visibles',
+        },
+      },
+    })
+
+    expect(screen.getByRole('columnheader', { name: 'Investisseur' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Controle' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Identite' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Ouvrir' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'A traiter' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('checkbox', { name: 'Selectionner les engagements visibles' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Ouvrir le dossier de Tailwind Partners' }),
     ).toBeInTheDocument()
   })
 
@@ -269,6 +309,7 @@ describe('DealCommitmentsTable', () => {
     const emptyRender = render(
       <DealCommitmentsTable
         footer={emptyDealCommitmentsTableLabels.footer}
+        labels={emptyDealCommitmentsTableLabels.labels}
         state={{
           description: 'Invited investors and submitted commitments will appear here.',
           kind: 'empty',
@@ -414,7 +455,36 @@ describe('DealCommitmentsTable', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Select Pine Point Capital' }))
     expect(onRowOpen).toHaveBeenCalledTimes(1)
 
-    await user.click(screen.getByRole('button', { name: 'More actions for Pine Point Capital' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Open commitment detail for Pine Point Capital' }),
+    )
+    expect(onRowOpen).toHaveBeenLastCalledWith('pine-point-capital')
+    expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-drawer-open', 'true')
+  })
+
+  it('opens rows from keyboard-activated row opener buttons', async () => {
+    const user = userEvent.setup()
+    const onRowOpen = vi.fn()
+
+    renderCommitmentsTable({ onRowOpen })
+
+    const tailwindOpener = screen.getByRole('button', {
+      name: 'Open commitment detail for Tailwind Partners',
+    })
+
+    tailwindOpener.focus()
+    await user.keyboard('{Enter}')
+
+    expect(onRowOpen).toHaveBeenLastCalledWith('tailwind-partners')
+    expect(getInvestorRow('Tailwind Partners')).toHaveAttribute('data-drawer-open', 'true')
+
+    const pinePointOpener = screen.getByRole('button', {
+      name: 'Open commitment detail for Pine Point Capital',
+    })
+
+    pinePointOpener.focus()
+    await user.keyboard(' ')
+
     expect(onRowOpen).toHaveBeenLastCalledWith('pine-point-capital')
     expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-drawer-open', 'true')
   })
@@ -436,7 +506,9 @@ describe('DealCommitmentsTable', () => {
     )
     expect(getInvestorRow('Pine Point Capital')).not.toHaveClass('bg-muted/10')
     expect(getInvestorRow('Tailwind Partners')).toHaveAttribute('data-active', 'false')
-    expect(screen.getByRole('button', { name: 'Open Pine Point Capital' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Open commitment detail for Pine Point Capital' }),
+    ).toBeInTheDocument()
     expect(container.querySelectorAll('[data-slot="commitment-drawer-connector"]')).toHaveLength(1)
   })
 
@@ -474,7 +546,9 @@ describe('DealCommitmentsTable', () => {
 
     await user.click(pinePointRow)
     await user.click(
-      within(pinePointRow).getByRole('button', { name: 'More actions for Pine Point Capital' }),
+      within(pinePointRow).getByRole('button', {
+        name: 'Open commitment detail for Pine Point Capital',
+      }),
     )
 
     expect(onRowOpen).not.toHaveBeenCalled()
@@ -503,7 +577,7 @@ describe('DealCommitmentsTable', () => {
       container.querySelector('[data-slot="commitment-drawer-connector"]'),
     ).not.toBeInTheDocument()
     expect(container.querySelectorAll('[data-batch-selected="true"]')).toHaveLength(0)
-    expect(screen.queryByRole('button', { name: moreActionsLabelPattern })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: openDetailsLabelPattern })).not.toBeInTheDocument()
     expect(
       screen.queryByRole('checkbox', { name: selectTailwindLabelPattern }),
     ).not.toBeInTheDocument()
@@ -517,6 +591,7 @@ describe('DealCommitmentsTable', () => {
     const { container } = render(
       <DealCommitmentsTable
         footer={emptyDealCommitmentsTableLabels.footer}
+        labels={emptyDealCommitmentsTableLabels.labels}
         state={{
           description: 'Invited investors and submitted commitments will appear here.',
           kind: 'empty',
@@ -543,7 +618,7 @@ describe('DealCommitmentsTable', () => {
     expect(
       container.querySelector('[data-slot="commitment-drawer-connector"]'),
     ).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: moreActionsLabelPattern })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: openDetailsLabelPattern })).not.toBeInTheDocument()
   })
 
   it('renders filtered empty state for ready rows without mutating source rows', async () => {
@@ -570,6 +645,7 @@ describe('DealCommitmentsTable', () => {
     const { container } = render(
       <DealCommitmentsTable
         footer={errorDealCommitmentsTableLabels.footer}
+        labels={errorDealCommitmentsTableLabels.labels}
         state={{
           description: 'Refresh the page or try again.',
           kind: 'error',
@@ -876,7 +952,9 @@ describe('DealCommitmentsTable', () => {
       user.click(screen.getByRole('checkbox', { name: 'Select Tailwind Partners' })),
     ).resolves.toBeUndefined()
     await expect(
-      user.click(screen.getByRole('button', { name: 'More actions for Tailwind Partners' })),
+      user.click(
+        screen.getByRole('button', { name: 'Open commitment detail for Tailwind Partners' }),
+      ),
     ).resolves.toBeUndefined()
   })
 
@@ -940,6 +1018,7 @@ describe('DealCommitmentsTable', () => {
     const emptyRender = render(
       <DealCommitmentsTable
         footer={emptyDealCommitmentsTableLabels.footer}
+        labels={emptyDealCommitmentsTableLabels.labels}
         state={{
           description: 'Invited investors and submitted commitments will appear here.',
           kind: 'empty',
@@ -956,6 +1035,7 @@ describe('DealCommitmentsTable', () => {
     const errorRender = render(
       <DealCommitmentsTable
         footer={errorDealCommitmentsTableLabels.footer}
+        labels={errorDealCommitmentsTableLabels.labels}
         state={{
           description: 'Refresh the page or try again.',
           kind: 'error',
@@ -974,6 +1054,7 @@ describe('DealCommitmentsTable', () => {
       <div className="dark" data-theme="dark">
         <DealCommitmentsTable
           footer={dealCommitmentsTableLabels.footer}
+          labels={dealCommitmentsTableLabels.labels}
           state={readyTableState()}
           subtitle={dealCommitmentsTableLabels.subtitle}
           title={dealCommitmentsTableLabels.title}
@@ -988,6 +1069,7 @@ describe('DealCommitmentsTable', () => {
       <div className="dark" data-theme="dark">
         <DealCommitmentsTable
           footer={dealCommitmentsTableLabels.footer}
+          labels={dealCommitmentsTableLabels.labels}
           state={readyTableState({ drawerOpenRowId: 'pine-point-capital' })}
           subtitle={dealCommitmentsTableLabels.subtitle}
           title={dealCommitmentsTableLabels.title}

@@ -14,6 +14,7 @@ export {
   type CommitmentTableSortState,
   type CommitmentTableViewValue,
   DealCommitmentsTable,
+  type DealCommitmentsTableLabels,
   type DealCommitmentsTableLifecycleState,
   type DealCommitmentsTableProps,
 } from './deal-commitments-table'

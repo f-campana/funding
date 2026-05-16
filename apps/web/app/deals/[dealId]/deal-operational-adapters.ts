@@ -52,6 +52,9 @@ export const mapDealProgressPanelProps = (
   data: DealOperationalCenterDTO,
 ): DealProgressPanelProps => ({
   labels: {
+    capitalBreakdownLabel: 'Capital breakdown',
+    capitalCompositionLabel: 'Capital composition',
+    progressCappedLabel: 'capped',
     progressAriaLabel: 'Deal capital progress',
     title: 'Deal progression',
   },

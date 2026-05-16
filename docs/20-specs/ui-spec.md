@@ -273,8 +273,7 @@ packages/kit/src/**/*.stories.@(ts|tsx)
 Do not implement:
 
 - `packages/kit`
-- product components such as `MoneyDisplay`, `InvestorRow`, or
-  `CommitmentProgress`
+- product components such as deal progress panels or commitment tables
 - product/domain chart widgets. Generic chart primitives are specified
   separately in [chart-primitives-spec.md](./chart-primitives-spec.md).
 - motion animations

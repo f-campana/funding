@@ -5,8 +5,11 @@ import type {
   DealProgressPanelState,
   DealProgressSegment,
   DealProgressVisualProgress,
-  NormalizedDealProgressSegment,
 } from './deal-progress-panel.types'
+
+type NormalizedDealProgressSegment = DealProgressSegment & {
+  readonly visualBasisPoints: number
+}
 
 export const maxBasisPoints = 10_000
 export const minCompositionSegmentBasisPoints = 600
@@ -35,16 +38,24 @@ export const getProgressBarValue = (progress: DealProgressVisualProgress): numbe
     .with({ kind: 'noTarget' }, () => null)
     .exhaustive()
 
-export const getProgressAriaValueText = (progress: DealProgressVisualProgress) =>
+export const getProgressAriaValueText = ({
+  cappedLabel,
+  locale,
+  progress,
+}: {
+  readonly progress: DealProgressVisualProgress
+  readonly cappedLabel: string
+  readonly locale?: string | undefined
+}) =>
   match(progress)
     .returnType<string>()
     .with({ kind: 'knownTarget' }, ({ basisPoints, capped, label }) => {
-      const percentage = new Intl.NumberFormat('en', {
+      const percentage = new Intl.NumberFormat(locale, {
         maximumFractionDigits: 1,
         minimumFractionDigits: 0,
       }).format(clampBasisPoints(basisPoints) / 100)
 
-      return capped ? `${label}: ${percentage}% capped` : `${label}: ${percentage}%`
+      return capped ? `${label}: ${percentage}% ${cappedLabel}` : `${label}: ${percentage}%`
     })
     .with({ kind: 'noTarget' }, ({ label }) => label)
     .exhaustive()

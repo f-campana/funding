@@ -20,6 +20,7 @@ import type {
   DealProgressAction,
   DealProgressDataQuality,
   DealProgressMetric,
+  DealProgressPanelLabels,
   DealProgressPanelProps,
   DealProgressPanelState,
   DealProgressSegmentKind,
@@ -68,6 +69,7 @@ export type {
   DealProgressMetric,
   DealProgressMetricTone,
   DealProgressMode,
+  DealProgressPanelLabels,
   DealProgressPanelProps,
   DealProgressPanelState,
   DealProgressSegment,
@@ -77,12 +79,12 @@ export type {
   DealProgressStatus,
   DealProgressVisibility,
   DealProgressVisualProgress,
-  NormalizedDealProgressSegment,
 } from './deal-progress-panel.types'
 
 export const DealProgressPanel = ({
   className,
   labels,
+  locale,
   onAction,
   state,
 }: DealProgressPanelProps) => {
@@ -110,7 +112,13 @@ export const DealProgressPanel = ({
         <ErrorContent onAction={onAction} state={state} titleId={titleId} />
       ) : null}
       {state.kind === 'ready' ? (
-        <ReadyContent labels={labels} onAction={onAction} state={state} titleId={titleId} />
+        <ReadyContent
+          labels={labels}
+          locale={locale}
+          onAction={onAction}
+          state={state}
+          titleId={titleId}
+        />
       ) : null}
     </section>
   )
@@ -175,11 +183,13 @@ const ErrorContent = ({
 
 const ReadyContent = ({
   labels,
+  locale,
   onAction,
   state,
   titleId,
 }: {
   readonly labels: DealProgressPanelProps['labels']
+  readonly locale?: DealProgressPanelProps['locale']
   readonly onAction: DealProgressPanelProps['onAction']
   readonly state: Extract<DealProgressPanelState, { readonly kind: 'ready' }>
   readonly titleId: string
@@ -224,8 +234,8 @@ const ReadyContent = ({
             {state.capital.progress.label}
           </p>
         </div>
-        <ProgressBar labels={labels} progress={state.capital.progress} />
-        <CapitalBreakdown segments={state.capital.breakdown} />
+        <ProgressBar labels={labels} locale={locale} progress={state.capital.progress} />
+        <CapitalBreakdown labels={labels} segments={state.capital.breakdown} />
       </div>
 
       {state.capital.details && state.capital.details.length > 0 ? (
@@ -294,16 +304,22 @@ const VisibilityNote = ({
 
 const ProgressBar = ({
   labels,
+  locale,
   progress,
 }: {
   readonly labels: DealProgressPanelProps['labels']
+  readonly locale?: DealProgressPanelProps['locale']
   readonly progress: Extract<
     DealProgressPanelState,
     { readonly kind: 'ready' }
   >['capital']['progress']
 }) => {
   const value = getProgressBarValue(progress)
-  const ariaValueText = getProgressAriaValueText(progress)
+  const ariaValueText = getProgressAriaValueText({
+    cappedLabel: labels.progressCappedLabel,
+    locale,
+    progress,
+  })
 
   return (
     <div
@@ -329,8 +345,10 @@ const ProgressBar = ({
 }
 
 const CapitalBreakdown = ({
+  labels,
   segments,
 }: {
+  readonly labels: DealProgressPanelLabels
   readonly segments: Extract<
     DealProgressPanelState,
     { readonly kind: 'ready' }
@@ -346,7 +364,9 @@ const CapitalBreakdown = ({
   return (
     <div className="grid gap-2.5" data-slot="deal-progress-breakdown">
       <div className="grid gap-1.5">
-        <p className="text-xs font-medium text-command-foreground/65">Capital composition</p>
+        <p className="text-xs font-medium text-command-foreground/65">
+          {labels.capitalCompositionLabel}
+        </p>
         <div
           aria-hidden="true"
           className="rounded-md border border-command-border bg-command-muted p-1"
@@ -367,7 +387,9 @@ const CapitalBreakdown = ({
         </div>
       </div>
       <div className="grid gap-1.5">
-        <p className="text-xs font-medium text-command-foreground/65">Capital breakdown</p>
+        <p className="text-xs font-medium text-command-foreground/65">
+          {labels.capitalBreakdownLabel}
+        </p>
         <ul className="grid gap-1 text-xs text-command-foreground/70">
           {breakdownSegments.map((segment) => (
             <li className="flex min-w-0 items-center justify-between gap-3" key={segment.kind}>

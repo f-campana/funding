@@ -5,6 +5,9 @@ import type {
 } from './deal-progress-panel'
 
 export const dealProgressPanelLabels = {
+  capitalBreakdownLabel: 'Capital breakdown',
+  capitalCompositionLabel: 'Capital composition',
+  progressCappedLabel: 'capped',
   progressAriaLabel: 'Deal capital progress',
   title: 'Deal progression',
 } as const satisfies DealProgressPanelProps['labels']

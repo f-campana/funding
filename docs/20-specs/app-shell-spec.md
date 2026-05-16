@@ -1,8 +1,15 @@
 # App Shell Spec
 
+Historical status note: this spec describes the earlier app-shell integration
+loop. The current kit API has since been narrowed to `DealCommitmentsTable` and
+`DealProgressPanel`, and the Northstar app vertical should now consume the
+app-owned operational data spine instead of the deleted `DealDashboardDemo`
+surface.
+
 ## Purpose
 
-This document specifies the next implementation loop for `apps/web`.
+This document specifies the historical app-shell implementation loop for
+`apps/web`.
 
 The goal is to turn the minimal Next.js shell into a real app surface that
 integrates the implemented workspace layers:
@@ -13,9 +20,9 @@ integrates the implemented workspace layers:
 @repo/design-tokens -> @repo/tailwind-config -> @repo/ui -> @repo/kit -> apps/web
 ```
 
-This loop proves that the app can render the product-shaped kit layer in a
-real Next.js App Router environment with locale, fonts, route boundaries, and
-Playwright coverage.
+At the time it was written, this loop proved that the app could render the
+then-current product-shaped kit layer in a real Next.js App Router environment
+with locale, fonts, route boundaries, and Playwright coverage.
 
 ## Current State
 
@@ -87,7 +94,7 @@ This loop is an integration shell, not a data or form loop.
 At the end of the loop, `apps/web` must provide:
 
 - a root route that introduces the case-study app and links to the deal route
-- a deal route rendering the current `@repo/kit/DealDashboardDemo`
+- a deal route rendering the then-current `@repo/kit/DealDashboardDemo`
 - `next-intl` translations for app-owned visible copy
 - self-hosted fonts through `next/font`
 - semantic Tailwind classes only
@@ -138,7 +145,7 @@ The page should:
 - be a Server Component
 - type `params` as a promise, as required by current Next.js App Router APIs
 - call `notFound()` for unsupported deal IDs
-- render `DealDashboardDemo` from `@repo/kit`
+- render the historical `DealDashboardDemo` from `@repo/kit`
 - use translated route framing copy around the kit demo
 - keep all mock/product data inside the kit demo for this loop
 

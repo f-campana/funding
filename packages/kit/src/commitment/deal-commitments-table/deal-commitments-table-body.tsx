@@ -8,6 +8,7 @@ import {
 import type {
   CommitmentInvestorRow as CommitmentInvestorRowData,
   CommitmentTableModel,
+  DealCommitmentsTableLabels,
   DealCommitmentsTableLifecycleState,
 } from './deal-commitments-table.types'
 import {
@@ -18,12 +19,14 @@ import {
 import { CommitmentTableStateRow } from './deal-commitments-table-state-row'
 
 export const CommitmentsTableBody = ({
+  labels,
   model,
   onRowOpen,
   onRowSelect,
   selectedRowIds,
   state,
 }: {
+  readonly labels: DealCommitmentsTableLabels
   readonly model: CommitmentTableModel | undefined
   readonly onRowOpen: (row: CommitmentInvestorRowData) => void
   readonly onRowSelect: (row: CommitmentInvestorRowData) => void
@@ -51,11 +54,12 @@ export const CommitmentsTableBody = ({
       />
     ))
     .with({ kind: 'ready' }, () => (
-      <>{model && getReadyBodyRows(model, selectedRowIds, onRowOpen, onRowSelect)}</>
+      <>{model && getReadyBodyRows(labels, model, selectedRowIds, onRowOpen, onRowSelect)}</>
     ))
     .exhaustive()
 
 const getReadyBodyRows = (
+  labels: DealCommitmentsTableLabels,
   model: CommitmentTableModel,
   selectedRowIds: readonly string[],
   onRowOpen: (row: CommitmentInvestorRowData) => void,
@@ -64,9 +68,9 @@ const getReadyBodyRows = (
   if (!model.hasSourceRows) {
     return (
       <CommitmentTableStateRow
-        description="Invited investors and submitted commitments will appear here."
+        description={labels.empty.noDataDescription}
         kind="empty"
-        title="No commitments yet"
+        title={labels.empty.noDataTitle}
       />
     )
   }
@@ -74,19 +78,25 @@ const getReadyBodyRows = (
   if (model.filteredRows.length === 0) {
     return (
       <CommitmentTableStateRow
-        description="Clear search or filters to return to all commitments."
+        description={labels.empty.noResultsDescription}
         kind="empty"
-        title="No commitments match your search or filters"
+        title={labels.empty.noResultsTitle}
       />
     )
   }
 
   return model.groupedItems.map((item) =>
     item.kind === 'group' ? (
-      <CommitmentGroupRow count={item.count} key={`group-${item.id}`} label={item.label} />
+      <CommitmentGroupRow
+        count={item.count}
+        key={`group-${item.id}`}
+        label={item.label}
+        labels={labels}
+      />
     ) : (
       <CommitmentInvestorRow
         batchSelected={selectedRowIds.includes(item.row.id) && !item.row.disabled}
+        labels={labels}
         key={item.row.id}
         onRowOpen={onRowOpen}
         onRowSelect={onRowSelect}

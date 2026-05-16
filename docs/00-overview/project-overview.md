@@ -53,13 +53,13 @@ Implemented and verified:
 - `@repo/ui` — generic shadcn/Radix-compatible primitives, chart
   infrastructure, shadcn monorepo configuration, Storybook stories, contract
   checks, and accessibility tests.
-- `@repo/kit` — domain-aware composed components: money display, metrics,
-  commitment progress, SPV state tracking, deal terms, investor disclosure rows,
-  and a dashboard demo block.
+- `@repo/kit` — accepted product baselines: `DealCommitmentsTable`,
+  `DealProgressPanel`, and their public props/state/action/label/input types.
+  Older exploratory kit surfaces were removed.
 - `apps/web` — Next.js App Router app shell with `next-intl`, token font/theme
-  wiring, translated homepage, Deal Operations V1 routes under
-  `/deals/northstar-energy`, route-owned fixture data adapter, route
-  boundaries, and Playwright e2e coverage.
+  wiring, translated homepage, an app-owned Northstar operational data spine,
+  a tRPC seam, route boundaries, and route work in progress under
+  `/deals/northstar-energy`.
 - `apps/storybook` — standalone component workspace consuming `ui` and `kit`
   stories, with locale and light/dark preview toolbar controls.
 
@@ -122,18 +122,13 @@ The package READMEs list package-specific verification commands.
 
 ## Next Step
 
-The next planning pass should target closing readiness and exception handling
-before another implementation loop.
+The next implementation pass should wire the real Northstar route workflows to
+the app-owned DTO/tRPC spine.
 
-Why: the dashboard is now structurally credible enough to expose the deeper
-product gap. It still behaves more like a static status report than a
-private-markets operator workspace. Before building more UI or adding API
-wiring, the next spec should define blockers, next actions, capital
-reconciliation, document completeness, deadline risk, and ownership semantics.
-
-Public-readiness documentation remains important because this is a public case
-study, but it should come after the current product thesis is captured in a
-durable planning document.
+Why: the kit API is intentionally narrowed to accepted baselines, and the
+Northstar data contract now lives in `apps/web`. The vertical should not be
+called complete until the about, commitments, and documents workflows consume
+that contract without reviving removed kit surfaces.
 
 Relevant docs:
 

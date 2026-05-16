@@ -19,7 +19,6 @@ import {
   Clock3,
   FilePenLine,
   Landmark,
-  MoreHorizontal,
   RefreshCw,
 } from 'lucide-react'
 import type { ComponentProps, ReactNode } from 'react'
@@ -35,6 +34,7 @@ import type {
   CommitmentReadinessTone,
   CommitmentRowDataIssueTone,
   CommitmentRowVisualState,
+  DealCommitmentsTableLabels,
 } from './deal-commitments-table.types'
 
 const readinessToneClasses = {
@@ -85,9 +85,11 @@ const avatarToneClasses = {
 export const CommitmentGroupRow = ({
   count,
   label,
+  labels,
 }: {
   readonly count: number
   readonly label: string
+  readonly labels: DealCommitmentsTableLabels
 }) => (
   <TableRow
     className="h-10 border-b border-border/50 bg-muted/35 hover:bg-muted/35"
@@ -95,7 +97,7 @@ export const CommitmentGroupRow = ({
   >
     <TableCell colSpan={commitmentTableColumnCount} className="px-3 py-2">
       <span className="text-muted-foreground text-xs font-semibold uppercase">
-        {label} · {count} {count === 1 ? 'investor' : 'investors'}
+        {labels.row.groupSummaryLabel(label, count)}
       </span>
     </TableCell>
   </TableRow>
@@ -103,6 +105,7 @@ export const CommitmentGroupRow = ({
 
 export const CommitmentInvestorRow = ({
   batchSelected,
+  labels,
   onRowOpen,
   onRowSelect,
   row,
@@ -110,6 +113,7 @@ export const CommitmentInvestorRow = ({
   visualState,
 }: {
   readonly batchSelected: boolean
+  readonly labels: DealCommitmentsTableLabels
   readonly row: CommitmentInvestorRowData
   readonly rowIndex: number
   readonly visualState: CommitmentRowVisualState
@@ -147,7 +151,7 @@ export const CommitmentInvestorRow = ({
           />
         ) : null}
         <Checkbox
-          aria-label={`Select ${row.investorName}`}
+          aria-label={labels.row.selectRowLabel(row)}
           checked={batchSelected}
           className={
             batchSelected
@@ -174,6 +178,7 @@ export const CommitmentInvestorRow = ({
         active={flags.active}
         disabled={flags.disabled}
         drawerOpen={flags.drawerOpen}
+        labels={labels}
         onRowOpen={onRowOpen}
         row={row}
       />
@@ -459,6 +464,7 @@ const CommitmentActionCell = ({
   active,
   disabled,
   drawerOpen,
+  labels,
   onRowOpen,
   row,
 }: {
@@ -466,9 +472,10 @@ const CommitmentActionCell = ({
   readonly active: boolean
   readonly drawerOpen: boolean
   readonly disabled: boolean
+  readonly labels: DealCommitmentsTableLabels
   readonly onRowOpen: (row: CommitmentInvestorRowData) => void
 }) => {
-  const buttonLabel = active ? `Open ${row.investorName}` : `More actions for ${row.investorName}`
+  const buttonLabel = labels.row.openDetailsLabel(row)
 
   return (
     <TableCell className="relative px-3 py-2 text-right">
@@ -483,6 +490,7 @@ const CommitmentActionCell = ({
         aria-label={buttonLabel}
         className={cn(
           'size-8 rounded-lg text-muted-foreground',
+          active ? 'text-status-info' : null,
           drawerOpen ? 'bg-status-info-muted text-status-info hover:bg-status-info-muted' : null,
         )}
         disabled={disabled}
@@ -493,11 +501,7 @@ const CommitmentActionCell = ({
         size="icon"
         variant="ghost"
       >
-        {active ? (
-          <ChevronRight aria-hidden="true" className="size-4" />
-        ) : (
-          <MoreHorizontal aria-hidden="true" className="size-4" />
-        )}
+        <ChevronRight aria-hidden="true" className="size-4" />
       </Button>
     </TableCell>
   )

@@ -24,7 +24,7 @@ export default meta
 
 type DealCommitmentsTableLabels = Pick<
   ComponentProps<typeof DealCommitmentsTable>,
-  'footer' | 'subtitle' | 'title' | 'toolbar'
+  'footer' | 'labels' | 'subtitle' | 'title' | 'toolbar'
 >
 type ReadyCommitmentsTableState = Extract<
   DealCommitmentsTableLifecycleState,
@@ -52,6 +52,7 @@ const renderTable = (
     <DealCommitmentsTable
       {...({
         footer: labels.footer,
+        labels: labels.labels,
         state: readyTableState(),
         subtitle: labels.subtitle,
         title: labels.title,
@@ -133,6 +134,7 @@ const renderRowStateTable = (
     <DealCommitmentsTable
       {...({
         footer: dealCommitmentsTableLabels.footer,
+        labels: dealCommitmentsTableLabels.labels,
         state: readyTableState({
           pagination: { page: 1, pageSize: 3 },
           rows: lockedCommitmentRows.slice(0, 3),
@@ -347,7 +349,7 @@ export const Interaction = {
       'Checkbox does not open the drawer.',
     )
 
-    getButton(canvasElement, 'More actions for Pine Point Capital').click()
+    getButton(canvasElement, 'Open commitment detail for Pine Point Capital').click()
     await waitForStoryUpdate()
 
     assertStory(

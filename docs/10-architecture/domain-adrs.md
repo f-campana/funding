@@ -81,8 +81,8 @@ The default locale is `fr-FR`.
 ### Rationale
 
 This keeps formatting deterministic, testable, and independent from React
-providers. UI wrappers such as `MoneyDisplay` can read locale from app context
-later and pass it to the domain function.
+providers. App or kit adapters can read locale from app context later and pass
+it to domain formatting functions.
 
 ### Consequences
 
@@ -195,4 +195,3 @@ domain loop should establish exact minor-unit arithmetic and parsing/formatting.
 Any future helper such as `multiplyEuroCentsByBasisPoints` or
 `allocateEuroCents` requires tests for rounding, conservation of total amount,
 and remainder distribution.
-

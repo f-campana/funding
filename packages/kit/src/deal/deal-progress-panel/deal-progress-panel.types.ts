@@ -80,10 +80,6 @@ export type DealProgressSegment = {
   readonly tone: DealProgressSegmentTone
 }
 
-export type NormalizedDealProgressSegment = DealProgressSegment & {
-  readonly visualBasisPoints: number
-}
-
 export type DealProgressMetricTone = 'default' | 'attention' | 'danger' | 'neutral'
 
 export type DealProgressMetric = {
@@ -145,12 +141,18 @@ export type DealProgressPanelState =
       readonly dataQuality?: DealProgressDataQuality | undefined
     }
 
+export type DealProgressPanelLabels = {
+  readonly title: string
+  readonly progressAriaLabel: string
+  readonly progressCappedLabel: string
+  readonly capitalCompositionLabel: string
+  readonly capitalBreakdownLabel: string
+}
+
 export type DealProgressPanelProps = {
   readonly state: DealProgressPanelState
-  readonly labels: {
-    readonly title: string
-    readonly progressAriaLabel: string
-  }
+  readonly labels: DealProgressPanelLabels
+  readonly locale?: string | undefined
   readonly onAction?: (event: DealProgressActionEvent) => void
   readonly className?: string
 }

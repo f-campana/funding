@@ -3,6 +3,7 @@ import {
   type CapitalReconciliationError,
   type CapitalReconciliationSummary,
   type ClosingBlockerType,
+  type DocumentRequirementStatus,
   type EuroCents,
   euroCentsToMinorUnits,
   getClosingBlockerSeverityTone,
@@ -13,10 +14,13 @@ import {
   getKycOperationalStatusLabel,
   getSignatureOperationalStatusLabel,
   getWireOperationalStatusLabel,
+  type KycOperationalStatus,
+  type SignatureOperationalStatus,
   serializeEuroCentsToNumber,
   summarizeCapitalReconciliation,
   summarizeClosingReadiness,
   summarizeDocumentCompleteness,
+  type WireOperationalStatus,
 } from '@repo/domain'
 
 import {
@@ -24,6 +28,7 @@ import {
   type NorthstarClosingBlockerFixture,
   type NorthstarDocumentRequirementFixture,
   type NorthstarInvestorOperationFixture,
+  type NorthstarOperationalFixture,
   northstarOperationalFixture,
 } from './fixtures/northstar-energy.fixture'
 import type {
@@ -77,6 +82,7 @@ export const getDealOperationalCenter = (
 
   const readinessSummary = summarizeClosingReadiness({
     blockers: northstarOperationalFixture.blockers,
+    hasOperationalInputs: true,
   })
   const documents = mapDocuments(northstarOperationalFixture.documents)
   const blockers = northstarOperationalFixture.blockers.map(mapBlocker)
@@ -84,7 +90,14 @@ export const getDealOperationalCenter = (
     mapInvestor(investor, northstarOperationalFixture.blockers, moneyContext.money),
   )
   const documentSummary = summarizeDocumentCompleteness(northstarOperationalFixture.documents)
-  const readiness = mapReadiness(readinessSummary, northstarOperationalFixture.blockers)
+  const readiness = deriveClosingReadiness({
+    blockers: northstarOperationalFixture.blockers,
+    capital: capitalResult.value,
+    documents: northstarOperationalFixture.documents,
+    investors: northstarOperationalFixture.investors,
+    summary: readinessSummary,
+    vehicle: northstarOperationalFixture.deal.vehicle,
+  })
   const capital = mapCapital(capitalResult.value, moneyContext.money)
   const documentsCenter: DocumentCenterDTO = {
     groups: northstarOperationalFixture.documentGroups,
@@ -204,39 +217,105 @@ const mapCapitalReconciliationError = (
   }
 }
 
-const mapReadiness = (
-  summary: Omit<ClosingReadinessDTO, 'dimensions'>,
-  blockers: readonly NorthstarClosingBlockerFixture[],
-): ClosingReadinessDTO => ({
-  ...summary,
-  dimensions: [
-    mapDimension('investor_identity', 'Investor identity', ['kyc', 'kyb', 'compliance'], blockers),
-    mapDimension('signatures', 'Signatures', ['signature'], blockers),
-    mapDimension('wires', 'Wires', ['wire'], blockers),
-    mapDimension('documents', 'Documents', ['document'], blockers),
-    mapDimension(
-      'capital_reconciliation',
-      'Capital reconciliation',
-      ['reconciliation', 'allocation'],
-      blockers,
-    ),
-    mapDimension('vehicle_setup', 'Vehicle setup', ['deadline'], blockers),
-  ],
-})
+const READINESS_NEXT_ACTION_LABELS = {
+  attention: 'Review operational exceptions before close',
+  blocked: 'Resolve blocking operational exceptions before close',
+  not_started: 'Start operational readiness review',
+  ready: 'Proceed to closing review',
+} as const satisfies Record<ClosingReadinessDTO['state'], string>
 
-const mapDimension = (
-  id: ReadinessDimensionDTO['id'],
-  label: string,
-  types: readonly ClosingBlockerType[],
-  blockers: readonly NorthstarClosingBlockerFixture[],
-): ReadinessDimensionDTO => {
+export const deriveClosingReadiness = ({
+  blockers,
+  capital,
+  documents,
+  investors,
+  summary,
+  vehicle,
+}: {
+  readonly summary: Omit<ClosingReadinessDTO, 'dimensions'>
+  readonly blockers: readonly NorthstarClosingBlockerFixture[]
+  readonly investors: readonly NorthstarInvestorOperationFixture[]
+  readonly documents: readonly NorthstarDocumentRequirementFixture[]
+  readonly capital: CapitalReconciliationSummary
+  readonly vehicle: NorthstarOperationalFixture['deal']['vehicle']
+}): ClosingReadinessDTO => {
+  const dimensions = [
+    mapDimension({
+      blockers,
+      id: 'investor_identity',
+      label: 'Investor identity',
+      sourceState: getInvestorIdentitySourceState(investors),
+      types: ['kyc', 'kyb', 'compliance'],
+    }),
+    mapDimension({
+      blockers,
+      id: 'signatures',
+      label: 'Signatures',
+      sourceState: getSignatureSourceState(investors),
+      types: ['signature'],
+    }),
+    mapDimension({
+      blockers,
+      id: 'wires',
+      label: 'Wires',
+      sourceState: getWireSourceState(investors),
+      types: ['wire'],
+    }),
+    mapDimension({
+      blockers,
+      id: 'documents',
+      label: 'Documents',
+      sourceState: getDocumentSourceState(documents),
+      types: ['document'],
+    }),
+    mapDimension({
+      blockers,
+      id: 'capital_reconciliation',
+      label: 'Capital reconciliation',
+      sourceState: getCapitalSourceState(capital),
+      types: ['reconciliation', 'allocation'],
+    }),
+    mapDimension({
+      blockers,
+      id: 'vehicle_setup',
+      label: 'Vehicle setup',
+      sourceState: getVehicleSourceState(vehicle.setupStatus),
+      types: ['deadline'],
+    }),
+  ] as const satisfies readonly ReadinessDimensionDTO[]
+  const state = combineReadinessStates([
+    summary.state,
+    ...dimensions.map((dimension) => dimension.state),
+  ])
+
+  return {
+    ...summary,
+    dimensions,
+    nextActionLabel: READINESS_NEXT_ACTION_LABELS[state],
+    state,
+  }
+}
+
+const mapDimension = ({
+  blockers,
+  id,
+  label,
+  sourceState,
+  types,
+}: {
+  readonly id: ReadinessDimensionDTO['id']
+  readonly label: string
+  readonly sourceState: ReadinessDimensionStateDTO
+  readonly types: readonly ClosingBlockerType[]
+  readonly blockers: readonly NorthstarClosingBlockerFixture[]
+}): ReadinessDimensionDTO => {
   const relevant = blockers.filter((blocker) => !blocker.resolved && types.includes(blocker.type))
 
   return {
     blockerCount: relevant.length,
     id,
     label,
-    state: readinessStateFromBlockers(relevant),
+    state: combineReadinessStates([sourceState, readinessStateFromBlockers(relevant)]),
   }
 }
 
@@ -252,6 +331,149 @@ const readinessStateFromBlockers = (
   }
 
   if (blockers.some((blocker) => blocker.severity === 'info')) {
+    return 'attention'
+  }
+
+  return 'ready'
+}
+
+const combineReadinessStates = (
+  states: readonly ReadinessDimensionStateDTO[],
+): ReadinessDimensionStateDTO => {
+  if (states.some((state) => state === 'blocked')) {
+    return 'blocked'
+  }
+
+  if (states.some((state) => state === 'attention')) {
+    return 'attention'
+  }
+
+  if (states.some((state) => state === 'not_started')) {
+    return 'not_started'
+  }
+
+  return 'ready'
+}
+
+const IDENTITY_BLOCKED_STATUSES = new Set<KycOperationalStatus>(['blocked', 'expired', 'rejected'])
+const IDENTITY_ATTENTION_STATUSES = new Set<KycOperationalStatus>([
+  'in_progress',
+  'not_started',
+  'pending_review',
+])
+const SIGNATURE_BLOCKED_STATUSES = new Set<SignatureOperationalStatus>([
+  'declined',
+  'expired',
+  'failed',
+])
+const SIGNATURE_ATTENTION_STATUSES = new Set<SignatureOperationalStatus>([
+  'not_sent',
+  'part_signed',
+  'prepared',
+  'sent',
+  'viewed',
+])
+const WIRE_BLOCKED_STATUSES = new Set<WireOperationalStatus>(['failed', 'returned'])
+const WIRE_ATTENTION_STATUSES = new Set<WireOperationalStatus>([
+  'instructions_sent',
+  'not_requested',
+  'partially_matched',
+  'pending',
+  'received',
+  'under_review',
+  'unmatched',
+])
+const DOCUMENT_BLOCKED_STATUSES = new Set<DocumentRequirementStatus>([
+  'expired',
+  'missing',
+  'rejected',
+])
+const DOCUMENT_ATTENTION_STATUSES = new Set<DocumentRequirementStatus>(['under_review', 'uploaded'])
+
+const getInvestorIdentitySourceState = (
+  investors: readonly NorthstarInvestorOperationFixture[],
+): ReadinessDimensionStateDTO => {
+  if (investors.length === 0) {
+    return 'not_started'
+  }
+
+  return combineReadinessStates(investors.map(getSingleInvestorIdentitySourceState))
+}
+
+const getSingleInvestorIdentitySourceState = (
+  investor: NorthstarInvestorOperationFixture,
+): ReadinessDimensionStateDTO => {
+  const statuses: KycOperationalStatus[] = [investor.kycStatus]
+
+  if (investor.kybStatus !== undefined) {
+    statuses.push(investor.kybStatus)
+  } else if (investor.legalEntityName !== undefined) {
+    return 'attention'
+  }
+
+  return sourceStateFromStatuses(statuses, IDENTITY_BLOCKED_STATUSES, IDENTITY_ATTENTION_STATUSES)
+}
+
+const getSignatureSourceState = (
+  investors: readonly NorthstarInvestorOperationFixture[],
+): ReadinessDimensionStateDTO =>
+  sourceStateFromStatuses(
+    investors.map((investor) => investor.signatureStatus),
+    SIGNATURE_BLOCKED_STATUSES,
+    SIGNATURE_ATTENTION_STATUSES,
+  )
+
+const getWireSourceState = (
+  investors: readonly NorthstarInvestorOperationFixture[],
+): ReadinessDimensionStateDTO =>
+  sourceStateFromStatuses(
+    investors.map((investor) => investor.wireStatus),
+    WIRE_BLOCKED_STATUSES,
+    WIRE_ATTENTION_STATUSES,
+  )
+
+const getDocumentSourceState = (
+  documents: readonly NorthstarDocumentRequirementFixture[],
+): ReadinessDimensionStateDTO =>
+  sourceStateFromStatuses(
+    documents.filter((document) => document.required).map((document) => document.status),
+    DOCUMENT_BLOCKED_STATUSES,
+    DOCUMENT_ATTENTION_STATUSES,
+  )
+
+const getCapitalSourceState = (
+  capital: CapitalReconciliationSummary,
+): ReadinessDimensionStateDTO =>
+  capital.hasUnmatchedFunds || capital.isOverTarget ? 'attention' : 'ready'
+
+const getVehicleSourceState = (
+  setupStatus: NorthstarOperationalFixture['deal']['vehicle']['setupStatus'],
+): ReadinessDimensionStateDTO => {
+  if (setupStatus === 'blocked') {
+    return 'blocked'
+  }
+
+  if (setupStatus === 'in_progress' || setupStatus === 'not_started') {
+    return 'attention'
+  }
+
+  return 'ready'
+}
+
+const sourceStateFromStatuses = <Status extends string>(
+  statuses: readonly Status[],
+  blockedStatuses: ReadonlySet<Status>,
+  attentionStatuses: ReadonlySet<Status>,
+): ReadinessDimensionStateDTO => {
+  if (statuses.length === 0) {
+    return 'not_started'
+  }
+
+  if (statuses.some((status) => blockedStatuses.has(status))) {
+    return 'blocked'
+  }
+
+  if (statuses.some((status) => attentionStatuses.has(status))) {
     return 'attention'
   }
 
@@ -296,7 +518,20 @@ const mapInvestor = (
     investorName: investor.investorName,
     kycStatus: investor.kycStatus,
     kycStatusLabel: getKycOperationalStatusLabel(investor.kycStatus),
-    readinessState: readinessStateFromBlockers(investorBlockers),
+    readinessState: combineReadinessStates([
+      getSingleInvestorIdentitySourceState(investor),
+      sourceStateFromStatuses(
+        [investor.signatureStatus],
+        SIGNATURE_BLOCKED_STATUSES,
+        SIGNATURE_ATTENTION_STATUSES,
+      ),
+      sourceStateFromStatuses(
+        [investor.wireStatus],
+        WIRE_BLOCKED_STATUSES,
+        WIRE_ATTENTION_STATUSES,
+      ),
+      readinessStateFromBlockers(investorBlockers),
+    ]),
     signatureStatus: investor.signatureStatus,
     signatureStatusLabel: getSignatureOperationalStatusLabel(investor.signatureStatus),
     wireStatus: investor.wireStatus,

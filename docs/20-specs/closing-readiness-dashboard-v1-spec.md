@@ -1,8 +1,14 @@
 # Closing Readiness Dashboard V1 Spec
 
-**Status:** Implemented
+**Status:** Historical implemented pass; superseded as current kit API
 **Scope:** `packages/kit` product components, kit stories/tests, and narrow
 `apps/web` e2e assertions only when needed.
+
+Current status note: the kit surfaces described in this file were removed after
+the baseline cleanup. Treat this document as implementation history, not the
+current `@repo/kit` public API. New route work should consume the app-owned
+Northstar data spine and the accepted `DealCommitmentsTable` /
+`DealProgressPanel` baselines.
 **Depends on:** `@repo/domain`, `@repo/domain/reconciliation`, `@repo/ui`,
 `@repo/tailwind-config`, React, existing kit components.
 **Must not depend on:** Next.js app APIs, `next-intl`, tRPC, GraphQL, database,

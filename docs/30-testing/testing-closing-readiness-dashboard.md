@@ -1,8 +1,13 @@
 # Testing Closing Readiness Dashboard V1
 
-**Status:** Implemented
+**Status:** Historical implemented pass; superseded as current kit API
 **Scope:** focused testing guidance for the Closing Readiness / Exception
 Dashboard V1 kit pass.
+
+Current status note: the kit components covered by this historical guide were
+removed during baseline cleanup. Current kit testing guidance lives in
+[testing-kit.md](./testing-kit.md) and covers only `DealCommitmentsTable` and
+`DealProgressPanel`.
 
 ## 1. Purpose
 

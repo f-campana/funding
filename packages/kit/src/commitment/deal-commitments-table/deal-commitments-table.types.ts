@@ -118,13 +118,14 @@ export type DealCommitmentsTableLifecycleState =
 export type DealCommitmentsTableProps = {
   readonly title: string
   readonly subtitle: string
+  readonly labels: DealCommitmentsTableLabels
   readonly toolbar: {
     readonly searchPlaceholder: string
     readonly workflowFiltersLabel: string
     readonly exportLabel: string
-    readonly exportSelectedLabel?: string | undefined
-    readonly exportVisibleLabel?: string | undefined
-    readonly selectedLabel?: string | undefined
+    readonly exportSelectedLabel: string
+    readonly exportVisibleLabel: string
+    readonly selectedLabel: string
   }
   readonly footer: {
     readonly investorsLabel: string
@@ -146,6 +147,43 @@ export type DealCommitmentsTableProps = {
   readonly onExportSelected?: (rowIds: readonly string[]) => void
   readonly onExportVisible?: (rowIds: readonly string[]) => void
   readonly className?: string
+}
+
+export type DealCommitmentsTableLabels = {
+  readonly columns: {
+    readonly investor: string
+    readonly commitment: string
+    readonly readiness: string
+    readonly kycKyb: string
+    readonly signature: string
+    readonly wire: string
+    readonly status: string
+    readonly actions: string
+  }
+  readonly empty: {
+    readonly noDataTitle: string
+    readonly noDataDescription: string
+    readonly noResultsTitle: string
+    readonly noResultsDescription: string
+  }
+  readonly filters: Record<CommitmentTableFilterId, string>
+  readonly footer: {
+    readonly emptyTotalCommittedLabel: string
+    readonly investorsLabel: (count: number) => string
+    readonly nextPageLabel: string
+    readonly previousPageLabel: string
+    readonly rangeLabel: (start: number, end: number, total: number) => string
+    readonly rowsPerPageLabel: (pageSize: number) => string
+    readonly rowsPerPageOptionLabel: (pageSize: number) => string
+  }
+  readonly row: {
+    readonly groupSummaryLabel: (label: string, count: number) => string
+    readonly openDetailsLabel: (row: CommitmentInvestorRow) => string
+    readonly selectRowLabel: (row: CommitmentInvestorRow) => string
+  }
+  readonly selection: {
+    readonly selectAllVisibleLabel: string
+  }
 }
 
 export type ReadyControls = {

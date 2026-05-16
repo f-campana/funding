@@ -13,10 +13,10 @@ implemented workspace layers into a real route:
 
 - `/` — translated entry page for the case-study app.
 - `/deals/northstar-energy` — redirects to `/deals/northstar-energy/about`.
-- `/deals/northstar-energy/about` — DTO-backed deal overview with the accepted
+- `/deals/northstar-energy/about` — DTO-backed deal overview using the accepted
   progress panel baseline.
-- `/deals/northstar-energy/commitments` — temporary commitment placeholder.
-- `/deals/northstar-energy/documents` — temporary document placeholder.
+- `/deals/northstar-energy/commitments` — placeholder until T5D-B route wiring.
+- `/deals/northstar-energy/documents` — placeholder until T5D-B route wiring.
 - `/deals/unknown` — unsupported deal route, expected to render the app
   not-found UI.
 - `/deals/unknown/about`, `/deals/unknown/commitments`, and
@@ -32,16 +32,19 @@ Implemented:
   `--font-geist-sans`, `--font-geist-mono`, and `--font-fraunces`
 - default `data-theme="light"` on the document root
 - route-level loading/error/not-found UI
-- app-owned deal DTO adapter and route data loader at `app/deals/[dealId]`
+- app-owned Northstar operational data spine under `server/deals`
+- tRPC seam under `server/trpc` and `app/api/trpc/[trpc]/route.ts`
+- route data loader at `app/deals/[dealId]`
 - Playwright e2e tests for homepage navigation, the DTO-backed about route,
   active tabs, and not-found behavior
 
 Not implemented yet:
 
+- full T5D-B route wiring for about, commitments, and documents workflows
 - commitments and documents route rebuilds
 - investor commitment form
 - React Hook Form
-- tRPC or GraphQL
+- GraphQL
 - auth/session logic
 - database or live data fetching
 - server actions or route handlers

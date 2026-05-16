@@ -33,6 +33,7 @@ export type {
   CommitmentTableSortKey,
   CommitmentTableSortState,
   CommitmentTableViewValue,
+  DealCommitmentsTableLabels,
   DealCommitmentsTableLifecycleState,
   DealCommitmentsTableProps,
 } from './deal-commitments-table.types'
@@ -40,6 +41,7 @@ export type {
 export const DealCommitmentsTable = ({
   className,
   footer,
+  labels,
   onActiveFilterIdsChange,
   onExportSelected,
   onExportVisible,
@@ -203,6 +205,7 @@ export const DealCommitmentsTable = ({
           subtitle={subtitle}
           title={title}
           toolbar={toolbar}
+          labels={labels}
         />
         <div
           className="max-w-full overflow-x-auto overscroll-x-contain"
@@ -214,11 +217,13 @@ export const DealCommitmentsTable = ({
             <CommitmentsTableHeader
               headerCheckboxState={model?.headerCheckboxState ?? false}
               headerSelectionDisabled={!model || model.selectableVisibleRowIds.length === 0}
+              labels={labels}
               onSelectVisible={toggleVisibleSelection}
             />
             <TableBody>
               <CommitmentsTableBody
                 model={model}
+                labels={labels}
                 onRowOpen={openRow}
                 onRowSelect={toggleRowSelection}
                 state={state}
@@ -229,6 +234,7 @@ export const DealCommitmentsTable = ({
         </div>
         <CommitmentsTableFooter
           footer={footer}
+          labels={labels}
           model={model}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}

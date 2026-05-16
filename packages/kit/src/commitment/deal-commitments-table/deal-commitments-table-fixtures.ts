@@ -374,7 +374,55 @@ export const dealCommitmentsTableLabels = {
     selectedLabel: 'selected',
     workflowFiltersLabel: 'Workflow filters',
   },
-} as const satisfies Pick<DealCommitmentsTableProps, 'footer' | 'subtitle' | 'title' | 'toolbar'>
+  labels: {
+    columns: {
+      actions: 'Actions',
+      commitment: 'Commitment',
+      investor: 'Investor',
+      kycKyb: 'KYC/KYB',
+      readiness: 'Readiness',
+      signature: 'Signature',
+      status: 'Status',
+      wire: 'Wire',
+    },
+    empty: {
+      noDataDescription: 'Invited investors and submitted commitments will appear here.',
+      noDataTitle: 'No commitments yet',
+      noResultsDescription: 'Clear search or filters to return to all commitments.',
+      noResultsTitle: 'No commitments match your search or filters',
+    },
+    filters: {
+      completedKycKyb: 'Completed KYC/KYB',
+      needsAttention: 'Needs attention',
+      pendingKycKyb: 'Pending KYC/KYB',
+      readyForClosing: 'Ready for closing',
+      signaturePending: 'Signature pending',
+      wirePending: 'Wire pending',
+    },
+    footer: {
+      emptyTotalCommittedLabel: 'Total committed $0',
+      investorsLabel: (count: number) => `${count} ${count === 1 ? 'investor' : 'investors'}`,
+      nextPageLabel: 'Next page',
+      previousPageLabel: 'Previous page',
+      rangeLabel: (start: number, end: number, total: number) => `${start}–${end} of ${total}`,
+      rowsPerPageLabel: (pageSize: number) => `Rows per page ${pageSize}`,
+      rowsPerPageOptionLabel: (pageSize: number) => `${pageSize} rows`,
+    },
+    row: {
+      groupSummaryLabel: (label: string, count: number) =>
+        `${label} · ${count} ${count === 1 ? 'investor' : 'investors'}`,
+      openDetailsLabel: (row: CommitmentInvestorRow) =>
+        `Open commitment detail for ${row.investorName}`,
+      selectRowLabel: (row: CommitmentInvestorRow) => `Select ${row.investorName}`,
+    },
+    selection: {
+      selectAllVisibleLabel: 'Select all visible commitments',
+    },
+  },
+} as const satisfies Pick<
+  DealCommitmentsTableProps,
+  'footer' | 'labels' | 'subtitle' | 'title' | 'toolbar'
+>
 
 export const emptyDealCommitmentsTableLabels = {
   ...dealCommitmentsTableLabels,
@@ -384,7 +432,10 @@ export const emptyDealCommitmentsTableLabels = {
     rowsPerPageLabel: 'Rows per page 8',
     totalCommittedLabel: 'Total committed $0',
   },
-} as const satisfies Pick<DealCommitmentsTableProps, 'footer' | 'subtitle' | 'title' | 'toolbar'>
+} as const satisfies Pick<
+  DealCommitmentsTableProps,
+  'footer' | 'labels' | 'subtitle' | 'title' | 'toolbar'
+>
 
 export const errorDealCommitmentsTableLabels = {
   ...dealCommitmentsTableLabels,
@@ -394,4 +445,7 @@ export const errorDealCommitmentsTableLabels = {
     rowsPerPageLabel: 'Rows per page 8',
     totalCommittedLabel: 'Total committed unavailable',
   },
-} as const satisfies Pick<DealCommitmentsTableProps, 'footer' | 'subtitle' | 'title' | 'toolbar'>
+} as const satisfies Pick<
+  DealCommitmentsTableProps,
+  'footer' | 'labels' | 'subtitle' | 'title' | 'toolbar'
+>

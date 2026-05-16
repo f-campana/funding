@@ -26,13 +26,13 @@ export const defaultPageSize = 8
 export const pageSizeOptions = [8, 12, 25] as const
 
 export const filterOptions = [
-  { id: 'needsAttention', label: 'Needs attention' },
-  { id: 'pendingKycKyb', label: 'Pending KYC/KYB' },
-  { id: 'completedKycKyb', label: 'Completed KYC/KYB' },
-  { id: 'signaturePending', label: 'Signature pending' },
-  { id: 'wirePending', label: 'Wire pending' },
-  { id: 'readyForClosing', label: 'Ready for closing' },
-] as const satisfies readonly { readonly id: CommitmentTableFilterId; readonly label: string }[]
+  { id: 'needsAttention' },
+  { id: 'pendingKycKyb' },
+  { id: 'completedKycKyb' },
+  { id: 'signaturePending' },
+  { id: 'wirePending' },
+  { id: 'readyForClosing' },
+] as const satisfies readonly { readonly id: CommitmentTableFilterId }[]
 
 const wirePendingPattern = /not received|pending/iu
 

@@ -8,8 +8,8 @@ for Funding. References to Funding are based on public research and used
 as product inspiration for an engineering case study.
 
 The repo is built in layers. The foundation packages, generic UI primitive
-layer, first product-shaped kit layer, and first Next.js app surface are now
-implemented.
+layer, narrowed product-shaped kit baselines, and an app-owned Northstar
+operational data spine are now implemented.
 
 ## For Reviewers
 
@@ -47,13 +47,13 @@ Implemented:
 - `@repo/ui` — generic shadcn/Radix-compatible UI primitives, chart
   infrastructure, shadcn monorepo configuration, Storybook stories, contract
   checks, and accessibility tests.
-- `@repo/kit` — product-shaped composed components: money display, metrics,
-  commitment progress, SPV state tracking, deal terms, investor disclosure rows,
-  and a dashboard demo block.
+- `@repo/kit` — accepted product baselines only: `DealCommitmentsTable`,
+  `DealProgressPanel`, and their public props/state/action/label/input types.
+  Legacy exploratory kit surfaces were removed.
 - `apps/web` — Next.js App Router shell with `next-intl`, token font/theme
-  wiring, translated homepage, Deal Operations V1 routes under
-  `/deals/northstar-energy`, route-owned fixture data adapter, route
-  boundaries, and Playwright e2e coverage.
+  wiring, translated homepage, an app-owned Northstar operational data spine,
+  a tRPC seam, route boundaries, and route work in progress under
+  `/deals/northstar-energy`.
 - `apps/storybook` — standalone Storybook workspace consuming `ui` and `kit`
   stories, with locale and light/dark preview toolbar controls.
 
@@ -146,19 +146,13 @@ Current high-authority docs:
 
 ## Next Work
 
-Next planning pass: closing readiness and exception handling.
+Next implementation pass: T5D-B route wiring.
 
-Why: the first dashboard route is now structurally credible, but the latest
-UX/domain reviews exposed a deeper product-model gap. The surface still reads
-more like a status report than an operator workspace. Before adding API wiring,
-forms, or another broad UI pass, the repo should define closing blockers, next
-actions, capital reconciliation, document completeness, ownership, and deadline
-risk.
-
-Public-readiness documentation remains important because this project may be
-shared externally. It should happen after the current product thesis is captured
-so the public docs explain the right next direction instead of documenting a
-stale visual-refinement phase.
+Why: the accepted kit baselines and app-owned Northstar DTO/tRPC spine are the
+trust boundary. The next pass should wire the real about, commitments, and
+documents workflows to that spine without reviving deleted kit surfaces or
+claiming the Northstar vertical is complete before all route workflows consume
+the contract.
 
 Relevant docs:
 

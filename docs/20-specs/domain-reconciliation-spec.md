@@ -49,7 +49,7 @@ Forbidden imports:
 ```ts
 import type { ReactNode } from 'react'
 import { Button } from '@repo/ui'
-import { MoneyDisplay } from '@repo/kit'
+import { DealProgressPanel } from '@repo/kit'
 import { prisma } from '@/db'
 import { createTRPCRouter } from '@/trpc'
 ```

@@ -2,14 +2,19 @@
 
 ## Purpose
 
-`packages/kit` tests protect composed product UI contracts. They verify that
-domain-shaped data is rendered accurately, interaction state is accessible, and
-financial display paths preserve exactness.
+`packages/kit` tests protect the accepted baseline component contracts. They
+verify accessible interaction state, label/copy injection, package boundaries,
+and layout-safe rendering for the current exported kit components.
 
-The tests should not duplicate all `@repo/ui` primitive tests and should not
-test Tailwind itself.
+The current kit baseline contains only:
 
-## 1. Test Stack
+- `DealCommitmentsTable`
+- `DealProgressPanel`
+
+Tests for older deleted kit surfaces are historical and should not be revived
+unless a future pass explicitly reintroduces a surface.
+
+## Test Stack
 
 Use:
 
@@ -21,129 +26,50 @@ Use:
 
 Do not introduce Jest.
 
-## 2. Query Strategy
+## Query Strategy
 
 Prefer user-facing queries:
 
 - `getByRole`
 - `getByLabelText`
 - `getByText`
-- `getByTitle` only when there is no better accessible query
 
 Use `data-slot` only for structural contract assertions.
 
 Do not add `data-testid`.
 
-## 3. MoneyDisplay Tests
+## DealCommitmentsTable Tests
 
-Test:
+Cover:
 
-- default `fr-FR` formatting
-- explicit `en-US` formatting
-- `currencyDisplay: 'code'`
-- fallback rendering when `formatEuroCents` cannot safely serialize
-- `data-state="ready"` and `data-state="error"`
-- `font-mono` and `tabular-nums` classes are present
+- title, subtitle, workflow filters, export actions, footer labels, and table
+  columns render from props
+- label overrides render without relying on component-internal English copy
+- row click opens as a pointer convenience
+- the row opener button opens with mouse, Enter, and Space
+- disabled row openers and checkboxes are inert
+- batch selection stays separate from active/drawer state
+- header selection operates on visible enabled rows
+- search, filter, pagination, empty, loading, and error states
+- long text remains truncated with accessible tooltip behavior
+- representative accessibility checks in light and dark contexts
 
-French currency formatting can contain regular spaces, no-break spaces
-(`\u00a0`), or narrow no-break spaces (`\u202f`) depending on platform and ICU
-version. Normalize spacing before asserting:
+## DealProgressPanel Tests
 
-```ts
-const normalizeFrenchNumber = (value: string) =>
-  value.replace(/\u00a0|\u202f/g, ' ')
-```
+Cover:
 
-Do not assert against raw ICU spacing.
+- ready, loading, error, stale/data-quality, no-target, over-target, disabled,
+  readonly, terminal, and dark-mode contexts
+- progress semantics expose one progressbar and correct aria state
+- labels and locale can override static section copy and progress aria text
+- action buttons emit stable action kinds and disabled reasons are accessible
+- composition segments normalize visually without becoming public API
+- package boundary checks reject app imports, console calls, and raw palette
+  classes
 
-## 4. CommitmentProgress Tests
+## Contract Script
 
-Test:
-
-- committed and target amounts render through `MoneyDisplay`
-- investor count renders
-- progress percentage is computed from `bigint` minor units
-- visual percentage clamps above 100 percent
-- zero target does not divide by zero
-- SVG/progress surface has an accessible label or title
-
-Use realistic amounts with cents.
-
-Do not do floating-point money arithmetic in test setup when domain helpers can
-construct exact values.
-
-## 5. SPV State Tracker Tests
-
-Test:
-
-- all statuses in `SPV_STATUSES` render in order
-- current status gets `data-state="current"`
-- previous statuses get `data-state="complete"`
-- following statuses get `data-state="pending"`
-- `labels` is exhaustive through the `Record<SpvStatus, string>` prop
-
-Prefer a table test over scattered one-off tests.
-
-## 6. DealTermsPanel Tests
-
-Test:
-
-- title renders as a heading
-- each term label and value renders exactly
-- optional descriptions render when provided
-- empty term array renders an accessible empty structural state if the component
-  supports one, or no rows if it does not
-
-Do not hardcode domain-specific legal copy in component tests.
-
-## 7. InvestorRow Tests
-
-Test:
-
-- row summary renders investor name, country, status, and amount
-- disclosure button has `aria-expanded`
-- click toggles open and closed state with `user-event`
-- expanded content is mounted/unmounted
-- status and qualification labels come from props
-- accessibility check passes for closed and open states
-
-Do not test Motion implementation details. Test the rendered state.
-
-## 8. Dashboard Demo Tests
-
-The dashboard demo needs a light smoke test only:
-
-- renders the main heading/label
-- renders the commitment progress
-- renders at least one investor row
-- has no obvious accessibility violations
-
-Avoid brittle assertions against every demo value.
-
-## 9. Stories As Visual Documentation
-
-Every component in this loop needs a Storybook story.
-
-Use stories to show:
-
-- default/light state
-- dark mode through the existing Storybook toolbar
-- locale differences where relevant, especially `MoneyDisplay`
-- expanded and collapsed investor rows
-- a realistic dashboard demo block
-
-Do not add image snapshot infrastructure in this loop. It is valid later when
-the dashboard demo becomes stable enough to protect visually.
-
-## 10. Contract Script
-
-Add a small package-level contract script:
-
-```text
-packages/kit/scripts/check-kit-contract.mjs
-```
-
-It should reject at least:
+`packages/kit/scripts/check-kit-contract.mjs` rejects at least:
 
 - `React.forwardRef`
 - imported `forwardRef`
@@ -156,33 +82,18 @@ It should reject at least:
 - imports from tRPC/database/server paths
 - raw hex colors
 - raw `oklch(...)`
-- hardcoded Tailwind color family utilities such as `text-green-600`
+- hardcoded Tailwind color family utilities
 - manual `dark:` overrides
 - `space-x-*` and `space-y-*`
 
 Unlike `@repo/ui`, `@repo/kit` may import `lucide-react`.
 
-Wire the script into package tests:
+## Coverage
 
-```json
-{
-  "scripts": {
-    "check:contracts": "node scripts/check-kit-contract.mjs",
-    "test": "pnpm check:contracts && vitest run",
-    "test:coverage": "pnpm check:contracts && vitest run --coverage"
-  }
-}
-```
+`pnpm --filter @repo/kit test:coverage` must pass. Keep coverage focused on
+accepted baseline files and avoid restoring deleted-surface tests.
 
-## 11. Coverage
-
-`pnpm --filter @repo/kit test:coverage` must pass.
-
-Use high coverage thresholds. Prefer 100 percent for implemented files unless a
-Motion or DOM-environment edge case makes that counterproductive. If thresholds
-are lower than 100 percent, record the reason in `STATUS.md`.
-
-## 12. Verification Commands
+## Verification Commands
 
 Run:
 
@@ -191,10 +102,6 @@ pnpm --filter @repo/kit typecheck
 pnpm --filter @repo/kit lint
 pnpm --filter @repo/kit test:coverage
 pnpm storybook:build
-pnpm turbo typecheck lint test
 pnpm lint
 git diff --check
 ```
-
-If dependencies are added, also run the relevant install command and ensure
-`pnpm-lock.yaml` changes are expected.
