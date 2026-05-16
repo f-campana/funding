@@ -5,6 +5,8 @@ Product-shaped composed React components for the funding workspace.
 This package is where generic UI primitives from `@repo/ui` meet domain-shaped
 data from `@repo/domain`. It stays render-focused: no data fetching, no Next.js
 routing, no auth, no tRPC, no database code, and no app-level i18n providers.
+It currently exposes only accepted baseline components while the next app
+vertical is rebuilt.
 
 ## Exports
 
@@ -12,47 +14,26 @@ Root export:
 
 ```ts
 import {
-  CommitmentProgress,
-  DealDashboardDemo,
-  DealTermsPanel,
-  InvestorRow,
-  MetricCard,
-  MoneyDisplay,
-  SpvStateTracker,
+  DealCommitmentsTable,
+  DealProgressPanel,
 } from '@repo/kit'
 ```
 
-Fixture export:
-
-```ts
-import { northstarDealFixture } from '@repo/kit/fixtures'
-```
-
-Fixture data is intentionally kept off the root export. App routes should use
-app-owned data adapters rather than importing fixtures directly throughout route
-files.
+Fixture data is not exported from this package. App routes should use app-owned
+data adapters rather than importing package fixtures.
 
 ## Component Scope
 
-Implemented first composed batch:
+Accepted baselines:
 
-- `MoneyDisplay` — locale-aware EUR rendering through `@repo/domain`.
-- `MetricCard` — compact label/value/supporting text display.
-- `CommitmentProgress` — committed vs target visualization using exact
-  `EuroCents` inputs.
-- `SpvStateTracker` — SPV lifecycle display backed by domain status order.
-- `DealTermsPanel` — deal term/value list.
-- `InvestorRow` — expandable investor commitment row.
-- Deal operations components — readiness, blockers, reconciliation, investor
-  operations, document completeness, activity, and the assembled
-  `DealDashboardDemo` surface for Storybook and review.
+- `DealCommitmentsTable` — commitment operations table baseline.
+- `DealProgressPanel` — deal progress command panel baseline.
 
 ## Boundary Rules
 
 May import:
 
 - React
-- `motion`
 - `lucide-react`
 - `ts-pattern`
 - `@repo/domain`

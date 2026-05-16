@@ -1,5 +1,3 @@
-export { CommitmentInspector, type CommitmentInspectorProps } from './commitment-inspector'
-export { CommitmentProgress, type CommitmentProgressProps } from './commitment-progress'
 export {
   type CommitmentInvestorAvatarTone,
   type CommitmentInvestorRow,
@@ -19,7 +17,3 @@ export {
   type DealCommitmentsTableLifecycleState,
   type DealCommitmentsTableProps,
 } from './deal-commitments-table'
-export {
-  InvestorOperationsTable,
-  type InvestorOperationsTableProps,
-} from './investor-operations-table'

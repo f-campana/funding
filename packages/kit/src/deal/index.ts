@@ -1,4 +1,3 @@
-export { DealProgressCard, type DealProgressCardProps } from './deal-progress-card'
 export {
   type DealProgressAction,
   type DealProgressActionAudience,
@@ -22,4 +21,3 @@ export {
   type DealProgressVisualProgress,
   type NormalizedDealProgressSegment,
 } from './deal-progress-panel'
-export { type DealTerm, DealTermsPanel, type DealTermsPanelProps } from './deal-terms-panel'

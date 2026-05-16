@@ -2,26 +2,10 @@ import * as Kit from '@repo/kit'
 import { describe, expect, it } from 'vitest'
 
 describe('@repo/kit package exports', () => {
-  it('exports the first composed product component set', () => {
-    expect(Kit.MoneyDisplay).toBeTypeOf('function')
-    expect(Kit.MetricCard).toBeTypeOf('function')
-    expect(Kit.CommitmentProgress).toBeTypeOf('function')
+  it('exports only the accepted baseline component set', () => {
     expect(Kit.DealCommitmentsTable).toBeTypeOf('function')
-    expect(Kit.CommitmentInspector).toBeTypeOf('function')
-    expect(Kit.InvestorOperationsTable).toBeTypeOf('function')
-    expect(Kit.SpvStateTracker).toBeTypeOf('function')
-    expect(Kit.DealTermsPanel).toBeTypeOf('function')
-    expect(Kit.DealProgressCard).toBeTypeOf('function')
     expect(Kit.DealProgressPanel).toBeTypeOf('function')
-    expect(Kit.DocumentCompletenessCard).toBeTypeOf('function')
-    expect(Kit.InvestorRow).toBeTypeOf('function')
-    expect(Kit.TicketDistribution).toBeTypeOf('function')
-    expect(Kit.InvestorStatusBreakdown).toBeTypeOf('function')
-    expect(Kit.ActivityTimeline).toBeTypeOf('function')
-    expect(Kit.ClosingReadinessSummary).toBeTypeOf('function')
-    expect(Kit.ClosingBlockerQueue).toBeTypeOf('function')
-    expect(Kit.CapitalReconciliationPanel).toBeTypeOf('function')
-    expect(Kit.DealDashboardDemo).toBeTypeOf('function')
+    expect(Object.keys(Kit).sort()).toEqual(['DealCommitmentsTable', 'DealProgressPanel'])
   })
 
   it('does not export the removed bootstrap placeholder', () => {
