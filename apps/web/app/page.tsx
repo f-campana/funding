@@ -1,4 +1,3 @@
-import { Button } from '@repo/ui'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 
@@ -21,9 +20,12 @@ export default async function HomePage() {
             <p className="text-sm leading-6 text-muted-foreground">{t('caseStudyBody')}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Button asChild>
-              <Link href="/deals/northstar-energy">{t('dealLink')}</Link>
-            </Button>
+            <Link
+              className="inline-flex h-9 shrink-0 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              href="/deals/northstar-energy"
+            >
+              {t('dealLink')}
+            </Link>
             <p className="text-sm text-muted-foreground">{t('status')}</p>
           </div>
         </div>

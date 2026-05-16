@@ -1,30 +1,14 @@
-import {
-  northstarActivityItems,
-  northstarCapitalSummariesByReadiness,
-  northstarClosingBlockersByState,
-  northstarDealFixture,
-  northstarDealTerms,
-  northstarDocumentCompletenessSummary,
-  northstarDocumentRequirements,
-  northstarDomainClosingBlockersByState,
-  northstarInvestorOperationsRecords,
-  northstarInvestorStatusBreakdown,
-  northstarReadinessCopyByState,
-} from '@repo/kit/fixtures'
-
 const dealOperationsRouteData = {
-  activityItems: northstarActivityItems,
-  capitalSummariesByReadiness: northstarCapitalSummariesByReadiness,
-  closingBlockersByState: northstarClosingBlockersByState,
-  deal: northstarDealFixture,
-  dealTerms: northstarDealTerms,
-  documentCompletenessSummary: northstarDocumentCompletenessSummary,
-  documentRequirements: northstarDocumentRequirements,
-  domainClosingBlockersByState: northstarDomainClosingBlockersByState,
-  investorOperationsRecords: northstarInvestorOperationsRecords,
-  investorStatusBreakdown: northstarInvestorStatusBreakdown,
-  readinessCopyByState: northstarReadinessCopyByState,
-  readinessState: 'blocked',
+  deal: {
+    closingReviewDateLabel: 'Rebuild paused',
+    description:
+      'Temporary workspace shell while the deal experience is rebuilt from accepted kit baselines.',
+    id: 'northstar-energy',
+    lastUpdatedLabel: 'Static shell',
+    statusLabel: 'Rebuild in progress',
+    title: 'Northstar Energy SPV',
+    vehicleLabel: 'SPV',
+  },
 } as const
 
 export type DealOperationsRouteData = typeof dealOperationsRouteData

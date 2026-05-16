@@ -1,7 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
 
-const eliseMartinRowName = /Elise Martin/
-
 async function expectActiveDealTab(page: Page, name: string) {
   await expect(
     page.getByRole('navigation', { name: 'Deal sections' }).getByRole('link', { name }),
@@ -19,16 +17,26 @@ async function expectDealShell(page: Page, activeModule: string) {
   await expect(page.getByRole('heading', { level: 1, name: 'Northstar Energy SPV' })).toBeVisible()
 }
 
-async function expectOperationalRail(page: Page) {
-  const rail = page.locator('[data-slot="deal-operational-rail"]')
-  await expect(rail).toBeVisible()
-  await expect(rail.getByRole('heading', { name: 'Deal progress' })).toBeVisible()
-  await expect(rail.getByRole('heading', { name: 'Close readiness' })).toBeVisible()
+async function expectPlaceholder(page: Page, sectionLabel: string) {
+  const placeholder = page.locator('[data-slot="deal-rebuild-placeholder"]')
+  await expect(placeholder).toBeVisible()
+  await expect(placeholder.getByText(sectionLabel, { exact: true })).toBeVisible()
+  await expect(
+    placeholder.getByRole('heading', { name: 'Deal Workspace rebuild in progress' }),
+  ).toBeVisible()
+  await expect(
+    placeholder.getByText('Accepted kit baselines are available in Storybook'),
+  ).toBeVisible()
 }
 
-test('homepage renders and redirects the legacy Northstar deal route to about', async ({
-  page,
-}) => {
+async function expectOperationalRailPlaceholder(page: Page) {
+  const rail = page.locator('[data-slot="deal-operational-rail"]')
+  await expect(rail).toBeVisible()
+  await expect(rail.getByRole('heading', { name: 'Workspace status' })).toBeVisible()
+  await expect(rail.getByRole('heading', { name: 'Cleanup scope' })).toBeVisible()
+}
+
+test('homepage renders and redirects the Northstar deal route to about', async ({ page }) => {
   await page.goto('/')
 
   await expect(
@@ -46,142 +54,52 @@ test('homepage renders and redirects the legacy Northstar deal route to about', 
   await expect(page).toHaveURL('/deals/northstar-energy/about')
   await expectDealShell(page, 'About')
   await expectActiveDealTab(page, 'About')
+  await expectPlaceholder(page, 'About')
 })
 
-test('deal about route renders overview sections and disclosure interaction', async ({
-  page,
-}, testInfo) => {
+test('deal about route renders the temporary workspace shell', async ({ page }) => {
   await page.goto('/deals/northstar-energy')
 
   await expect(page).toHaveURL('/deals/northstar-energy/about')
   await expectDealShell(page, 'About')
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
-  await expect(page.getByRole('heading', { name: 'Close is blocked' })).toBeVisible()
-  await expect(page.getByText('KYC evidence blocks signing')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Capital reconciliation' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Document completeness' })).toBeVisible()
-  await expectOperationalRail(page)
+  await expectPlaceholder(page, 'About')
+  await expectOperationalRailPlaceholder(page)
   await expectActiveDealTab(page, 'About')
-
-  const firstBlocker = page.locator('[data-slot="closing-blocker-item"]').first()
-  const blockerDetailsButton = firstBlocker.getByRole('button', { name: 'Show details' })
-  await blockerDetailsButton.click()
-  await expect(firstBlocker.getByRole('button', { name: 'Hide details' })).toHaveAttribute(
-    'aria-expanded',
-    'true',
-  )
-
-  await page.screenshot({
-    fullPage: true,
-    path: testInfo.outputPath('northstar-energy-about.png'),
-  })
 })
 
-test('deal about route keeps readiness and blockers visible on mobile without overflow', async ({
-  page,
-}) => {
+test('deal placeholder shell avoids mobile page overflow', async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 390 })
   await page.goto('/deals/northstar-energy/about')
 
   await expect(page.locator('[data-slot="deal-left-rail"]')).toBeVisible()
-  await expectOperationalRail(page)
-  await expect(page.getByRole('heading', { name: 'Close is blocked' })).toBeVisible()
-  await expect(page.getByText('KYC evidence blocks signing')).toBeVisible()
+  await expectPlaceholder(page, 'About')
+  await expectOperationalRailPlaceholder(page)
 
-  const railTop = await page
-    .locator('[data-slot="deal-operational-rail"]')
-    .evaluate((element) => element.getBoundingClientRect().top)
-  const readinessTop = await page
-    .locator('[data-slot="closing-readiness-summary"]')
-    .evaluate((element) => element.getBoundingClientRect().top)
-  const blockerTop = await page
-    .locator('[data-slot="closing-blocker-queue"]')
-    .evaluate((element) => element.getBoundingClientRect().top)
-  const documentTop = await page
-    .locator('[data-slot="document-completeness-card"]')
-    .evaluate((element) => element.getBoundingClientRect().top)
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   )
 
-  expect(railTop).toBeLessThan(readinessTop)
-  expect(readinessTop).toBeLessThan(blockerTop)
-  expect(blockerTop).toBeLessThan(documentTop)
   expect(hasHorizontalOverflow).toBe(false)
 })
 
-test('deal commitments route supports investor inspection', async ({ page }) => {
+test('deal section navigation renders placeholder routes', async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 1440 })
-  await page.goto('/deals/northstar-energy/commitments')
+  await page.goto('/deals/northstar-energy/about')
 
+  const tabs = page.getByRole('navigation', { name: 'Deal sections' })
+
+  await tabs.getByRole('link', { name: 'Commitments' }).click()
+  await expect(page).toHaveURL('/deals/northstar-energy/commitments')
   await expectDealShell(page, 'Commitments')
-  await expectOperationalRail(page)
-  await expect(page.getByRole('heading', { name: 'Investor operations' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Commitment inspector' })).toBeVisible()
+  await expectPlaceholder(page, 'Commitments')
   await expectActiveDealTab(page, 'Commitments')
 
-  const tableBox = await page
-    .locator('[data-slot="investor-operations-table"]')
-    .evaluate((element) => {
-      const rect = element.getBoundingClientRect()
-
-      return { bottom: rect.bottom, left: rect.left }
-    })
-  const inspectorBox = await page
-    .locator('[data-slot="commitment-inspector"]')
-    .evaluate((element) => {
-      const rect = element.getBoundingClientRect()
-
-      return { left: rect.left, top: rect.top }
-    })
-  expect(inspectorBox.left).toBeGreaterThan(tableBox.left)
-  expect(inspectorBox.top).toBeLessThan(tableBox.bottom)
-
-  const eliseRow = page.getByRole('row', { name: eliseMartinRowName })
-  const eliseInspectButton = eliseRow.getByRole('button', { name: 'Inspect' })
-  await expect(eliseInspectButton).toHaveAttribute('aria-pressed', 'true')
-
-  await expect(page.getByText('Elise Martin').last()).toBeVisible()
-  await expect(page.getByText('KYC evidence blocks signing')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Open documents' })).toBeVisible()
-})
-
-test('deal commitments route stacks inspector on mobile without page overflow', async ({
-  page,
-}) => {
-  await page.setViewportSize({ height: 844, width: 390 })
-  await page.goto('/deals/northstar-energy/commitments')
-
-  await expect(page.locator('[data-slot="deal-left-rail"]')).toBeVisible()
-  await expectOperationalRail(page)
-  await expect(page.getByRole('heading', { name: 'Investor operations' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Commitment inspector' })).toBeVisible()
-
-  const tableTop = await page
-    .locator('[data-slot="investor-operations-table"]')
-    .evaluate((element) => element.getBoundingClientRect().top)
-  const inspectorTop = await page
-    .locator('[data-slot="commitment-inspector"]')
-    .evaluate((element) => element.getBoundingClientRect().top)
-  const hasHorizontalOverflow = await page.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-  )
-
-  expect(tableTop).toBeLessThan(inspectorTop)
-  expect(hasHorizontalOverflow).toBe(false)
-})
-
-test('deal documents route renders fixture-backed requirements', async ({ page }) => {
-  await page.goto('/deals/northstar-energy/documents')
-
+  await tabs.getByRole('link', { name: 'Documents' }).click()
+  await expect(page).toHaveURL('/deals/northstar-energy/documents')
   await expectDealShell(page, 'Documents')
-  await expectOperationalRail(page)
-  await expect(page.getByRole('heading', { name: 'Document completeness' })).toBeVisible()
+  await expectPlaceholder(page, 'Documents')
   await expectActiveDealTab(page, 'Documents')
-  await expect(page.getByText('Elise Martin proof of address')).toBeVisible()
-  await expect(page.getByText('Rhine Ventures UBO declaration')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Rejected' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Missing' })).toBeVisible()
 })
 
 test('unsupported deal route renders the not-found UI', async ({ page }) => {

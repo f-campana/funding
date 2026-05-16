@@ -105,9 +105,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@repo/kit':
-        specifier: workspace:*
-        version: link:../../packages/kit
       '@repo/tailwind-config':
         specifier: workspace:*
         version: link:../../packages/tailwind-config

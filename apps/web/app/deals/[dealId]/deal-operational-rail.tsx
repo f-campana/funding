@@ -1,77 +1,40 @@
-import {
-  DealProgressCard,
-  type DealTerm,
-  DealTermsPanel,
-  InvestorStatusBreakdown,
-  MoneyDisplay,
-} from '@repo/kit'
-import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui'
-
 import type { DealOperationsRouteData } from './data'
-import { dealProgressLabels, investorStatusLabels } from './labels'
 
 type DealOperationalRailProps = {
   readonly data: DealOperationsRouteData
 }
 
 export function DealOperationalRail({ data }: DealOperationalRailProps) {
-  const capitalSummary = data.capitalSummariesByReadiness[data.readinessState]
-  const blockers = data.closingBlockersByState[data.readinessState]
-  const readinessCopy = data.readinessCopyByState[data.readinessState]
-  const dealTerms = data.dealTerms.map(
-    (term): DealTerm => ({
-      ...term,
-      value:
-        term.value.kind === 'money' ? <MoneyDisplay amount={term.value.amount} /> : term.value.text,
-    }),
-  )
-
   return (
     <aside
       aria-label="Deal operational rail"
       className="grid content-start gap-3 lg:sticky lg:top-5"
       data-slot="deal-operational-rail"
     >
-      <DealProgressCard
-        committedAmount={capitalSummary.committedAmountCents}
-        deadlineLabel={readinessCopy.deadline}
-        labels={dealProgressLabels}
-        lifecycleState={data.deal.lifecycleState}
-        matchedAmount={capitalSummary.matchedAmountCents}
-        nextActionLabel="Clear critical blockers before close review."
-        supportingText={data.deal.description}
-        targetAmount={capitalSummary.targetAmountCents}
-        title="Deal progress"
-      />
-      <Card className="gap-0 overflow-hidden py-0" data-slot="deal-rail-readiness-card">
-        <CardHeader className="gap-2 border-b border-border p-4">
-          <CardTitle className="text-sm">Close readiness</CardTitle>
-          <p className="text-sm leading-6 text-muted-foreground">{readinessCopy.title}</p>
-        </CardHeader>
-        <CardContent className="grid gap-3 p-4 text-sm">
-          <RailMetric label="Active blockers" value={blockers.length.toString()} />
-          <RailMetric
-            label="Document gaps"
-            value={(
-              data.documentCompletenessSummary.requiredMissingCount +
-              data.documentCompletenessSummary.requiredRejectedCount
-            ).toString()}
-          />
-          <RailMetric
-            label="Investor records"
-            value={data.investorOperationsRecords.length.toString()}
-          />
-        </CardContent>
-      </Card>
-      <InvestorStatusBreakdown
-        countLabel="investors"
-        description="Closing blockers grouped by investor state."
-        emptyLabel={investorStatusLabels.empty}
-        items={data.investorStatusBreakdown}
-        percentageLabel={investorStatusLabels.percentage}
-        title="Investor status"
-      />
-      <DealTermsPanel terms={dealTerms} title="Deal terms" />
+      <section className="rounded-lg border border-border bg-card p-4 text-card-foreground shadow-card">
+        <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
+          Current state
+        </p>
+        <h2 className="mt-2 text-sm font-semibold text-foreground">Workspace status</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{data.deal.description}</p>
+      </section>
+
+      <section className="rounded-lg border border-border bg-background p-4 shadow-card">
+        <h2 className="text-sm font-semibold text-foreground">Cleanup scope</h2>
+        <div className="mt-3 grid gap-2 text-sm">
+          <RailMetric label="Runtime kit imports" value="Removed" />
+          <RailMetric label="Fixture dependency" value="Removed" />
+          <RailMetric label="Live data" value="Deferred" />
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-border bg-background p-4 shadow-card">
+        <h2 className="text-sm font-semibold text-foreground">Next rebuild pass</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Deal commitments and progress baselines stay Storybook-first until the app-owned adapter
+          is defined.
+        </p>
+      </section>
     </aside>
   )
 }
