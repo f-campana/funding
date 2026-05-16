@@ -1,0 +1,16 @@
+.DS_Store
+node_modules/
+.pnpm-store/
+.pnpm-cache/
+.turbo/
+.next/
+dist/
+build/
+coverage/
+storybook-static/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example

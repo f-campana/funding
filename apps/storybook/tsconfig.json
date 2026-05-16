@@ -1,0 +1,5 @@
+{
+  "extends": "../../packages/typescript-config/react-library.json",
+  "include": [".storybook/**/*.ts", ".storybook/**/*.tsx"],
+  "exclude": ["node_modules", "storybook-static"]
+}
