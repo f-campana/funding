@@ -1,2 +1,25 @@
 export { DealProgressCard, type DealProgressCardProps } from './deal-progress-card'
+export {
+  type DealProgressAction,
+  type DealProgressActionAudience,
+  type DealProgressActionEvent,
+  type DealProgressActionKind,
+  type DealProgressActions,
+  type DealProgressCapitalSummary,
+  type DealProgressDataQuality,
+  type DealProgressMetric,
+  type DealProgressMetricTone,
+  type DealProgressMode,
+  DealProgressPanel,
+  type DealProgressPanelProps,
+  type DealProgressPanelState,
+  type DealProgressSegment,
+  type DealProgressSegmentKind,
+  type DealProgressSegmentTone,
+  type DealProgressStage,
+  type DealProgressStatus,
+  type DealProgressVisibility,
+  type DealProgressVisualProgress,
+  type NormalizedDealProgressSegment,
+} from './deal-progress-panel'
 export { type DealTerm, DealTermsPanel, type DealTermsPanelProps } from './deal-terms-panel'

@@ -12,6 +12,7 @@ describe('@repo/kit package exports', () => {
     expect(Kit.SpvStateTracker).toBeTypeOf('function')
     expect(Kit.DealTermsPanel).toBeTypeOf('function')
     expect(Kit.DealProgressCard).toBeTypeOf('function')
+    expect(Kit.DealProgressPanel).toBeTypeOf('function')
     expect(Kit.DocumentCompletenessCard).toBeTypeOf('function')
     expect(Kit.InvestorRow).toBeTypeOf('function')
     expect(Kit.TicketDistribution).toBeTypeOf('function')
