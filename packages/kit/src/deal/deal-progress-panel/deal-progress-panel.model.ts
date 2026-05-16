@@ -9,6 +9,7 @@ import type {
 } from './deal-progress-panel.types'
 
 export const maxBasisPoints = 10_000
+export const minCompositionSegmentBasisPoints = 600
 
 const terminalStages = ['invested', 'completed', 'exited', 'canceled'] as const
 
@@ -78,6 +79,58 @@ export const normalizeSegments = (
     return {
       ...segment,
       visualBasisPoints,
+    }
+  })
+}
+
+export const normalizeCompositionSegments = (
+  segments: readonly DealProgressSegment[] | undefined,
+): readonly NormalizedDealProgressSegment[] => {
+  const nonZeroSegments = normalizeSegments(segments).filter(
+    (segment) => segment.visualBasisPoints > 0,
+  )
+
+  if (nonZeroSegments.length === 0) {
+    return []
+  }
+
+  const total = nonZeroSegments.reduce((sum, segment) => sum + segment.visualBasisPoints, 0)
+  let allocated = 0
+  const proportionalSegments = nonZeroSegments.map((segment, index) => {
+    const isLast = index === nonZeroSegments.length - 1
+    const visualBasisPoints = isLast
+      ? Math.max(maxBasisPoints - allocated, 0)
+      : Math.floor((segment.visualBasisPoints / total) * maxBasisPoints)
+
+    allocated += visualBasisPoints
+
+    return {
+      ...segment,
+      visualBasisPoints,
+    }
+  })
+
+  const adjustedSegments = proportionalSegments.map((segment) => ({
+    ...segment,
+    visualBasisPoints: Math.max(segment.visualBasisPoints, minCompositionSegmentBasisPoints),
+  }))
+  let overflow =
+    adjustedSegments.reduce((sum, segment) => sum + segment.visualBasisPoints, 0) - maxBasisPoints
+
+  return adjustedSegments.map((segment) => {
+    if (overflow <= 0) {
+      return segment
+    }
+
+    const reduction = Math.min(
+      Math.max(segment.visualBasisPoints - minCompositionSegmentBasisPoints, 0),
+      overflow,
+    )
+    overflow -= reduction
+
+    return {
+      ...segment,
+      visualBasisPoints: segment.visualBasisPoints - reduction,
     }
   })
 }

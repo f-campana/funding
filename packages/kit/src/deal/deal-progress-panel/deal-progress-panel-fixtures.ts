@@ -34,11 +34,6 @@ const segmentedCapital = {
       tone: 'attention',
     },
   ],
-  details: [
-    { label: 'Investable amount', value: '€95,500' },
-    { label: 'Entry fees', value: '€2,500' },
-    { label: 'SPV fees', value: '€2,000' },
-  ],
   headlineLabel: '€100,000 / €200,000',
   progress: {
     basisPoints: 5_000,
@@ -257,6 +252,17 @@ export const adminOnlyState = {
 
 export const dataIssueState = {
   ...readyBase,
+  capital: {
+    ...segmentedCapital,
+    details: [
+      {
+        description: 'Refresh fund admin sync before closing decisions.',
+        label: 'Affected workflow',
+        tone: 'attention',
+        value: 'Wire reconciliation',
+      },
+    ],
+  },
   dataQuality: {
     description: 'Wire reconciliation data was last synced 2 hours ago.',
     kind: 'stale',

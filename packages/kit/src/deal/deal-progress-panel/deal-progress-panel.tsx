@@ -1,10 +1,10 @@
 'use client'
 
+import type { StatusTone } from '@repo/domain'
 import { Badge, Button, cn, Skeleton } from '@repo/ui'
 import { AlertCircle, Eye } from 'lucide-react'
 import { useId } from 'react'
 
-import { statusToneClasses } from '../../status/status-tone'
 import {
   getActionDisabledReason,
   getPanelVisualState,
@@ -13,6 +13,7 @@ import {
   getProgressBarValue,
   getSecondaryActions,
   isActionDisabled,
+  normalizeCompositionSegments,
   normalizeSegments,
 } from './deal-progress-panel.model'
 import type {
@@ -21,28 +22,39 @@ import type {
   DealProgressMetric,
   DealProgressPanelProps,
   DealProgressPanelState,
+  DealProgressSegmentKind,
   DealProgressSegmentTone,
 } from './deal-progress-panel.types'
 
-const segmentToneClasses = {
-  attention: 'bg-status-attention-border',
-  info: 'bg-status-info-border',
-  neutral: 'bg-muted-foreground/40',
-  success: 'bg-status-success-border',
-} as const satisfies Record<DealProgressSegmentTone, string>
+const segmentKindClasses = {
+  entryFees: 'bg-command-segment-entry-fees',
+  investable: 'bg-command-segment-investable',
+  spvFees: 'bg-command-segment-spv-fees',
+} as const satisfies Record<DealProgressSegmentKind, string>
+
+const commandStatusToneClasses = {
+  attention:
+    'border-command-segment-spv-fees/70 bg-command-progress-muted text-command-segment-spv-fees',
+  danger: 'border-status-danger-border/70 bg-command-progress-muted text-status-danger-border',
+  info: 'border-command-segment-entry-fees/70 bg-command-progress-muted text-command-segment-entry-fees',
+  neutral: 'border-command-border bg-command-muted text-command-foreground/75',
+  pending:
+    'border-command-segment-neutral/60 bg-command-progress-muted text-command-segment-neutral',
+  success: 'border-command-progress/70 bg-command-progress-muted text-command-progress',
+} as const satisfies Record<StatusTone, string>
 
 const metricToneClasses = {
   attention: 'text-status-attention',
   danger: 'text-status-danger',
-  default: 'text-background',
-  neutral: 'text-background/80',
+  default: 'text-command-foreground',
+  neutral: 'text-command-foreground/80',
 } as const satisfies Record<NonNullable<DealProgressMetric['tone']>, string>
 
 const dataQualityClasses = {
-  fresh: 'border-background/15 bg-background/10 text-background/70',
+  fresh: 'border-command-border bg-command-muted text-command-foreground/70',
   issue: 'border-status-danger-border/60 bg-status-danger-muted text-status-danger',
   stale: 'border-status-attention-border/60 bg-status-attention-muted text-status-attention',
-  unavailable: 'border-background/15 bg-background/10 text-background/70',
+  unavailable: 'border-command-border bg-command-muted text-command-foreground/70',
 } as const satisfies Record<DealProgressDataQuality['kind'], string>
 
 export type {
@@ -82,7 +94,7 @@ export const DealProgressPanel = ({
       aria-busy={state.kind === 'loading' ? true : undefined}
       aria-labelledby={titleId}
       className={cn(
-        'grid w-full max-w-[26rem] gap-5 rounded-xl border border-foreground/15 bg-foreground p-5 text-background shadow-card',
+        'grid h-fit w-full max-w-[26rem] gap-5 self-start rounded-xl border border-command-border bg-command p-5 text-command-foreground shadow-popover',
         className,
       )}
       data-mode={state.kind === 'ready' ? state.mode : undefined}
@@ -113,18 +125,18 @@ const LoadingContent = ({
 }) => (
   <>
     <div className="flex items-start justify-between gap-3" data-slot="deal-progress-header">
-      <h2 className="text-sm font-semibold text-background" id={titleId}>
+      <h2 className="text-sm font-semibold text-command-foreground" id={titleId}>
         {label}
       </h2>
-      <Skeleton className="h-7 w-24 bg-background/15 motion-reduce:animate-none" />
+      <Skeleton className="h-7 w-24 bg-command-muted motion-reduce:animate-none" />
     </div>
     <div className="grid gap-4" data-slot="deal-progress-loading">
-      <Skeleton className="h-5 w-40 bg-background/15 motion-reduce:animate-none" />
-      <Skeleton className="h-10 w-64 bg-background/15 motion-reduce:animate-none" />
-      <Skeleton className="h-2.5 w-full rounded-full bg-background/15 motion-reduce:animate-none" />
+      <Skeleton className="h-5 w-40 bg-command-muted motion-reduce:animate-none" />
+      <Skeleton className="h-10 w-64 bg-command-muted motion-reduce:animate-none" />
+      <Skeleton className="h-2.5 w-full rounded-full bg-command-muted motion-reduce:animate-none" />
       <div className="grid gap-2">
-        <Skeleton className="h-9 w-full bg-background/15 motion-reduce:animate-none" />
-        <Skeleton className="h-9 w-full bg-background/15 motion-reduce:animate-none" />
+        <Skeleton className="h-9 w-full bg-command-muted motion-reduce:animate-none" />
+        <Skeleton className="h-9 w-full bg-command-muted motion-reduce:animate-none" />
       </div>
     </div>
   </>
@@ -141,16 +153,16 @@ const ErrorContent = ({
 }) => (
   <>
     <div className="grid gap-2" data-slot="deal-progress-header">
-      <h2 className="text-sm font-semibold text-background" id={titleId}>
+      <h2 className="text-sm font-semibold text-command-foreground" id={titleId}>
         {state.title}
       </h2>
       {state.description ? (
-        <p className="text-sm leading-6 text-background/70">{state.description}</p>
+        <p className="text-sm leading-6 text-command-foreground/70">{state.description}</p>
       ) : null}
     </div>
     {state.retryLabel ? (
       <Button
-        className="w-full focus-visible:ring-background focus-visible:ring-offset-foreground"
+        className="w-full bg-command-accent text-command-accent-foreground hover:bg-command-accent/90 focus-visible:ring-command-accent focus-visible:ring-offset-command"
         data-slot="deal-progress-action"
         onClick={() => onAction?.({ kind: 'retry' })}
         variant="default"
@@ -186,7 +198,7 @@ const ReadyContent = ({
     <>
       <div className="flex items-start justify-between gap-3" data-slot="deal-progress-header">
         <div className="grid gap-2">
-          <h2 className="text-sm font-semibold text-background" id={titleId}>
+          <h2 className="text-sm font-semibold text-command-foreground" id={titleId}>
             {labels.title}
           </h2>
           {state.visibility ? <VisibilityNote visibility={state.visibility} /> : null}
@@ -194,7 +206,7 @@ const ReadyContent = ({
         <Badge
           className={cn(
             'max-w-[12rem] justify-start truncate',
-            statusToneClasses[state.status.tone],
+            commandStatusToneClasses[state.status.tone],
           )}
           data-slot="deal-progress-status"
           variant="outline"
@@ -205,18 +217,20 @@ const ReadyContent = ({
 
       <div className="grid gap-3" data-slot="deal-progress-capital">
         <div className="grid gap-1">
-          <p className="break-words font-mono text-3xl font-semibold leading-tight tabular-nums text-background">
+          <p className="break-words font-mono text-3xl font-semibold leading-tight tabular-nums text-command-foreground">
             {state.capital.headlineLabel}
           </p>
-          <p className="text-xs font-medium text-background/65">{state.capital.progress.label}</p>
+          <p className="text-xs font-medium text-command-foreground/65">
+            {state.capital.progress.label}
+          </p>
         </div>
         <ProgressBar labels={labels} progress={state.capital.progress} />
-        <ProgressLegend segments={state.capital.breakdown} />
+        <CapitalBreakdown segments={state.capital.breakdown} />
       </div>
 
       {state.capital.details && state.capital.details.length > 0 ? (
         <dl
-          className="grid gap-0 overflow-hidden rounded-md border border-background/15"
+          className="grid gap-0 overflow-hidden rounded-md border border-command-border"
           data-slot="deal-progress-details"
         >
           {state.capital.details.map((metric) => (
@@ -251,7 +265,7 @@ const ReadyContent = ({
           </div>
           {firstDisabledReason ? (
             <p
-              className="rounded-md border border-background/15 bg-background/10 px-3 py-2 text-xs leading-5 text-background/75"
+              className="rounded-md border border-command-border bg-command-muted px-3 py-2 text-xs leading-5 text-command-foreground/75"
               data-slot="deal-progress-disabled-reason"
               id={disabledReasonId}
             >
@@ -270,7 +284,7 @@ const VisibilityNote = ({
   readonly visibility: Extract<DealProgressPanelState, { readonly kind: 'ready' }>['visibility']
 }) => (
   <p
-    className="flex min-w-0 items-center gap-2 text-sm leading-5 text-background/70"
+    className="flex min-w-0 items-center gap-2 text-sm leading-5 text-command-foreground/70"
     data-slot="deal-progress-visibility"
   >
     <Eye aria-hidden="true" className="size-4 shrink-0" />
@@ -298,14 +312,14 @@ const ProgressBar = ({
       aria-valuemin={progress.kind === 'knownTarget' ? 0 : undefined}
       aria-valuenow={value ?? undefined}
       aria-valuetext={ariaValueText}
-      className="relative h-2.5 w-full overflow-hidden rounded-full bg-background/20"
+      className="relative h-2.5 w-full overflow-hidden rounded-full bg-command-progress-muted"
       data-capped={progress.kind === 'knownTarget' ? progress.capped === true : undefined}
       data-slot="deal-progress-bar"
       role="progressbar"
     >
       {progress.kind === 'knownTarget' ? (
         <div
-          className="h-full rounded-full bg-status-success-border transition-[width] motion-reduce:transition-none"
+          className="h-full rounded-full bg-command-progress transition-[width] motion-reduce:transition-none"
           data-slot="deal-progress-indicator"
           style={{ width: `${value ?? 0}%` }}
         />
@@ -314,7 +328,7 @@ const ProgressBar = ({
   )
 }
 
-const ProgressLegend = ({
+const CapitalBreakdown = ({
   segments,
 }: {
   readonly segments: Extract<
@@ -322,49 +336,72 @@ const ProgressLegend = ({
     { readonly kind: 'ready' }
   >['capital']['breakdown']
 }) => {
-  const normalizedSegments = normalizeSegments(segments)
+  const breakdownSegments = normalizeSegments(segments)
+  const compositionSegments = normalizeCompositionSegments(segments)
 
-  if (normalizedSegments.length === 0) {
+  if (breakdownSegments.length === 0) {
     return null
   }
 
   return (
-    <div className="grid gap-2" data-slot="deal-progress-segments">
-      <div className="flex h-2 w-full overflow-hidden rounded-full bg-background/20">
-        {normalizedSegments.map((segment) => (
-          <span
-            aria-hidden="true"
-            className={cn('h-full', segmentToneClasses[segment.tone])}
-            data-segment-kind={segment.kind}
-            data-slot="deal-progress-segment"
-            key={segment.kind}
-            style={{ width: `${segment.visualBasisPoints / 100}%` }}
-          />
-        ))}
-      </div>
-      <ul className="grid gap-1 text-xs text-background/70">
-        {normalizedSegments.map((segment) => (
-          <li className="flex min-w-0 items-center justify-between gap-3" key={segment.kind}>
-            <span className="flex min-w-0 items-center gap-2">
+    <div className="grid gap-2.5" data-slot="deal-progress-breakdown">
+      <div className="grid gap-1.5">
+        <p className="text-xs font-medium text-command-foreground/65">Capital composition</p>
+        <div
+          aria-hidden="true"
+          className="rounded-md border border-command-border bg-command-muted p-1"
+          data-slot="deal-capital-composition"
+        >
+          <div className="flex h-2 overflow-hidden rounded-sm bg-command-progress-muted/60">
+            {compositionSegments.map((segment) => (
               <span
-                aria-hidden="true"
-                className={cn('size-2.5 shrink-0 rounded-full', segmentToneClasses[segment.tone])}
+                className={cn('h-full', getSegmentClassName(segment))}
+                data-segment-kind={segment.kind}
+                data-slot="deal-capital-composition-segment"
+                data-visual-basis-points={segment.visualBasisPoints}
+                key={segment.kind}
+                style={{ width: `${segment.visualBasisPoints / 100}%` }}
               />
-              <span className="min-w-0 truncate">{segment.label}</span>
-            </span>
-            <span className="shrink-0 font-mono tabular-nums text-background">
-              {segment.amountLabel}
-            </span>
-          </li>
-        ))}
-      </ul>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-1.5">
+        <p className="text-xs font-medium text-command-foreground/65">Capital breakdown</p>
+        <ul className="grid gap-1 text-xs text-command-foreground/70">
+          {breakdownSegments.map((segment) => (
+            <li className="flex min-w-0 items-center justify-between gap-3" key={segment.kind}>
+              <span className="flex min-w-0 items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className={cn('size-2.5 shrink-0 rounded-full', getSegmentClassName(segment))}
+                  data-segment-kind={segment.kind}
+                  data-slot="deal-progress-segment-marker"
+                />
+                <span className="min-w-0 truncate">{segment.label}</span>
+              </span>
+              <span className="shrink-0 font-mono tabular-nums text-command-foreground">
+                {segment.amountLabel}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }
 
+const getSegmentClassName = ({
+  kind,
+  tone,
+}: {
+  readonly kind: DealProgressSegmentKind
+  readonly tone: DealProgressSegmentTone
+}) => (tone === 'neutral' ? 'bg-command-segment-neutral' : segmentKindClasses[kind])
+
 const ProgressMetric = ({ metric }: { readonly metric: DealProgressMetric }) => (
-  <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 border-b border-background/15 px-3 py-2.5 last:border-b-0">
-    <dt className="text-sm text-background/65">{metric.label}</dt>
+  <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 border-b border-command-border px-3 py-2.5 last:border-b-0">
+    <dt className="text-sm text-command-foreground/65">{metric.label}</dt>
     <dd
       className={cn(
         'font-mono text-sm font-semibold tabular-nums',
@@ -374,7 +411,9 @@ const ProgressMetric = ({ metric }: { readonly metric: DealProgressMetric }) => 
       {metric.value}
     </dd>
     {metric.description ? (
-      <dd className="col-span-2 text-xs leading-5 text-background/55">{metric.description}</dd>
+      <dd className="col-span-2 text-xs leading-5 text-command-foreground/55">
+        {metric.description}
+      </dd>
     ) : null}
   </div>
 )
@@ -416,10 +455,10 @@ const ActionButton = ({
   return (
     <Button
       className={cn(
-        'min-w-0 focus-visible:ring-background focus-visible:ring-offset-foreground',
+        'min-w-0 shadow-card focus-visible:ring-offset-command disabled:shadow-none',
         primary
-          ? 'w-full'
-          : 'w-full border-background/15 bg-background/10 text-background hover:bg-background/15',
+          ? 'w-full bg-command-accent text-command-accent-foreground hover:bg-command-accent/90 focus-visible:ring-command-accent disabled:bg-command-muted disabled:text-command-foreground/50'
+          : 'w-full border-command-border bg-command-muted text-command-foreground hover:border-command-border hover:bg-command-border/50 hover:text-command-foreground focus-visible:ring-command-foreground disabled:border-command-border/60 disabled:bg-command-muted disabled:text-command-foreground/50 disabled:opacity-50',
       )}
       aria-describedby={disabled ? describedById : undefined}
       data-action-kind={action.kind}

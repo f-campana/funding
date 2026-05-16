@@ -119,6 +119,7 @@ export const ClosedCompleted = {
 }
 
 export const SegmentedProgress = {
+  name: 'Capital Composition',
   render: () => renderPanel({ state: segmentedProgressState }),
 }
 
@@ -201,7 +202,7 @@ export const DarkCardOnLightWorkspace = {
 export const MacBook14RightRailContext = {
   render: () => (
     <StorySection
-      className="w-[min(96vw,1512px)]"
+      className="w-full max-w-[1512px]"
       description="Simulates a 14-inch workspace with primary content and a right command panel."
       title="MacBook 14 right rail context"
     >
@@ -222,7 +223,7 @@ export const MacBook14RightRailContext = {
 export const WithCommitmentsTableContext = {
   render: () => (
     <StorySection
-      className="w-[min(96vw,1512px)]"
+      className="w-full max-w-[1512px]"
       description="Shows the progression panel paired with the isolated commitments workflow table."
       title="Panel with commitments table"
     >

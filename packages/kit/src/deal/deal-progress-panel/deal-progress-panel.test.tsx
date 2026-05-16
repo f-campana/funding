@@ -11,12 +11,15 @@ import {
   getPrimaryAction,
   getProgressBarValue,
   getSecondaryActions,
+  minCompositionSegmentBasisPoints,
+  normalizeCompositionSegments,
   normalizeSegments,
 } from './deal-progress-panel.model'
 import type { DealProgressPanelState } from './deal-progress-panel.types'
 import {
   adminOnlyState,
   closedCompletedState,
+  dataIssueState,
   dealProgressPanelLabels,
   defaultCollectingCommitmentsState,
   disabledActionsState,
@@ -39,6 +42,8 @@ const forbiddenImportsPattern = /apps\/web|@repo\/app|trpc|createTRPC|router|rou
 const consolePattern = /console\.(log|warn|error)/u
 const rawPalettePattern =
   /\b(?:bg|border|fill|from|outline|ring|stroke|text|to|via)-(?:amber|blue|cyan|emerald|fuchsia|gray|green|indigo|lime|neutral|orange|pink|purple|red|rose|sky|slate|stone|teal|violet|yellow|zinc)-\d{2,3}\b/u
+const panelSurfaceInversionPattern =
+  /\b(?:bg|border)-foreground(?:\/\d+)?\b|\btext-background(?:\/\d+)?\b|\bbg-background\/\d+\b|\bborder-background\/\d+\b/u
 const panelSourceFilePattern = /^deal-progress-panel.*\.(ts|tsx)$/u
 
 const expectLifecycleState = (_state: DealProgressPanelState) => undefined
@@ -54,16 +59,27 @@ expectLifecycleState({ kind: 'ready', mode: 'collectingCommitments', stage: 'ope
 
 describe('DealProgressPanel', () => {
   it('renders the ready command panel with status, visibility, capital, progress, and actions', () => {
-    renderPanel()
+    const { container } = renderPanel()
 
     expect(screen.getByRole('heading', { name: 'Deal progression' })).toBeInTheDocument()
     expect(screen.getByText('Collecting commitments')).toBeInTheDocument()
     expect(screen.getByText('Only visible to admins')).toBeInTheDocument()
     expect(screen.getByText('€100,000 / €200,000')).toBeInTheDocument()
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1)
     expect(screen.getByRole('progressbar', { name: 'Deal capital progress' })).toHaveAttribute(
       'aria-valuenow',
       '50',
     )
+    expect(container.querySelector('[data-slot="deal-capital-composition"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="deal-capital-composition"]')).not.toHaveAttribute(
+      'role',
+    )
+    expect(screen.getByText('Capital composition')).toBeInTheDocument()
+    expect(screen.getByText('Capital breakdown')).toBeInTheDocument()
+    expect(screen.getByText('Investable')).toBeInTheDocument()
+    expect(screen.getByText('€95,500')).toBeInTheDocument()
+    expect(screen.queryByText('Investable amount')).not.toBeInTheDocument()
+    expect(container.querySelector('[data-slot="deal-progress-details"]')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Close deal' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Invite' })).toBeInTheDocument()
   })
@@ -92,15 +108,44 @@ describe('DealProgressPanel', () => {
     expect(onAction).toHaveBeenCalledWith({ kind: 'retry' })
   })
 
-  it('renders segmented progress with labels and amounts', () => {
-    renderPanel(segmentedProgressState)
+  it('renders capital composition and breakdown without a second progressbar', () => {
+    const { container } = renderPanel(segmentedProgressState)
+    const composition = container.querySelector('[data-slot="deal-capital-composition"]')
+    const entryFeeCompositionSegment = container.querySelector(
+      '[data-slot="deal-capital-composition-segment"][data-segment-kind="entryFees"]',
+    )
+    const spvFeeCompositionSegment = container.querySelector(
+      '[data-slot="deal-capital-composition-segment"][data-segment-kind="spvFees"]',
+    )
 
+    expect(screen.getByText('Capital composition')).toBeInTheDocument()
+    expect(screen.getByText('Capital breakdown')).toBeInTheDocument()
     expect(screen.getByText('Investable')).toBeInTheDocument()
-    expect(screen.getAllByText('€95,500').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Entry fees').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('€2,500').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('SPV fees').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('€2,000').length).toBeGreaterThan(0)
+    expect(screen.getByText('€95,500')).toBeInTheDocument()
+    expect(screen.getByText('Entry fees')).toBeInTheDocument()
+    expect(screen.getByText('€2,500')).toBeInTheDocument()
+    expect(screen.getByText('SPV fees')).toBeInTheDocument()
+    expect(screen.getByText('€2,000')).toBeInTheDocument()
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1)
+    expect(composition).toHaveAttribute('aria-hidden', 'true')
+    expect(composition).not.toHaveAttribute('role')
+    expect(
+      composition?.querySelectorAll('[data-slot="deal-capital-composition-segment"]'),
+    ).toHaveLength(3)
+    expect(entryFeeCompositionSegment).toHaveAttribute(
+      'data-visual-basis-points',
+      `${minCompositionSegmentBasisPoints}`,
+    )
+    expect(spvFeeCompositionSegment).toHaveAttribute(
+      'data-visual-basis-points',
+      `${minCompositionSegmentBasisPoints}`,
+    )
+    expect(container.querySelector('[data-slot="deal-progress-segment"]')).not.toBeInTheDocument()
+    expect(
+      container.querySelector(
+        '[data-slot="deal-progress-segment-marker"][data-segment-kind="investable"]',
+      ),
+    ).toHaveClass('bg-command-segment-investable')
   })
 
   it('keeps no-target progress semantically indeterminate', () => {
@@ -108,9 +153,23 @@ describe('DealProgressPanel', () => {
 
     const progress = screen.getByRole('progressbar', { name: 'Deal capital progress' })
 
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1)
     expect(progress).not.toHaveAttribute('aria-valuenow')
     expect(progress).toHaveAttribute('aria-valuetext', 'Target amount not available')
     expect(screen.getByText('€640,000 raised')).toBeInTheDocument()
+    expect(screen.getByText('Amount raised')).toBeInTheDocument()
+    expect(
+      screen.getByText('Target allocation has not been confirmed by operations.'),
+    ).toBeInTheDocument()
+  })
+
+  it('keeps stale data warning and non-duplicative detail rows', () => {
+    renderPanel(dataIssueState)
+
+    expect(screen.getByText('Progress data may be stale')).toBeInTheDocument()
+    expect(screen.getByText('Affected workflow')).toBeInTheDocument()
+    expect(screen.getByText('Wire reconciliation')).toBeInTheDocument()
+    expect(screen.queryByText('Investable amount')).not.toBeInTheDocument()
   })
 
   it('clamps over-target progress visually while preserving capped semantics', () => {
@@ -204,6 +263,40 @@ describe('DealProgressPanel', () => {
     ])
 
     expect(segments.reduce((sum, segment) => sum + segment.visualBasisPoints, 0)).toBe(10_000)
+
+    const compositionSegments = normalizeCompositionSegments([
+      {
+        amountLabel: '€95,500',
+        basisPoints: 4_775,
+        kind: 'investable',
+        label: 'Investable',
+        tone: 'success',
+      },
+      {
+        amountLabel: '€2,500',
+        basisPoints: 125,
+        kind: 'entryFees',
+        label: 'Entry fees',
+        tone: 'info',
+      },
+      {
+        amountLabel: '€2,000',
+        basisPoints: 100,
+        kind: 'spvFees',
+        label: 'SPV fees',
+        tone: 'attention',
+      },
+    ])
+
+    expect(compositionSegments.reduce((sum, segment) => sum + segment.visualBasisPoints, 0)).toBe(
+      10_000,
+    )
+    expect(
+      compositionSegments.find((segment) => segment.kind === 'entryFees')?.visualBasisPoints,
+    ).toBe(minCompositionSegmentBasisPoints)
+    expect(
+      compositionSegments.find((segment) => segment.kind === 'spvFees')?.visualBasisPoints,
+    ).toBe(minCompositionSegmentBasisPoints)
   })
 
   it('filters primary and secondary actions through model-level state rules', () => {
@@ -221,6 +314,7 @@ describe('DealProgressPanel', () => {
     ['loading', loadingState],
     ['error', errorState],
     ['disabled', disabledActionsState],
+    ['data issue', dataIssueState],
   ] as const)('has no accessibility violations for %s state', async (_name, state) => {
     const { container } = renderPanel(state)
 
@@ -267,6 +361,76 @@ describe('DealProgressPanel', () => {
     expect(panel).toHaveAttribute('data-mode', 'collectingCommitments')
     expect(container.querySelector('[data-slot="deal-progress-status"]')).toBeInTheDocument()
     expect(container.querySelector('[data-slot="deal-progress-capital"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="deal-progress-breakdown"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="deal-capital-composition"]')).toBeInTheDocument()
     expect(container.querySelector('[data-slot="deal-progress-action"]')).toBeInTheDocument()
+  })
+
+  it('uses command surface tokens instead of foreground/background inversion', () => {
+    const { container } = renderPanel(defaultCollectingCommitmentsState)
+    const panel = container.querySelector('[data-slot="deal-progress-panel"]')
+    const closeButton = screen.getByRole('button', { name: 'Close deal' })
+    const inviteButton = screen.getByRole('button', { name: 'Invite' })
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/deal/deal-progress-panel/deal-progress-panel.tsx'),
+      'utf8',
+    )
+
+    expect(panel).toHaveClass(
+      'h-fit',
+      'self-start',
+      'border-command-border',
+      'bg-command',
+      'text-command-foreground',
+      'shadow-popover',
+    )
+    expect(screen.getByRole('progressbar', { name: 'Deal capital progress' })).toHaveClass(
+      'bg-command-progress-muted',
+    )
+    expect(container.querySelector('[data-slot="deal-progress-indicator"]')).toHaveClass(
+      'bg-command-progress',
+    )
+    expect(
+      container.querySelector(
+        '[data-slot="deal-progress-segment-marker"][data-segment-kind="investable"]',
+      ),
+    ).toHaveClass('bg-command-segment-investable')
+    expect(
+      container.querySelector(
+        '[data-slot="deal-capital-composition-segment"][data-segment-kind="investable"]',
+      ),
+    ).toHaveClass('bg-command-segment-investable')
+    expect(container.querySelector('[data-slot="deal-capital-composition"]')).toHaveClass(
+      'border-command-border',
+      'bg-command-muted',
+    )
+    expect(
+      container.querySelector(
+        '[data-slot="deal-progress-segment-marker"][data-segment-kind="entryFees"]',
+      ),
+    ).toHaveClass('bg-command-segment-entry-fees')
+    expect(
+      container.querySelector(
+        '[data-slot="deal-progress-segment-marker"][data-segment-kind="spvFees"]',
+      ),
+    ).toHaveClass('bg-command-segment-spv-fees')
+    expect(container.querySelector('[data-slot="deal-progress-status"]')).toHaveClass(
+      'bg-command-progress-muted',
+      'text-command-progress',
+    )
+    expect(closeButton).toHaveClass('bg-command-accent', 'text-command-accent-foreground')
+    expect(inviteButton).toHaveClass(
+      'border-command-border',
+      'bg-command-muted',
+      'text-command-foreground',
+      'shadow-card',
+      'hover:bg-command-border/50',
+      'hover:text-command-foreground',
+      'focus-visible:ring-command-foreground',
+      'disabled:text-command-foreground/50',
+    )
+    expect(inviteButton).not.toHaveClass('hover:bg-muted')
+    expect(inviteButton).not.toHaveClass('hover:text-foreground')
+    expect(source).not.toMatch(panelSurfaceInversionPattern)
   })
 })
