@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Funding — Proxima Fusion Series A</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Figtree:wght@300;400;500;600&family=Azeret+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ground:   #EEE9E0;
+      --card:     #FEFCF9;
+      --card2:    #F8F5EF;
+      --border:   rgba(30,24,16,0.09);
+      --border2:  rgba(30,24,16,0.05);
+      --ink:      #1A1510;
+      --ink-2:    #5A5348;
+      --ink-3:    #9A9388;
+      --ink-4:    #C8C3BC;
+
+      --forest:       #1B5C42;
+      --forest-light: #2A7A58;
+      --forest-bg:    rgba(27,92,66,0.07);
+      --forest-bg2:   rgba(27,92,66,0.13);
+      --forest-line:  rgba(27,92,66,0.25);
+
+      --amber:    #8C5018;
+      --amber-bg: rgba(140,80,24,0.08);
+      --slate:    #2A4A7C;
+      --slate-bg: rgba(42,74,124,0.08);
+      --burgundy: #8A2232;
+      --burg-bg:  rgba(138,34,50,0.07);
+    }
+
+    html { font-size: 13px; }
+    body {
+      font-family: 'Figtree', sans-serif;
+      font-weight: 400;
+      background: var(--ground);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* subtle paper texture */
+    body::after {
+      content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
+    }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
+      height:44px; position:sticky; top:0; z-index:200;
+      background:var(--card); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; padding:0 24px; gap:0;
+    }
+    .logo { display:flex; align-items:center; gap:7px; margin-right:28px; }
+    .logo-ring {
+      width:19px; height:19px; border-radius:50%;
+      border:1.5px solid var(--forest);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .logo-ring::after {
+      content:''; width:5px; height:5px;
+      border-radius:50%; background:var(--forest);
+    }
+    .logo-name { font-size:13px; font-weight:600; letter-spacing:-0.01em; }
+    .topnav { display:flex; flex:1; gap:0; }
+    .tnav {
+      font-size:12.5px; color:var(--ink-3); padding:4px 9px;
+      border-radius:4px; cursor:pointer; transition:color .12s;
+    }
+    .tnav:hover { color:var(--ink-2); }
+    .tnav.on { color:var(--ink); font-weight:500; }
+    .topbar-r { display:flex; align-items:center; gap:10px; }
+    .t-btn {
+      font-family:'Figtree',sans-serif; font-size:11.5px; font-weight:500;
+      padding:5px 12px; border-radius:5px; cursor:pointer; border:none;
+      display:flex; align-items:center; gap:4px; transition:all .12s;
+    }
+    .t-btn-g { background:var(--forest); color:#FEFCF9; }
+    .t-btn-g:hover { background:var(--forest-light); }
+    .t-btn-o {
+      background:transparent; color:var(--ink-2);
+      border:1px solid var(--border);
+    }
+    .t-btn-o:hover { background:var(--card2); }
+    .av {
+      width:26px; height:26px; border-radius:50%;
+      background:var(--forest-bg2); border:1px solid var(--forest-line);
+      display:flex; align-items:center; justify-content:center;
+      font-size:10px; font-weight:600; color:var(--forest);
+    }
+
+    /* ─── DEAL HEADER ─── */
+    .deal-header {
+      background:var(--card); border-bottom:1px solid var(--border);
+      padding:18px 24px 0;
+      opacity:0; animation:up .45s ease forwards;
+    }
+    .bc { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-3); margin-bottom:14px; }
+    .bc a { color:var(--ink-3); text-decoration:none; cursor:pointer; }
+    .bc a:hover { color:var(--ink-2); }
+    .bc .s { opacity:.35; }
+
+    .dh-inner {
+      display:grid; grid-template-columns:1fr auto;
+      align-items:flex-start; gap:20px; padding-bottom:16px;
+    }
+    .deal-left {}
+    .deal-name {
+      font-family:'Fraunces',serif; font-size:26px; font-weight:400;
+      font-style:italic; letter-spacing:-0.025em; line-height:1;
+      color:var(--ink); margin-bottom:9px;
+    }
+    .deal-name em { font-style:normal; font-weight:300; color:var(--ink-2); }
+    .deal-chips { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .chip {
+      font-size:10.5px; font-weight:500; padding:3px 9px;
+      border-radius:100px; white-space:nowrap;
+    }
+    .chip-live { background:var(--forest-bg); color:var(--forest); }
+    .chip-live::before { content:'● '; font-size:8px; }
+    .chip-stage { background:var(--slate-bg); color:var(--slate); }
+    .chip-struct { background:var(--card2); color:var(--ink-2); border:1px solid var(--border); }
+    .chip-sector { color:var(--ink-3); font-weight:400; font-size:11px; }
+
+    .deal-right { display:flex; align-items:center; gap:7px; margin-top:4px; }
+
+    .tabs { display:flex; }
+    .tab {
+      font-size:12px; font-weight:400; color:var(--ink-3);
+      padding:7px 11px; border-bottom:2px solid transparent;
+      cursor:pointer; transition:color .12s; white-space:nowrap;
+    }
+    .tab:hover { color:var(--ink-2); }
+    .tab.on { color:var(--ink); font-weight:500; border-bottom-color:var(--forest); }
+
+    /* ─── BODY ─── */
+    .body {
+      display:grid; grid-template-columns:1fr 288px;
+      min-height:calc(100vh - 44px - 114px);
+    }
+    .main { padding:20px 24px; display:flex; flex-direction:column; gap:16px; border-right:1px solid var(--border); }
+    .side { padding:16px 16px; display:flex; flex-direction:column; gap:12px; }
+
+    /* ─── DASHBOARD ROW ─── */
+    .dash-row {
+      display:grid; grid-template-columns:1fr 1fr 200px;
+      gap:10px;
+      opacity:0; animation:up .4s ease forwards .05s;
+    }
+    .dcard {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:9px; overflow:hidden;
+    }
+    .dcard-head {
+      padding:12px 16px 0;
+      display:flex; justify-content:space-between; align-items:baseline;
+    }
+    .dcard-title { font-size:11px; font-weight:500; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); }
+    .dcard-action { font-size:10.5px; color:var(--ink-4); cursor:pointer; }
+    .dcard-body { padding:12px 16px 14px; }
+
+    /* Donut card */
+    .donut-wrap {
+      display:flex; align-items:center; gap:16px;
+    }
+    .donut-svg-wrap { position:relative; flex-shrink:0; }
+    .donut-svg { transform:rotate(-90deg); }
+    .donut-bg { fill:none; stroke:var(--ground); stroke-width:9; }
+    .donut-fill {
+      fill:none; stroke:var(--forest); stroke-width:9;
+      stroke-linecap:round;
+      stroke-dasharray:0 339.3;
+      transition:stroke-dasharray 1.3s cubic-bezier(.4,0,.2,1) .5s;
+    }
+    .donut-center {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+    }
+    .donut-pct {
+      font-family:'Azeret Mono',monospace; font-size:18px; font-weight:400;
+      letter-spacing:-0.04em; color:var(--ink); line-height:1;
+    }
+    .donut-sub { font-size:9px; color:var(--ink-3); margin-top:1px; }
+    .donut-meta { display:flex; flex-direction:column; gap:8px; }
+    .dm-row { display:flex; flex-direction:column; gap:1px; }
+    .dm-label { font-size:10px; color:var(--ink-3); }
+    .dm-val { font-family:'Azeret Mono',monospace; font-size:13px; letter-spacing:-0.03em; color:var(--ink); }
+    .dm-val.forest { color:var(--forest); }
+
+    /* Sparkline card */
+    .spark-nums {
+      display:flex; justify-content:space-between; align-items:baseline;
+      margin-bottom:8px;
+    }
+    .spark-big {
+      font-family:'Azeret Mono',monospace; font-size:20px;
+      letter-spacing:-0.04em; color:var(--ink);
+    }
+    .spark-delta {
+      font-size:11px; font-weight:500; color:var(--forest);
+    }
+    .spark-svg { display:block; width:100%; }
+    .spark-x-labels {
+      display:flex; justify-content:space-between;
+      margin-top:4px;
+      font-family:'Azeret Mono',monospace; font-size:9px; color:var(--ink-4);
+    }
+
+    /* Metric stack card */
+    .metric-stack { display:flex; flex-direction:column; gap:0; }
+    .ms-item {
+      padding:11px 14px; border-bottom:1px solid var(--border2);
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .ms-item:last-child { border-bottom:none; }
+    .ms-label { font-size:10px; color:var(--ink-3); letter-spacing:.02em; }
+    .ms-val {
+      font-family:'Azeret Mono',monospace; font-size:17px;
+      letter-spacing:-0.035em; color:var(--ink); line-height:1.1;
+    }
+    .ms-sub { font-size:10px; color:var(--ink-3); }
+
+    /* ─── BREAKDOWN CARD ─── */
+    .breakdown-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:9px; overflow:hidden;
+      opacity:0; animation:up .4s ease forwards .10s;
+    }
+    .bk-head {
+      padding:12px 16px; border-bottom:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .bk-title { font-size:12px; font-weight:500; }
+    .bk-sub { font-size:11px; color:var(--ink-3); }
+    .bk-body { padding:14px 16px; display:flex; gap:20px; }
+    .bk-chart { flex:1; }
+    .bk-legend { display:flex; flex-direction:column; gap:8px; width:140px; flex-shrink:0; }
+
+    /* bar rows */
+    .br-row { display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+    .br-row:last-child { margin-bottom:0; }
+    .br-label { font-size:11px; color:var(--ink-2); width:80px; flex-shrink:0; }
+    .br-track {
+      flex:1; height:6px; background:var(--ground);
+      border-radius:3px; overflow:hidden;
+    }
+    .br-fill { height:100%; border-radius:3px; transition:width 1s cubic-bezier(.4,0,.2,1) .6s; width:0; }
+    .br-fill.f1 { background:var(--forest); }
+    .br-fill.f2 { background:var(--forest-light); opacity:.8; }
+    .br-fill.f3 { background:var(--forest-light); opacity:.55; }
+    .br-fill.f4 { background:var(--forest-light); opacity:.35; }
+    .br-count {
+      font-family:'Azeret Mono',monospace; font-size:10.5px;
+      color:var(--ink-3); width:28px; text-align:right; flex-shrink:0;
+    }
+
+    .legend-item { display:flex; align-items:center; gap:6px; }
+    .legend-dot { width:7px; height:7px; border-radius:2px; flex-shrink:0; }
+    .legend-text { font-size:10.5px; color:var(--ink-2); }
+    .legend-amt {
+      font-family:'Azeret Mono',monospace;
+      font-size:10px; color:var(--ink-3); margin-left:auto;
+    }
+
+    /* ─── TABLE ─── */
+    .table-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:9px; overflow:hidden;
+      opacity:0; animation:up .4s ease forwards .15s;
+    }
+    .tc-head {
+      padding:11px 16px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .tc-title-row { display:flex; align-items:center; gap:10px; }
+    .tc-title { font-size:12.5px; font-weight:500; }
+    .filters { display:flex; gap:3px; }
+    .fb {
+      font-family:'Figtree',sans-serif; font-size:11px;
+      padding:3px 8px; border-radius:4px;
+      border:1px solid var(--border); background:transparent;
+      color:var(--ink-3); cursor:pointer; transition:all .12s;
+    }
+    .fb:hover { color:var(--ink-2); }
+    .fb.on { background:var(--forest-bg); border-color:var(--forest-line); color:var(--forest); }
+
+    table { width:100%; border-collapse:collapse; }
+    thead th {
+      font-size:10px; font-weight:500; letter-spacing:.07em;
+      text-transform:uppercase; color:var(--ink-3);
+      padding:8px 14px; text-align:left;
+      border-bottom:1px solid var(--border);
+      background:var(--ground);
+      white-space:nowrap; cursor:pointer; user-select:none;
+    }
+    thead th.r { text-align:right; }
+    thead th:first-child { padding-left:16px; }
+    thead th:last-child { padding-right:16px; }
+    thead th .sort { opacity:.35; margin-left:3px; }
+
+    tbody tr.inv-row {
+      border-bottom:1px solid var(--border2);
+      cursor:pointer; transition:background .1s;
+    }
+    tbody tr.inv-row:last-of-type { border-bottom:none; }
+    tbody tr.inv-row:hover { background:rgba(27,92,66,0.025); }
+    tbody tr.inv-row.expanded { background:rgba(27,92,66,0.03); }
+    tbody tr.detail-row { display:none; }
+    tbody tr.detail-row.open { display:table-row; }
+
+    td { padding:10px 14px; font-size:12.5px; vertical-align:middle; }
+    td:first-child { padding-left:16px; }
+    td:last-child { padding-right:16px; }
+    td.r { text-align:right; }
+
+    .inv-cell { display:flex; align-items:center; gap:9px; }
+    .inv-av {
+      width:28px; height:28px; border-radius:50%;
+      font-size:10px; font-weight:600;
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; border:1px solid var(--border);
+    }
+    .inv-name { font-weight:500; font-size:12.5px; }
+    .inv-sub { font-size:10.5px; color:var(--ink-3); }
+    .expand-icon {
+      width:16px; height:16px; margin-left:6px; flex-shrink:0;
+      color:var(--ink-4); transition:transform .2s; display:flex;
+      align-items:center; justify-content:center;
+    }
+    .inv-row.expanded .expand-icon { transform:rotate(180deg); color:var(--forest); }
+    .expand-icon svg { width:12px; height:12px; }
+
+    .mono { font-family:'Azeret Mono',monospace; letter-spacing:-.02em; }
+    .amt { font-family:'Azeret Mono',monospace; font-size:12.5px; letter-spacing:-.02em; text-align:right; }
+
+    .own-cell { display:flex; align-items:center; gap:7px; justify-content:flex-end; }
+    .own-track { width:48px; height:2px; background:var(--ground); border-radius:2px; overflow:hidden; }
+    .own-fill { height:100%; background:var(--forest); border-radius:2px; }
+    .own-pct { font-family:'Azeret Mono',monospace; font-size:11px; color:var(--ink-3); width:34px; text-align:right; }
+
+    .status-dot {
+      display:flex; align-items:center; gap:5px;
+      font-size:11.5px; font-weight:500;
+    }
+    .status-dot::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+    .s-signed { color:var(--forest); }
+    .s-signed::before { background:var(--forest); }
+    .s-committed { color:var(--slate); }
+    .s-committed::before { background:var(--slate); }
+    .s-kyc { color:var(--amber); }
+    .s-kyc::before { background:var(--amber); }
+    .s-pending { color:var(--ink-3); }
+    .s-pending::before { border:1px solid var(--ink-4); background:transparent; }
+
+    .kyc-badge {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:11px; font-weight:500;
+    }
+    .kyc-ok { color:var(--forest); }
+    .kyc-rev { color:var(--amber); }
+    .kyc-no { color:var(--ink-3); }
+
+    /* ── DETAIL DRAWER ── */
+    .detail-td {
+      padding:0 !important;
+      border-bottom:1px solid var(--border) !important;
+    }
+    .detail-inner {
+      overflow:hidden; max-height:0;
+      transition:max-height .3s cubic-bezier(.4,0,.2,1);
+    }
+    .detail-inner.open { max-height:200px; }
+    .detail-content {
+      padding:14px 16px 16px 54px;
+      display:grid; grid-template-columns:repeat(4,1fr);
+      gap:16px; background:var(--ground);
+      border-top:1px solid var(--border2);
+    }
+    .dc-group { display:flex; flex-direction:column; gap:3px; }
+    .dc-label { font-size:10px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); }
+    .dc-value { font-size:12px; font-weight:500; color:var(--ink); }
+    .dc-sub { font-size:10.5px; color:var(--ink-3); margin-top:1px; }
+    .doc-pill {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:10.5px; padding:2px 7px;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:3px; color:var(--ink-2); margin-right:3px; margin-bottom:2px;
+    }
+    .doc-pill.signed { border-color:var(--forest-line); color:var(--forest); background:var(--forest-bg); }
+
+    /* table footer */
+    .tc-foot {
+      padding:9px 16px; border-top:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .tc-foot-note { font-size:11px; color:var(--ink-3); }
+    .page-row { display:flex; gap:2px; }
+    .pb {
+      width:22px; height:22px; border-radius:3px;
+      border:1px solid var(--border); background:transparent;
+      font-family:'Azeret Mono',monospace; font-size:11px;
+      color:var(--ink-3); display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+    }
+    .pb.on { background:var(--forest-bg); border-color:var(--forest-line); color:var(--forest); }
+
+    /* ─── ACTIVITY ─── */
+    .act-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:9px; overflow:hidden;
+      opacity:0; animation:up .4s ease forwards .2s;
+    }
+    .act-head {
+      padding:11px 16px; border-bottom:1px solid var(--border);
+      font-size:11px; font-weight:500; letter-spacing:.05em;
+      text-transform:uppercase; color:var(--ink-3);
+    }
+    .act-list { }
+    .act-item {
+      display:flex; gap:12px; padding:9px 16px;
+      border-bottom:1px solid var(--border2);
+      transition:background .1s;
+    }
+    .act-item:last-child { border-bottom:none; }
+    .act-item:hover { background:var(--ground); }
+    .act-time { font-family:'Azeret Mono',monospace; font-size:9.5px; color:var(--ink-4); padding-top:2px; width:42px; flex-shrink:0; }
+    .act-body { font-size:12px; color:var(--ink-2); line-height:1.45; }
+    .act-body strong { color:var(--ink); font-weight:500; }
+
+    /* ─── SIDE PANEL CARDS ─── */
+    .sc {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:9px; overflow:hidden;
+      opacity:0; animation:up .4s ease forwards;
+    }
+    .sc:nth-child(1){animation-delay:.07s}
+    .sc:nth-child(2){animation-delay:.13s}
+    .sc:nth-child(3){animation-delay:.19s}
+    .sc:nth-child(4){animation-delay:.25s}
+
+    .sc-head {
+      padding:10px 14px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      cursor:pointer; user-select:none;
+    }
+    .sc-head-title { font-size:10.5px; font-weight:500; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); }
+    .sc-head-right { display:flex; align-items:center; gap:7px; }
+    .sc-badge { font-size:10.5px; font-weight:500; }
+    .sc-toggle { color:var(--ink-4); transition:transform .2s; font-size:11px; }
+    .sc.collapsed .sc-toggle { transform:rotate(-90deg); }
+    .sc-body { padding:12px 14px; transition:all .2s; }
+    .sc.collapsed .sc-body { display:none; }
+
+    /* SPV state */
+    .spv-steps { display:flex; flex-direction:column; }
+    .spv-step { display:flex; gap:10px; align-items:flex-start; padding:4px 0; }
+    .spv-vl { display:flex; flex-direction:column; align-items:center; width:14px; flex-shrink:0; padding-top:2px; }
+    .spv-nd {
+      width:10px; height:10px; border-radius:50%;
+      border:1.5px solid var(--ink-4); background:var(--card); flex-shrink:0;
+    }
+    .spv-nd.done { background:var(--forest); border-color:var(--forest); }
+    .spv-nd.now { border:2px solid var(--forest); background:var(--card); box-shadow:0 0 0 3px rgba(27,92,66,.1); }
+    .spv-line { width:1px; flex:1; min-height:10px; background:var(--border); margin:2px 0; }
+    .spv-line.done { background:var(--forest); opacity:.3; }
+    .spv-info { padding-top:0; }
+    .spv-txt { font-size:12px; color:var(--ink-3); line-height:1.2; }
+    .spv-txt.done { color:var(--ink-2); }
+    .spv-txt.now { color:var(--ink); font-weight:500; }
+    .spv-note { font-size:10.5px; color:var(--forest); margin-top:1px; }
+
+    /* Terms */
+    .tr-row {
+      display:flex; justify-content:space-between; align-items:baseline;
+      padding:5px 0; border-bottom:1px solid var(--border2);
+    }
+    .tr-row:last-child { border-bottom:none; }
+    .tr-k { font-size:11.5px; color:var(--ink-3); }
+    .tr-v { font-size:12px; font-weight:500; color:var(--ink); text-align:right; }
+    .tr-v.mono { font-family:'Azeret Mono',monospace; font-size:11.5px; letter-spacing:-.02em; }
+
+    /* Deadline */
+    .deadline-date { font-family:'Fraunces',serif; font-size:21px; font-weight:400; letter-spacing:-.02em; margin-bottom:4px; }
+    .deadline-rem { font-size:11.5px; font-weight:500; color:var(--amber); }
+
+    /* Docs */
+    .doc-row {
+      display:flex; align-items:center; gap:9px; padding:6px 0;
+      border-bottom:1px solid var(--border2); cursor:pointer;
+      transition:opacity .12s;
+    }
+    .doc-row:last-child { border-bottom:none; }
+    .doc-row:hover { opacity:.65; }
+    .doc-ext {
+      font-family:'Azeret Mono',monospace; font-size:8.5px; font-weight:500;
+      width:28px; height:28px; border-radius:4px; background:var(--ground);
+      border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+      color:var(--ink-3); flex-shrink:0;
+    }
+    .doc-name { font-size:12px; flex:1; }
+    .doc-sz { font-family:'Azeret Mono',monospace; font-size:10px; color:var(--ink-4); }
+
+    /* ─── ANIM ─── */
+    @keyframes up {
+      from { opacity:0; transform:translateY(7px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(30,24,16,.15); border-radius:4px; }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-ring"></div>
+    <span class="logo-name">Funding</span>
+  </div>
+  <nav class="topnav">
+    <span class="tnav on">Deals</span>
+    <span class="tnav">Communities</span>
+    <span class="tnav">Portfolio</span>
+    <span class="tnav">Funds</span>
+    <span class="tnav">Secondary</span>
+  </nav>
+  <div class="topbar-r">
+    <button class="t-btn t-btn-o">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Share
+    </button>
+    <button class="t-btn t-btn-g">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+      Invite investor
+    </button>
+    <div class="av">FC</div>
+  </div>
+</header>
+
+<!-- DEAL HEADER -->
+<div class="deal-header">
+  <div class="bc">
+    <a>Deals</a><span class="s">›</span>
+    <a>My deals</a><span class="s">›</span>
+    <span>Proxima Fusion — Series A</span>
+  </div>
+  <div class="dh-inner">
+    <div class="deal-left">
+      <div class="deal-name">Proxima Fusion <em>— Series A</em></div>
+      <div class="deal-chips">
+        <span class="chip chip-live">Live</span>
+        <span class="chip chip-stage">Series A</span>
+        <span class="chip chip-struct">Luxembourg SCSp</span>
+        <span class="chip chip-sector">Fusion Energy · Deep Tech · Munich</span>
+      </div>
+    </div>
+    <div class="deal-right">
+      <button class="t-btn t-btn-o">Edit deal</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <span class="tab on">Overview</span>
+    <span class="tab">Investors</span>
+    <span class="tab">Documents</span>
+    <span class="tab">Cap table</span>
+    <span class="tab">Compliance</span>
+    <span class="tab">Activity</span>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="body">
+<div class="main">
+
+  <!-- DASHBOARD ROW -->
+  <div class="dash-row">
+
+    <!-- Donut card -->
+    <div class="dcard">
+      <div class="dcard-head">
+        <span class="dcard-title">Commitment</span>
+        <span class="dcard-action">Breakdown ↗</span>
+      </div>
+      <div class="dcard-body">
+        <div class="donut-wrap">
+          <div class="donut-svg-wrap">
+            <svg class="donut-svg" width="108" height="108" viewBox="0 0 108 108">
+              <circle class="donut-bg" cx="54" cy="54" r="44"/>
+              <circle class="donut-fill" id="donut" cx="54" cy="54" r="44"/>
+            </svg>
+            <div class="donut-center">
+              <span class="donut-pct" id="donut-pct">0%</span>
+              <span class="donut-sub">funded</span>
+            </div>
+          </div>
+          <div class="donut-meta">
+            <div class="dm-row">
+              <span class="dm-label">Raised</span>
+              <span class="dm-val forest mono">€482,000</span>
+            </div>
+            <div class="dm-row">
+              <span class="dm-label">Target</span>
+              <span class="dm-val mono">€600,000</span>
+            </div>
+            <div class="dm-row">
+              <span class="dm-label">Remaining</span>
+              <span class="dm-val mono">€118,000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sparkline card -->
+    <div class="dcard">
+      <div class="dcard-head">
+        <span class="dcard-title">Velocity — last 14 days</span>
+      </div>
+      <div class="dcard-body">
+        <div class="spark-nums">
+          <span class="spark-big mono">€257,000</span>
+          <span class="spark-delta">↑ 14 days</span>
+        </div>
+        <svg class="spark-svg" viewBox="0 0 220 56" preserveAspectRatio="none" height="56">
+          <defs>
+            <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1B5C42" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#1B5C42" stop-opacity="0"/>
+            </linearGradient>
+            <clipPath id="spark-clip">
+              <rect id="spark-reveal" x="0" y="0" width="0" height="56"/>
+            </clipPath>
+          </defs>
+          <!-- area fill -->
+          <path d="M0,51 L0,48 L16.9,51 L33.8,43 L50.8,46 L67.7,40 L84.6,51 L101.5,31 L118.5,20 L135.4,44 L152.3,10 L169.2,40 L186.2,20 L203.1,40 L220,43 L220,56 L0,56 Z"
+            fill="url(#sg)" clip-path="url(#spark-clip)"/>
+          <!-- line -->
+          <polyline
+            points="0,48 16.9,51 33.8,43 50.8,46 67.7,40 84.6,51 101.5,31 118.5,20 135.4,44 152.3,10 169.2,40 186.2,20 203.1,40 220,43"
+            fill="none" stroke="#1B5C42" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"
+            clip-path="url(#spark-clip)"/>
+          <!-- dots on last point -->
+          <circle cx="220" cy="43" r="3" fill="#1B5C42" opacity="0" id="spark-dot"/>
+          <!-- x-axis -->
+          <line x1="0" y1="55" x2="220" y2="55" stroke="rgba(30,24,16,0.07)" stroke-width="1"/>
+        </svg>
+        <div class="spark-x-labels">
+          <span>Apr 10</span>
+          <span>Apr 17</span>
+          <span>Apr 24</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metric stack -->
+    <div class="dcard">
+      <div class="metric-stack">
+        <div class="ms-item">
+          <span class="ms-label">Investors</span>
+          <span class="ms-val mono">23</span>
+          <span class="ms-sub">9 countries</span>
+        </div>
+        <div class="ms-item">
+          <span class="ms-label">Avg. ticket</span>
+          <span class="ms-val mono">€20,957</span>
+          <span class="ms-sub">min. €5,000</span>
+        </div>
+        <div class="ms-item">
+          <span class="ms-label">Closes in</span>
+          <span class="ms-val mono" style="color:var(--amber)">14d</span>
+          <span class="ms-sub">May 8, 2026</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BREAKDOWN CARD -->
+  <div class="breakdown-card">
+    <div class="bk-head">
+      <span class="bk-title">Investor breakdown by ticket size</span>
+      <span class="bk-sub">23 investors · €482,000 total</span>
+    </div>
+    <div class="bk-body">
+      <div class="bk-chart">
+        <div class="br-row">
+          <span class="br-label">€50k +</span>
+          <div class="br-track"><div class="br-fill f1" data-w="28"></div></div>
+          <span class="br-count">3</span>
+        </div>
+        <div class="br-row">
+          <span class="br-label">€25k – €50k</span>
+          <div class="br-track"><div class="br-fill f2" data-w="78"></div></div>
+          <span class="br-count">9</span>
+        </div>
+        <div class="br-row">
+          <span class="br-label">€10k – €25k</span>
+          <div class="br-track"><div class="br-fill f3" data-w="62"></div></div>
+          <span class="br-count">8</span>
+        </div>
+        <div class="br-row">
+          <span class="br-label">€5k – €10k</span>
+          <div class="br-track"><div class="br-fill f4" data-w="28"></div></div>
+          <span class="br-count">3</span>
+        </div>
+      </div>
+      <div class="bk-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--forest)"></div>
+          <span class="legend-text">€50k+</span>
+          <span class="legend-amt">€225k</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--forest-light);opacity:.8"></div>
+          <span class="legend-text">€25k–50k</span>
+          <span class="legend-amt">€180k</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--forest-light);opacity:.55"></div>
+          <span class="legend-text">€10k–25k</span>
+          <span class="legend-amt">€62k</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--forest-light);opacity:.35"></div>
+          <span class="legend-text">€5k–10k</span>
+          <span class="legend-amt">€15k</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVESTORS TABLE with progressive disclosure -->
+  <div class="table-card">
+    <div class="tc-head">
+      <div class="tc-title-row">
+        <span class="tc-title">Investors <span style="color:var(--ink-3);font-weight:400;font-size:12px;margin-left:3px">23</span></span>
+        <div class="filters">
+          <button class="fb on">All</button>
+          <button class="fb">Signed (12)</button>
+          <button class="fb">Committed (8)</button>
+          <button class="fb">Pending (3)</button>
+        </div>
+      </div>
+      <button class="t-btn t-btn-o" style="font-size:11.5px;padding:4px 10px;">Export CSV</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Investor <span class="sort">↕</span></th>
+          <th>Type</th>
+          <th class="r">Amount <span class="sort">↕</span></th>
+          <th class="r">Ownership</th>
+          <th>KYC / KYB</th>
+          <th>Status <span class="sort">↕</span></th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- Row 1 -->
+        <tr class="inv-row" onclick="toggleRow(this)">
+          <td>
+            <div class="inv-cell">
+              <div class="inv-av" style="background:rgba(42,74,124,.08);color:#2A4A7C">OB</div>
+              <div>
+                <div class="inv-name">Olivier B.</div>
+                <div class="inv-sub">🇫🇷 Paris</div>
+              </div>
+              <div class="expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </td>
+          <td style="color:var(--ink-2);font-size:12px">Individual</td>
+          <td class="amt">€75,000.00</td>
+          <td><div class="own-cell"><div class="own-track"><div class="own-fill" style="width:62%"></div></div><span class="own-pct">15.6%</span></div></td>
+          <td><span class="kyc-badge kyc-ok">✓ Verified</span></td>
+          <td><span class="status-dot s-signed">Signed</span></td>
+        </tr>
+        <tr class="detail-row">
+          <td colspan="6" class="detail-td">
+            <div class="detail-inner">
+              <div class="detail-content">
+                <div class="dc-group">
+                  <span class="dc-label">Full name</span>
+                  <span class="dc-value">Olivier Beaumont</span>
+                  <span class="dc-sub">Date of birth: 14 Mar 1979</span>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Documents signed</span>
+                  <div style="margin-top:4px">
+                    <span class="doc-pill signed">✓ Subscription bulletin</span>
+                    <span class="doc-pill signed">✓ Term sheet acknowledgement</span>
+                  </div>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Wire status</span>
+                  <span class="dc-value" style="color:var(--forest)">Received</span>
+                  <span class="dc-sub mono" style="font-size:10px">Apr 18, 2026 · IBAN FR76…</span>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Qualification</span>
+                  <span class="dc-value">Professional investor</span>
+                  <span class="dc-sub">EuVECA eligible · FR</span>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Row 2 -->
+        <tr class="inv-row" onclick="toggleRow(this)">
+          <td>
+            <div class="inv-cell">
+              <div class="inv-av" style="background:rgba(27,92,66,.08);color:#1B5C42">SR</div>
+              <div>
+                <div class="inv-name">Sophie R.</div>
+                <div class="inv-sub">🇩🇪 Berlin</div>
+              </div>
+              <div class="expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </td>
+          <td style="color:var(--ink-2);font-size:12px">Individual</td>
+          <td class="amt">€50,000.00</td>
+          <td><div class="own-cell"><div class="own-track"><div class="own-fill" style="width:41%"></div></div><span class="own-pct">10.4%</span></div></td>
+          <td><span class="kyc-badge kyc-ok">✓ Verified</span></td>
+          <td><span class="status-dot s-signed">Signed</span></td>
+        </tr>
+        <tr class="detail-row">
+          <td colspan="6" class="detail-td">
+            <div class="detail-inner">
+              <div class="detail-content">
+                <div class="dc-group">
+                  <span class="dc-label">Full name</span>
+                  <span class="dc-value">Sophie Richter</span>
+                  <span class="dc-sub">Date of birth: 3 Jun 1986</span>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Documents signed</span>
+                  <div style="margin-top:4px">
+                    <span class="doc-pill signed">✓ Subscription bulletin</span>
+                    <span class="doc-pill signed">✓ SHA acknowledgement</span>
+                  </div>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Wire status</span>
+                  <span class="dc-value" style="color:var(--forest)">Received</span>
+                  <span class="dc-sub mono" style="font-size:10px">Apr 20, 2026 · IBAN DE89…</span>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Qualification</span>
+                  <span class="dc-value">Informed investor</span>
+                  <span class="dc-sub">EuVECA eligible · DE</span>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Row 3 -->
+        <tr class="inv-row" onclick="toggleRow(this)">
+          <td>
+            <div class="inv-cell">
+              <div class="inv-av" style="background:rgba(140,80,24,.08);color:#8C5018">NK</div>
+              <div>
+                <div class="inv-name">Noord Kap SAS</div>
+                <div class="inv-sub">🇧🇪 Brussels</div>
+              </div>
+              <div class="expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </td>
+          <td style="color:var(--ink-2);font-size:12px">Legal entity</td>
+          <td class="amt">€100,000.00</td>
+          <td><div class="own-cell"><div class="own-track"><div class="own-fill" style="width:82%"></div></div><span class="own-pct">20.7%</span></div></td>
+          <td><span class="kyc-badge kyc-ok">✓ Verified</span></td>
+          <td><span class="status-dot s-committed">Committed</span></td>
+        </tr>
+        <tr class="detail-row">
+          <td colspan="6" class="detail-td">
+            <div class="detail-inner">
+              <div class="detail-content">
+                <div class="dc-group">
+                  <span class="dc-label">Entity</span>
+                  <span class="dc-value">Noord Kap SAS</span>
+                  <span class="dc-sub">SIREN 892 341 620 · BE</span>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Documents pending</span>
+                  <div style="margin-top:4px">
+                    <span class="doc-pill">⏳ Subscription bulletin</span>
+                  </div>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Wire status</span>
+                  <span class="dc-value" style="color:var(--amber)">Awaiting</span>
+                  <span class="dc-sub">Expected by Apr 28</span>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Beneficial owner</span>
+                  <span class="dc-value">Thomas V.D.B.</span>
+                  <span class="dc-sub">UBO verified ✓</span>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Row 4 -->
+        <tr class="inv-row" onclick="toggleRow(this)">
+          <td>
+            <div class="inv-cell">
+              <div class="inv-av" style="background:rgba(138,34,50,.07);color:#8A2232">ML</div>
+              <div>
+                <div class="inv-name">Marc L.</div>
+                <div class="inv-sub">🇨🇭 Zürich</div>
+              </div>
+              <div class="expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </td>
+          <td style="color:var(--ink-2);font-size:12px">Individual</td>
+          <td class="amt">€30,000.00</td>
+          <td><div class="own-cell"><div class="own-track"><div class="own-fill" style="width:25%"></div></div><span class="own-pct">6.2%</span></div></td>
+          <td><span class="kyc-badge kyc-rev">⏳ In review</span></td>
+          <td><span class="status-dot s-committed">Committed</span></td>
+        </tr>
+        <tr class="detail-row">
+          <td colspan="6" class="detail-td">
+            <div class="detail-inner">
+              <div class="detail-content">
+                <div class="dc-group">
+                  <span class="dc-label">Full name</span>
+                  <span class="dc-value">Marc Lautenschläger</span>
+                  <span class="dc-sub">Date of birth: 22 Nov 1974</span>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">KYC documents</span>
+                  <div style="margin-top:4px">
+                    <span class="doc-pill signed">✓ ID uploaded</span>
+                    <span class="doc-pill" style="color:var(--amber);border-color:rgba(140,80,24,.2)">⏳ Proof of address</span>
+                  </div>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Wire status</span>
+                  <span class="dc-value" style="color:var(--amber)">Awaiting</span>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Qualification</span>
+                  <span class="dc-value">Pending review</span>
+                  <span class="dc-sub">CH residence · non-EU</span>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Row 5 -->
+        <tr class="inv-row" onclick="toggleRow(this)">
+          <td>
+            <div class="inv-cell">
+              <div class="inv-av" style="background:rgba(42,74,124,.06);color:#2A4A7C">EV</div>
+              <div>
+                <div class="inv-name">Elena V.</div>
+                <div class="inv-sub">🇳🇱 Amsterdam</div>
+              </div>
+              <div class="expand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </td>
+          <td style="color:var(--ink-2);font-size:12px">Individual</td>
+          <td class="amt">€25,000.00</td>
+          <td><div class="own-cell"><div class="own-track"><div class="own-fill" style="width:20%"></div></div><span class="own-pct">5.2%</span></div></td>
+          <td><span class="kyc-badge kyc-no">Not started</span></td>
+          <td><span class="status-dot s-pending">Pending</span></td>
+        </tr>
+        <tr class="detail-row">
+          <td colspan="6" class="detail-td">
+            <div class="detail-inner">
+              <div class="detail-content">
+                <div class="dc-group">
+                  <span class="dc-label">Full name</span>
+                  <span class="dc-value">Elena Vandermeer</span>
+                  <span class="dc-sub">Invited Apr 21, 2026</span>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">KYC documents</span>
+                  <div style="margin-top:4px">
+                    <span class="doc-pill">No documents uploaded</span>
+                  </div>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Wire status</span>
+                  <span class="dc-value" style="color:var(--ink-3)">Not started</span>
+                </div>
+                <div class="dc-group">
+                  <span class="dc-label">Actions</span>
+                  <button class="t-btn t-btn-o" style="font-size:11px;padding:4px 9px;margin-top:3px">Send reminder</button>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+    <div class="tc-foot">
+      <span class="tc-foot-note">5 of 23 — total committed: <span class="mono">€482,000.00</span></span>
+      <div class="page-row">
+        <button class="pb on">1</button>
+        <button class="pb">2</button>
+        <button class="pb">3</button>
+        <button class="pb">›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVITY -->
+  <div class="act-card">
+    <div class="act-head">Recent activity</div>
+    <div class="act-list">
+      <div class="act-item">
+        <span class="act-time">2h</span>
+        <span class="act-body"><strong>Noord Kap SAS</strong> completed KYB verification — entity confirmed as Belgian SAS.</span>
+      </div>
+      <div class="act-item">
+        <span class="act-time">5h</span>
+        <span class="act-body"><strong>Marc L.</strong> committed <strong class="mono">€30,000.00</strong>. KYC review initiated.</span>
+      </div>
+      <div class="act-item">
+        <span class="act-time">1d</span>
+        <span class="act-body">Reminder sent to <strong>4 investors</strong> with pending signatures.</span>
+      </div>
+      <div class="act-item">
+        <span class="act-time">2d</span>
+        <span class="act-body"><strong>Sophie R.</strong> signed subscription bulletin.</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- SIDE -->
+<div class="side">
+
+  <!-- SPV STATE -->
+  <div class="sc">
+    <div class="sc-head" onclick="toggleCard(this)">
+      <span class="sc-head-title">SPV State</span>
+      <div class="sc-head-right">
+        <span class="sc-badge" style="color:var(--forest)">Open</span>
+        <span class="sc-toggle">▾</span>
+      </div>
+    </div>
+    <div class="sc-body">
+      <div class="spv-steps">
+        <div class="spv-step">
+          <div class="spv-vl"><div class="spv-nd done"></div><div class="spv-line done"></div></div>
+          <div class="spv-info"><div class="spv-txt done">Deal created</div></div>
+        </div>
+        <div class="spv-step">
+          <div class="spv-vl"><div class="spv-nd done"></div><div class="spv-line done"></div></div>
+          <div class="spv-info"><div class="spv-txt done">Commitments open</div></div>
+        </div>
+        <div class="spv-step">
+          <div class="spv-vl"><div class="spv-nd now"></div><div class="spv-line"></div></div>
+          <div class="spv-info">
+            <div class="spv-txt now">KYC / KYB</div>
+            <div class="spv-note">3 investors pending</div>
+          </div>
+        </div>
+        <div class="spv-step">
+          <div class="spv-vl"><div class="spv-nd"></div><div class="spv-line"></div></div>
+          <div class="spv-info"><div class="spv-txt">E-signatures</div></div>
+        </div>
+        <div class="spv-step">
+          <div class="spv-vl"><div class="spv-nd"></div><div class="spv-line"></div></div>
+          <div class="spv-info"><div class="spv-txt">Fund collection</div></div>
+        </div>
+        <div class="spv-step">
+          <div class="spv-vl"><div class="spv-nd"></div></div>
+          <div class="spv-info"><div class="spv-txt">SPV incorporated</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TERMS -->
+  <div class="sc">
+    <div class="sc-head" onclick="toggleCard(this)">
+      <span class="sc-head-title">Deal Terms</span>
+      <span class="sc-toggle">▾</span>
+    </div>
+    <div class="sc-body">
+      <div class="tr-row"><span class="tr-k">Instrument</span><span class="tr-v">Equity</span></div>
+      <div class="tr-row"><span class="tr-k">Pre-money val.</span><span class="tr-v mono">€180,000,000</span></div>
+      <div class="tr-row"><span class="tr-k">SPV target</span><span class="tr-v mono">€600,000</span></div>
+      <div class="tr-row"><span class="tr-k">Min. ticket</span><span class="tr-v mono">€5,000</span></div>
+      <div class="tr-row"><span class="tr-k">Structure</span><span class="tr-v">Luxembourg SCSp</span></div>
+      <div class="tr-row"><span class="tr-k">Carry</span><span class="tr-v mono">10%</span></div>
+      <div class="tr-row"><span class="tr-k">Entry fee</span><span class="tr-v" style="color:var(--ink-3)">None</span></div>
+    </div>
+  </div>
+
+  <!-- DEADLINE -->
+  <div class="sc">
+    <div class="sc-head" onclick="toggleCard(this)">
+      <span class="sc-head-title">Closing Deadline</span>
+      <span class="sc-toggle">▾</span>
+    </div>
+    <div class="sc-body">
+      <div class="deadline-date">May 08, 2026</div>
+      <div class="deadline-rem">⏱ 14 days remaining</div>
+    </div>
+  </div>
+
+  <!-- DOCS -->
+  <div class="sc">
+    <div class="sc-head" onclick="toggleCard(this)">
+      <span class="sc-head-title">Documents</span>
+      <div class="sc-head-right">
+        <span class="sc-badge" style="color:var(--ink-3)">4</span>
+        <span class="sc-toggle">▾</span>
+      </div>
+    </div>
+    <div class="sc-body">
+      <div class="doc-row"><div class="doc-ext">PDF</div><span class="doc-name">Investment Memorandum</span><span class="doc-sz">2.4 MB</span></div>
+      <div class="doc-row"><div class="doc-ext">PDF</div><span class="doc-name">Term Sheet</span><span class="doc-sz">380 KB</span></div>
+      <div class="doc-row"><div class="doc-ext">PDF</div><span class="doc-name">SHA Draft</span><span class="doc-sz">1.1 MB</span></div>
+      <div class="doc-row"><div class="doc-ext">XLS</div><span class="doc-name">Cap Table (pre-SPV)</span><span class="doc-sz">64 KB</span></div>
+    </div>
+  </div>
+
+</div><!-- /side -->
+</div><!-- /body -->
+
+<script>
+  // ── DONUT ANIMATION ──
+  const CIRC = 2 * Math.PI * 44; // 276.5
+  const PCT = 0.803;
+  const donut = document.getElementById('donut');
+  const label = document.getElementById('donut-pct');
+
+  setTimeout(() => {
+    donut.style.strokeDasharray = (CIRC * PCT) + ' ' + CIRC;
+    // count-up
+    let start = 0;
+    const end = 80.3;
+    const dur = 1300;
+    const t0 = performance.now();
+    function tick(now) {
+      const p = Math.min((now - t0) / dur, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      label.textContent = (start + (end - start) * ease).toFixed(1) + '%';
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }, 500);
+
+  // ── SPARKLINE REVEAL ──
+  const rect = document.getElementById('spark-reveal');
+  const dot = document.getElementById('spark-dot');
+  setTimeout(() => {
+    rect.style.transition = 'width 1.2s cubic-bezier(.4,0,.2,1)';
+    rect.style.width = '220';
+    dot.style.transition = 'opacity .3s ease 1.1s';
+    dot.style.opacity = '1';
+  }, 400);
+
+  // ── BAR CHART ANIMATION ──
+  setTimeout(() => {
+    document.querySelectorAll('.br-fill').forEach(el => {
+      el.style.transition = 'width 1s cubic-bezier(.4,0,.2,1)';
+      el.style.width = el.dataset.w + '%';
+    });
+  }, 500);
+
+  // ── ROW EXPAND (progressive disclosure) ──
+  function toggleRow(row) {
+    const detail = row.nextElementSibling;
+    const inner = detail.querySelector('.detail-inner');
+    const isOpen = inner.classList.contains('open');
+
+    // close all
+    document.querySelectorAll('.detail-inner.open').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.inv-row.expanded').forEach(el => el.classList.remove('expanded'));
+    document.querySelectorAll('.detail-row.open').forEach(el => el.classList.remove('open'));
+
+    if (!isOpen) {
+      inner.classList.add('open');
+      row.classList.add('expanded');
+      detail.classList.add('open');
+    }
+  }
+
+  // ── COLLAPSIBLE SIDE CARDS ──
+  function toggleCard(head) {
+    head.closest('.sc').classList.toggle('collapsed');
+  }
+</script>
+</body>
+</html>
