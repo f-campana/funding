@@ -36,6 +36,21 @@ export const shadcnColorTokens = [
   'sidebar-ring',
 ]
 
+export const commandColorTokens = [
+  'command',
+  'command-foreground',
+  'command-muted',
+  'command-border',
+  'command-accent',
+  'command-accent-foreground',
+  'command-progress',
+  'command-progress-muted',
+  'command-segment-investable',
+  'command-segment-entry-fees',
+  'command-segment-spv-fees',
+  'command-segment-neutral',
+]
+
 export const statusColorTokens = [
   'status-success',
   'status-success-foreground',
@@ -80,6 +95,7 @@ export const readinessColorTokens = [
 
 export const semanticColorTokens = [
   ...shadcnColorTokens,
+  ...commandColorTokens,
   ...statusColorTokens,
   ...readinessColorTokens,
 ]

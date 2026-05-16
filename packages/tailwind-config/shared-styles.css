@@ -18,6 +18,18 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-command: var(--command);
+  --color-command-foreground: var(--command-foreground);
+  --color-command-muted: var(--command-muted);
+  --color-command-border: var(--command-border);
+  --color-command-accent: var(--command-accent);
+  --color-command-accent-foreground: var(--command-accent-foreground);
+  --color-command-progress: var(--command-progress);
+  --color-command-progress-muted: var(--command-progress-muted);
+  --color-command-segment-investable: var(--command-segment-investable);
+  --color-command-segment-entry-fees: var(--command-segment-entry-fees);
+  --color-command-segment-spv-fees: var(--command-segment-spv-fees);
+  --color-command-segment-neutral: var(--command-segment-neutral);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);

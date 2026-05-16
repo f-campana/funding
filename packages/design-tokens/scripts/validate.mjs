@@ -4,6 +4,7 @@ import {
   baseTokenSpecs,
   buildTokensCss,
   buildTokensTs,
+  commandColorTokens,
   cssUrl,
   getTokenValue,
   readinessColorTokens,
@@ -22,6 +23,8 @@ const contrastPairs = [
   ['secondary', 'secondary-foreground', 4.5],
   ['muted', 'muted-foreground', 4.5],
   ['accent', 'accent-foreground', 4.5],
+  ['command', 'command-foreground', 7],
+  ['command-accent', 'command-accent-foreground', 4.5],
   ['destructive', 'destructive-foreground', 4.5],
   ['sidebar', 'sidebar-foreground', 7],
   ['sidebar-primary', 'sidebar-primary-foreground', 4.5],
@@ -109,6 +112,12 @@ const validateTokenListCompleteness = (errors) => {
   }
 
   for (const tokenName of shadcnColorTokens) {
+    if (!semanticColorTokens.includes(tokenName)) {
+      errors.push(`${tokenName} is missing from semanticColorTokens.`)
+    }
+  }
+
+  for (const tokenName of commandColorTokens) {
     if (!semanticColorTokens.includes(tokenName)) {
       errors.push(`${tokenName} is missing from semanticColorTokens.`)
     }

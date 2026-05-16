@@ -62,6 +62,21 @@ const statusColorTokens = [
   'status-pending-border',
 ] as const
 
+const commandColorTokens = [
+  'command',
+  'command-foreground',
+  'command-muted',
+  'command-border',
+  'command-accent',
+  'command-accent-foreground',
+  'command-progress',
+  'command-progress-muted',
+  'command-segment-investable',
+  'command-segment-entry-fees',
+  'command-segment-spv-fees',
+  'command-segment-neutral',
+] as const
+
 const readinessColorTokens = [
   'readiness-ready',
   'readiness-ready-foreground',
@@ -115,6 +130,13 @@ describe('@repo/design-tokens generated exports', () => {
     }
   })
 
+  it('exposes all command surface color tokens in both themes', () => {
+    for (const tokenName of commandColorTokens) {
+      expect(Object.hasOwn(lightTheme.color, tokenName)).toBe(true)
+      expect(Object.hasOwn(darkTheme.color, tokenName)).toBe(true)
+    }
+  })
+
   it('exposes all readiness color tokens in both themes', () => {
     for (const tokenName of readinessColorTokens) {
       expect(Object.hasOwn(lightTheme.color, tokenName)).toBe(true)
@@ -150,6 +172,18 @@ describe('@repo/design-tokens generated exports', () => {
       '--status-danger',
       '--status-info',
       '--status-pending',
+      '--command',
+      '--command-foreground',
+      '--command-muted',
+      '--command-border',
+      '--command-accent',
+      '--command-accent-foreground',
+      '--command-progress',
+      '--command-progress-muted',
+      '--command-segment-investable',
+      '--command-segment-entry-fees',
+      '--command-segment-spv-fees',
+      '--command-segment-neutral',
       '--readiness-ready',
       '--readiness-attention',
       '--readiness-blocked',
