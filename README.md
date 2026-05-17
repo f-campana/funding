@@ -146,13 +146,14 @@ Current high-authority docs:
 
 ## Next Work
 
-Next implementation pass: T5D-C commitments wiring.
+Next implementation pass: T5E-C2 DealCommitmentInspector kit baseline.
 
 Why: the accepted kit baselines and app-owned Northstar DTO/tRPC spine are the
 trust boundary. The operator entry route is `/deals/northstar-energy/overview`,
-with `/about` reserved for a future investor lens. The next pass should wire the
-real commitments workflow without reviving deleted kit surfaces or claiming the
-Northstar vertical is complete before all route workflows consume the contract.
+with `/about` reserved for a future investor lens. The commitments route now
+uses `DealCommitmentsTable`; the next useful step is a kit-first row inspector
+baseline so investor blockers and related documents have an inspectable product
+surface before the documents route is designed.
 
 Relevant docs:
 

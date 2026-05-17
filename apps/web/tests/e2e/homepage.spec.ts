@@ -56,6 +56,7 @@ async function expectCommitmentsTable(page: Page) {
   await expect(table.getByText('Alba FO SARL')).toBeVisible()
   await expect(table.getByText('Meridian Ventures II LP')).toBeVisible()
   await expect(table.getByText('€1,500,000')).toBeVisible()
+  await expect(table.getByText('Overall committed €4,850,000')).toBeVisible()
   await expect(table).toContainText('Verified')
   await expect(table).toContainText('Signed')
   await expect(table).toContainText('Reconciled')

@@ -39,7 +39,8 @@ Implemented:
 - tRPC seam under `server/trpc` and `app/api/trpc/[trpc]/route.ts`
 - route data loader at `app/deals/[dealId]`
 - Playwright e2e tests for homepage navigation, the DTO-backed overview route,
-  the legacy `/about` redirect, active tabs, and not-found behavior
+  the DTO-backed commitments table, the legacy `/about` redirect, active tabs,
+  row-open keyboard behavior, mobile overflow guards, and not-found behavior
 
 Not implemented yet:
 

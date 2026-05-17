@@ -40,7 +40,7 @@ export const mapDealCommitmentsTableViewModel = (
       investorsLabel: `${rows.length} ${pluralize(rows.length, 'investor')}`,
       rangeLabel: rows.length === 0 ? '0 of 0' : `1-${Math.min(rows.length, 8)} of ${rows.length}`,
       rowsPerPageLabel: '8 rows per page',
-      totalCommittedLabel: `Amounts shown in ${data.deal.currency}`,
+      totalCommittedLabel: `Overall committed ${formatMoney(data.capital.committedAmount)}`,
     },
     state:
       rows.length === 0
