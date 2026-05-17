@@ -58,15 +58,14 @@ export type {
 const readinessToneClasses = {
   attention: 'border-status-attention-border bg-status-attention-muted text-status-attention',
   blocked: 'border-status-danger-border bg-status-danger-muted text-status-danger',
-  notStarted: 'border-status-pending-border bg-status-pending-muted text-status-pending',
+  not_started: 'border-status-pending-border bg-status-pending-muted text-status-pending',
   ready: 'border-status-success-border bg-status-success-muted text-status-success',
 } as const satisfies Record<DealOperationalReadinessState, string>
 
 const severityToneClasses = {
   critical: 'border-status-danger-border bg-status-danger-muted text-status-danger',
-  high: 'border-status-attention-border bg-status-attention-muted text-status-attention',
-  low: 'border-border bg-muted text-muted-foreground',
-  medium: 'border-status-info-border bg-status-info-muted text-status-info',
+  info: 'border-status-info-border bg-status-info-muted text-status-info',
+  warning: 'border-status-attention-border bg-status-attention-muted text-status-attention',
 } as const satisfies Record<DealOperationalBlockerSeverity, string>
 
 const metricToneClasses = {
@@ -102,10 +101,15 @@ export const DealOperationalOverview = ({
         'w-full overflow-hidden rounded-lg border border-border/70 bg-card text-card-foreground shadow-card',
         className,
       )}
-      data-blocker-count={state.kind === 'ready' ? state.blockers.length : undefined}
       data-readiness-state={readinessState}
       data-slot="deal-operational-overview"
       data-state={state.kind}
+      data-total-blocker-count={
+        state.kind === 'ready'
+          ? getOperationalBlockerTotal(state.readiness.blockerCounts)
+          : undefined
+      }
+      data-visible-blocker-count={state.kind === 'ready' ? state.blockers.length : undefined}
     >
       {state.kind === 'loading' ? (
         <LoadingContent label={state.label ?? labels.loadingLabel} titleId={titleId} />
@@ -540,7 +544,7 @@ const BlockersSection = ({
       {blockers.length > 0 ? (
         <ol className="grid gap-2">
           {blockers.map((blocker) => (
-            <BlockerItem blocker={blocker} key={blocker.id} />
+            <BlockerItem blocker={blocker} key={blocker.id} labels={labels} />
           ))}
         </ol>
       ) : (
@@ -555,7 +559,13 @@ const BlockersSection = ({
   )
 }
 
-const BlockerItem = ({ blocker }: { readonly blocker: DealOperationalBlocker }) => (
+const BlockerItem = ({
+  blocker,
+  labels,
+}: {
+  readonly blocker: DealOperationalBlocker
+  readonly labels: DealOperationalOverviewLabels
+}) => (
   <li>
     <article
       className="grid gap-3 rounded-md border border-border/70 bg-background/60 px-3 py-3"
@@ -577,15 +587,29 @@ const BlockerItem = ({ blocker }: { readonly blocker: DealOperationalBlocker }) 
         </Badge>
       </div>
       <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
-        <BlockerFact icon="owner" label="Owner" value={blocker.owner} />
-        <BlockerFact icon="surface" label="Surface" value={blocker.surfaceLabel} />
+        <BlockerFact icon="owner" label={labels.blockerOwnerLabel} value={blocker.owner} />
+        <BlockerFact
+          icon="surface"
+          label={labels.blockerSurfaceLabel}
+          value={blocker.surfaceLabel}
+        />
         {blocker.investorCountLabel ? (
-          <BlockerFact icon="investors" label="Investors" value={blocker.investorCountLabel} />
+          <BlockerFact
+            icon="investors"
+            label={labels.blockerInvestorsLabel}
+            value={blocker.investorCountLabel}
+          />
         ) : null}
         {blocker.documentCountLabel ? (
-          <BlockerFact icon="documents" label="Documents" value={blocker.documentCountLabel} />
+          <BlockerFact
+            icon="documents"
+            label={labels.blockerDocumentsLabel}
+            value={blocker.documentCountLabel}
+          />
         ) : null}
-        {blocker.dueLabel ? <BlockerFact icon="due" label="Due" value={blocker.dueLabel} /> : null}
+        {blocker.dueLabel ? (
+          <BlockerFact icon="due" label={labels.blockerDueLabel} value={blocker.dueLabel} />
+        ) : null}
       </dl>
     </article>
   </li>

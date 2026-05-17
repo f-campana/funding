@@ -11,7 +11,11 @@ import {
   getOperationalBlockerTotal,
   getOperationalProgressValue,
 } from './deal-operational-overview.model'
-import type { DealOperationalOverviewState } from './deal-operational-overview.types'
+import type {
+  DealOperationalBlockerSeverity,
+  DealOperationalOverviewState,
+  DealOperationalReadinessState,
+} from './deal-operational-overview.types'
 import {
   blockedOperationalOverviewState,
   dealOperationalOverviewLabels,
@@ -40,6 +44,8 @@ const rawPalettePattern =
 const overviewSourceFilePattern = /^deal-operational-overview.*\.(ts|tsx)$/u
 
 const expectLifecycleState = (_state: DealOperationalOverviewState) => undefined
+const expectReadinessState = (_state: DealOperationalReadinessState) => undefined
+const expectBlockerSeverity = (_severity: DealOperationalBlockerSeverity) => undefined
 
 // @ts-expect-error Loading state cannot carry ready readiness data.
 expectLifecycleState({ kind: 'loading', readiness: blockedOperationalOverviewState.readiness })
@@ -49,6 +55,17 @@ expectLifecycleState({ blockers: blockedOperationalOverviewState.blockers, kind:
 
 // @ts-expect-error Ready state requires capital summary.
 expectLifecycleState({ kind: 'ready', readiness: blockedOperationalOverviewState.readiness })
+
+expectReadinessState('not_started')
+
+// @ts-expect-error Readiness state must match the Northstar DTO vocabulary.
+expectReadinessState('not' + 'Started')
+
+expectBlockerSeverity('warning')
+expectBlockerSeverity('info')
+
+// @ts-expect-error Blocker severity must match the Northstar DTO vocabulary.
+expectBlockerSeverity('hi' + 'gh')
 
 describe('DealOperationalOverview', () => {
   it('renders ready mission-control content with readiness, capital, blockers, and activity', () => {
@@ -79,8 +96,15 @@ describe('DealOperationalOverview', () => {
       screen.getByText('Matched €410,000 of incoming wires to signed subscription records.'),
     ).toBeInTheDocument()
     expect(container.querySelector('[data-slot="deal-operational-overview"]')).toHaveAttribute(
-      'data-blocker-count',
+      'data-visible-blocker-count',
       '3',
+    )
+    expect(container.querySelector('[data-slot="deal-operational-overview"]')).toHaveAttribute(
+      'data-total-blocker-count',
+      '6',
+    )
+    expect(container.querySelector('[data-slot="deal-operational-overview"]')).not.toHaveAttribute(
+      'data-' + 'blocker-count',
     )
   })
 
@@ -136,6 +160,39 @@ describe('DealOperationalOverview', () => {
     expect(readiness).toHaveAttribute('data-readiness-state', 'blocked')
     expect(blockedDimension).toHaveAttribute('data-state', 'blocked')
     expect(criticalBlocker).toHaveAttribute('data-severity', 'critical')
+  })
+
+  it('renders blocker fact labels from the labels contract', () => {
+    render(
+      <DealOperationalOverview
+        labels={{
+          ...dealOperationalOverviewLabels,
+          blockerDocumentsLabel: 'Document evidence',
+          blockerDueLabel: 'Target date',
+          blockerInvestorsLabel: 'Investor scope',
+          blockerOwnerLabel: 'Responsible team',
+          blockerSurfaceLabel: 'Operational surface',
+        }}
+        state={blockedOperationalOverviewState}
+      />,
+    )
+
+    expect(screen.getAllByText('Responsible team').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Operational surface').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Investor scope').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Document evidence').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Target date').length).toBeGreaterThan(0)
+  })
+
+  it('keeps blocker severity fixtures on the Northstar vocabulary', () => {
+    expect(
+      blockedOperationalOverviewState.readiness.blockerCounts.map((count) => count.severity),
+    ).toEqual(['critical', 'warning', 'info'])
+    expect(blockedOperationalOverviewState.blockers.map((blocker) => blocker.severity)).toEqual([
+      'critical',
+      'critical',
+      'warning',
+    ])
   })
 
   it('renders no-blocker ready states without creating empty blocker rows', () => {

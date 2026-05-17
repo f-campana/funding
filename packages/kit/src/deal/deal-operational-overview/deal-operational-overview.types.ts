@@ -1,6 +1,6 @@
-export type DealOperationalReadinessState = 'ready' | 'attention' | 'blocked' | 'notStarted'
+export type DealOperationalReadinessState = 'ready' | 'attention' | 'blocked' | 'not_started'
 
-export type DealOperationalBlockerSeverity = 'critical' | 'high' | 'medium' | 'low'
+export type DealOperationalBlockerSeverity = 'critical' | 'warning' | 'info'
 
 export type DealOperationalMetricTone = 'default' | 'success' | 'attention' | 'danger' | 'neutral'
 
@@ -108,6 +108,11 @@ export type DealOperationalOverviewLabels = {
   readonly readinessTitle: string
   readonly nextActionLabel: string
   readonly blockerCountsLabel: string
+  readonly blockerDocumentsLabel: string
+  readonly blockerDueLabel: string
+  readonly blockerInvestorsLabel: string
+  readonly blockerOwnerLabel: string
+  readonly blockerSurfaceLabel: string
   readonly dimensionsTitle: string
   readonly capitalTitle: string
   readonly capitalProgressAriaLabel: string

@@ -71,7 +71,14 @@ export const DefaultBlocked = {
     assertDefaultStory(canvasElement)
     const overview = canvasElement.querySelector('[data-slot="deal-operational-overview"]')
 
-    assertStory(overview?.getAttribute('data-blocker-count') === '3', 'Expected blocker count.')
+    assertStory(
+      overview?.getAttribute('data-visible-blocker-count') === '3',
+      'Expected visible blocker count.',
+    )
+    assertStory(
+      overview?.getAttribute('data-total-blocker-count') === '6',
+      'Expected total blocker count.',
+    )
   },
 }
 

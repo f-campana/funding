@@ -8,6 +8,11 @@ import type {
 export const dealOperationalOverviewLabels = {
   activityTitle: 'Latest activity',
   blockerCountsLabel: 'Blocker counts by severity',
+  blockerDocumentsLabel: 'Documents',
+  blockerDueLabel: 'Due',
+  blockerInvestorsLabel: 'Investors',
+  blockerOwnerLabel: 'Owner',
+  blockerSurfaceLabel: 'Surface',
   blockersTitle: 'Priority blockers',
   capitalEconomicsTitle: 'Economics',
   capitalMetricsTitle: 'Reconciliation metrics',
@@ -60,9 +65,8 @@ const readyCapital = {
 const blockedReadiness = {
   blockerCounts: [
     { count: 2, label: 'Critical', severity: 'critical' },
-    { count: 3, label: 'High', severity: 'high' },
-    { count: 1, label: 'Medium', severity: 'medium' },
-    { count: 0, label: 'Low', severity: 'low' },
+    { count: 3, label: 'Warning', severity: 'warning' },
+    { count: 1, label: 'Info', severity: 'info' },
   ],
   dimensions: [
     {
@@ -117,9 +121,8 @@ const attentionReadiness = {
   ...blockedReadiness,
   blockerCounts: [
     { count: 0, label: 'Critical', severity: 'critical' },
-    { count: 1, label: 'High', severity: 'high' },
-    { count: 2, label: 'Medium', severity: 'medium' },
-    { count: 1, label: 'Low', severity: 'low' },
+    { count: 3, label: 'Warning', severity: 'warning' },
+    { count: 1, label: 'Info', severity: 'info' },
   ],
   dimensions: [
     {
@@ -173,9 +176,8 @@ const attentionReadiness = {
 const readyReadiness = {
   blockerCounts: [
     { count: 0, label: 'Critical', severity: 'critical' },
-    { count: 0, label: 'High', severity: 'high' },
-    { count: 0, label: 'Medium', severity: 'medium' },
-    { count: 0, label: 'Low', severity: 'low' },
+    { count: 0, label: 'Warning', severity: 'warning' },
+    { count: 0, label: 'Info', severity: 'info' },
   ],
   dimensions: [
     {
@@ -289,8 +291,8 @@ export const blockedOperationalOverviewState = {
       dueLabel: 'Due tomorrow',
       id: 'unmatched-received',
       owner: 'Finance',
-      severity: 'high',
-      severityLabel: 'High',
+      severity: 'warning',
+      severityLabel: 'Warning',
       surfaceLabel: 'Capital reconciliation',
       title: 'Reduce unmatched received balance',
     },
@@ -312,8 +314,8 @@ export const attentionOperationalOverviewState = {
       id: 'signature-release',
       investorCountLabel: '1 investor',
       owner: 'Legal',
-      severity: 'high',
-      severityLabel: 'High',
+      severity: 'warning',
+      severityLabel: 'Warning',
       surfaceLabel: 'Signatures',
       title: 'Release final countersignature',
     },
@@ -322,8 +324,8 @@ export const attentionOperationalOverviewState = {
       dueLabel: 'Due tomorrow',
       id: 'fee-memo',
       owner: 'Finance',
-      severity: 'medium',
-      severityLabel: 'Medium',
+      severity: 'info',
+      severityLabel: 'Info',
       surfaceLabel: 'Economics',
       title: 'Approve economics memo',
     },
