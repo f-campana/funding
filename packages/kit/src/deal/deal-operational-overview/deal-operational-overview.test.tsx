@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -37,12 +35,6 @@ const renderOverview = (
       state={state}
     />,
   )
-
-const forbiddenImportsPattern = /apps\/web|@repo\/app|@repo\/domain|trpc|createTRPC|router|route/u
-const consolePattern = /console\.(log|warn|error)/u
-const rawPalettePattern =
-  /\b(?:bg|border|fill|from|outline|ring|stroke|text|to|via)-(?:amber|blue|cyan|emerald|fuchsia|gray|green|indigo|lime|neutral|orange|pink|purple|red|rose|sky|slate|stone|teal|violet|yellow|zinc)-\d{2,3}\b/u
-const overviewSourceFilePattern = /^deal-operational-overview.*\.(ts|tsx)$/u
 
 const expectLifecycleState = (_state: DealOperationalOverviewState) => undefined
 const expectOverviewProps = (_props: DealOperationalOverviewProps) => undefined
@@ -143,6 +135,18 @@ describe('DealOperationalOverview', () => {
     expect(onAction).toHaveBeenCalledWith({ kind: 'retry' })
   })
 
+  it('renders a non-retryable error without requiring an action handler', () => {
+    render(
+      <DealOperationalOverview
+        labels={dealOperationalOverviewLabels}
+        state={{ kind: 'error', title: 'No retry' }}
+      />,
+    )
+
+    expect(screen.getByText('No retry')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
   it('renders an empty state safely', () => {
     renderOverview(emptyOperationalOverviewState)
 
@@ -218,6 +222,64 @@ describe('DealOperationalOverview', () => {
     )
   })
 
+  it('renders ready states with empty activity and optional metric groups omitted', () => {
+    const state = {
+      ...blockedOperationalOverviewState,
+      activity: [],
+      capital: {
+        ...blockedOperationalOverviewState.capital,
+        economics: [],
+        metrics: [],
+      },
+    } as const satisfies DealOperationalOverviewState
+
+    const { container } = renderOverview(state)
+
+    expect(screen.getByText('No recent operational activity.')).toBeInTheDocument()
+    expect(screen.queryByText('Reconciliation metrics')).not.toBeInTheDocument()
+    expect(screen.queryByText('Economics')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('progressbar', { name: 'Capital reconciliation progress' }),
+    ).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="deal-operational-blocker"]')).toBeInTheDocument()
+  })
+
+  it('renders not-started readiness and dimension states from the Northstar vocabulary', () => {
+    const state = {
+      ...blockedOperationalOverviewState,
+      readiness: {
+        ...blockedOperationalOverviewState.readiness,
+        blockerCounts: [],
+        dimensions: [
+          {
+            blockerCount: 0,
+            description: 'Closing workflow has not started.',
+            id: 'closing-workflow',
+            label: 'Closing workflow',
+            state: 'not_started',
+          },
+        ],
+        label: 'Not started',
+        nextAction: 'Start the closing workflow.',
+        state: 'not_started',
+      },
+    } as const satisfies DealOperationalOverviewState
+
+    const { container } = renderOverview(state)
+
+    expect(container.querySelector('[data-slot="deal-operational-overview"]')).toHaveAttribute(
+      'data-readiness-state',
+      'not_started',
+    )
+    expect(screen.getByText('Not started')).toBeInTheDocument()
+    expect(screen.getByText('Start the closing workflow.')).toBeInTheDocument()
+    expect(
+      container.querySelector(
+        '[data-slot="deal-operational-dimension"][data-dimension-id="closing-workflow"]',
+      ),
+    ).toHaveAttribute('data-state', 'not_started')
+  })
+
   it('clamps progress helper output for invalid and over-target values', () => {
     expect(clampOperationalProgressValue(-25)).toBe(0)
     expect(clampOperationalProgressValue(Number.NaN)).toBe(0)
@@ -253,21 +315,4 @@ describe('DealOperationalOverview', () => {
     expect((await axe(container)).violations).toHaveLength(0)
   })
 
-  it('keeps new kit files inside package boundaries', () => {
-    const directory = resolve(process.cwd(), 'src/deal/deal-operational-overview')
-    const files = readdirSync(directory).filter(
-      (fileName) =>
-        overviewSourceFilePattern.test(fileName) &&
-        !fileName.endsWith('.stories.tsx') &&
-        !fileName.endsWith('.test.tsx'),
-    )
-
-    for (const fileName of files) {
-      const contents = readFileSync(resolve(directory, fileName), 'utf8')
-
-      expect(contents).not.toMatch(forbiddenImportsPattern)
-      expect(contents).not.toMatch(consolePattern)
-      expect(contents).not.toMatch(rawPalettePattern)
-    }
-  })
 })

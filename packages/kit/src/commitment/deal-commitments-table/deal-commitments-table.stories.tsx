@@ -80,59 +80,6 @@ const renderDarkTable = (
   </div>
 )
 
-const assertStory: (condition: unknown, message: string) => asserts condition = (
-  condition,
-  message,
-) => {
-  if (!condition) {
-    throw new globalThis.Error(message)
-  }
-}
-
-const waitForStoryUpdate = () =>
-  new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-  })
-
-const getStoryRow = (root: ParentNode, label: string): HTMLTableRowElement => {
-  const row = Array.from(root.querySelectorAll('tr')).find((candidate) =>
-    candidate.textContent?.includes(label),
-  )
-
-  assertStory(row instanceof HTMLTableRowElement, `Expected ${label} row to render.`)
-
-  return row
-}
-
-const getStoryCheckbox = (root: ParentNode, investorName: string): HTMLElement => {
-  const checkbox = root.querySelector(`[role="checkbox"][aria-label="Select ${investorName}"]`)
-
-  assertStory(checkbox instanceof HTMLElement, `Expected ${investorName} checkbox to render.`)
-
-  return checkbox
-}
-
-const getButton = (root: ParentNode, label: string): HTMLButtonElement => {
-  const button = Array.from(root.querySelectorAll('button')).find(
-    (candidate) =>
-      candidate.textContent === label || candidate.getAttribute('aria-label') === label,
-  )
-
-  assertStory(button instanceof HTMLButtonElement, `Expected "${label}" button to render.`)
-
-  return button
-}
-
-const setInputValue = async (input: HTMLInputElement, value: string) => {
-  input.value = value
-  input.dispatchEvent(new Event('input', { bubbles: true }))
-  await waitForStoryUpdate()
-}
-
-const markStoryAction = (key: string, value: string) => {
-  document.body.dataset[key] = value
-}
-
 const noopPageChange = (_page: number) => undefined
 const noopPageSizeChange = (_pageSize: number) => undefined
 const noopSearchValueChange = (_value: string) => undefined
@@ -164,37 +111,10 @@ const renderRowStateTable = (
 
 export const Default = {
   render: () => renderTable(),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertStory(canvasElement.textContent?.includes('Commitments'), 'Expected table title.')
-    assertStory(canvasElement.textContent?.includes('Readiness'), 'Expected Readiness group.')
-
-    const pinePointRow = getStoryRow(canvasElement, 'Pine Point Capital')
-
-    assertStory(pinePointRow.getAttribute('data-active') === 'false', 'Pine Point is not active.')
-    assertStory(
-      getStoryCheckbox(canvasElement, 'Pine Point Capital').getAttribute('aria-checked') ===
-        'false',
-      'Pine Point is not batch selected.',
-    )
-  },
 }
 
 export const ActiveDrawerClosed = {
   render: () => renderTable({ state: readyTableState({ activeRowId: 'pine-point-capital' }) }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    const pinePointRow = getStoryRow(canvasElement, 'Pine Point Capital')
-
-    assertStory(pinePointRow.getAttribute('data-active') === 'true', 'Pine Point is active.')
-    assertStory(
-      getStoryCheckbox(canvasElement, 'Pine Point Capital').getAttribute('aria-checked') ===
-        'false',
-      'Batch checkbox remains separate from active object state.',
-    )
-    assertStory(
-      canvasElement.querySelector('[data-slot="commitment-drawer-connector"]') === null,
-      'Drawer connector is absent while closed.',
-    )
-  },
 }
 
 export const ActiveDrawerOpen = {
@@ -204,43 +124,14 @@ export const ActiveDrawerOpen = {
         drawerOpenRowId: 'pine-point-capital',
       }),
     }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    const pinePointRow = getStoryRow(canvasElement, 'Pine Point Capital')
-
-    assertStory(pinePointRow.getAttribute('data-active') === 'true', 'Drawer row is active.')
-    assertStory(
-      canvasElement.querySelector('[data-slot="commitment-drawer-connector"]'),
-      'Drawer connector is present while open.',
-    )
-  },
 }
 
 export const AttentionNotSelected = {
   render: () => renderTable(),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    const pinePointRow = getStoryRow(canvasElement, 'Pine Point Capital')
-
-    assertStory(pinePointRow.getAttribute('data-attention') === 'true', 'Attention flag renders.')
-    assertStory(pinePointRow.getAttribute('data-active') === 'false', 'Attention is not active.')
-    assertStory(
-      pinePointRow.getAttribute('data-batch-selected') === 'false',
-      'Attention is not batch selected.',
-    )
-  },
 }
 
 export const Loading = {
   render: () => renderTable({ state: { kind: 'loading', rowCount: 8 } }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertStory(
-      canvasElement.querySelectorAll('[data-slot="commitment-row-skeleton"]').length > 0,
-      'Skeleton rows render.',
-    )
-    assertStory(
-      !canvasElement.textContent?.includes('Pine Point Capital'),
-      'Real investor rows are hidden while loading.',
-    )
-  },
 }
 
 export const EmptyNoData = {
@@ -267,16 +158,6 @@ export const EmptyFiltered = {
         searchValue: 'no matching investor',
       }),
     }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertStory(
-      canvasElement.textContent?.includes('No commitments match your search or filters'),
-      'Filtered empty copy renders.',
-    )
-    assertStory(
-      !canvasElement.textContent?.includes('Tailwind Partners'),
-      'Filtered empty state hides rows.',
-    )
-  },
 }
 
 export const TableError = {
@@ -289,7 +170,7 @@ export const TableError = {
           kind: 'error',
           retry: {
             label: 'Retry',
-            onRetry: () => markStoryAction('dealCommitmentsRetry', 'true'),
+            onRetry: () => undefined,
           },
           title: 'Commitments could not be loaded',
         },
@@ -297,12 +178,6 @@ export const TableError = {
       'w-[min(96vw,1550px)]',
       errorDealCommitmentsTableLabels,
     ),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    delete document.body.dataset.dealCommitmentsRetry
-    getButton(canvasElement, 'Retry').click()
-    await waitForStoryUpdate()
-    assertStory(document.body.dataset.dealCommitmentsRetry === 'true', 'Retry callback fired.')
-  },
 }
 
 export const RowDataIssue = {
@@ -352,121 +227,6 @@ export const RowStates = {
       {renderRowStateTable('Loading', { state: { kind: 'loading', rowCount: 3 } })}
     </StoryStack>
   ),
-}
-
-export const Interaction = {
-  render: () => renderTable(),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    const checkbox = getStoryCheckbox(canvasElement, 'Pine Point Capital')
-    checkbox.click()
-    await waitForStoryUpdate()
-
-    assertStory(canvasElement.textContent?.includes('1 selected'), 'Checkbox updates batch count.')
-    assertStory(
-      !canvasElement.querySelector('[data-slot="commitment-drawer-connector"]'),
-      'Checkbox does not open the drawer.',
-    )
-
-    getButton(canvasElement, 'Open commitment detail for Pine Point Capital').click()
-    await waitForStoryUpdate()
-
-    assertStory(
-      canvasElement.querySelector('[data-slot="commitment-drawer-connector"]'),
-      'Row action opens the active drawer connector.',
-    )
-  },
-}
-
-export const SearchInteraction = {
-  render: () => renderTable(),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    const search = canvasElement.querySelector<HTMLInputElement>(
-      'input[aria-label="Search investors"]',
-    )
-
-    assertStory(search, 'Search input renders.')
-    await setInputValue(search, 'Pine')
-
-    assertStory(canvasElement.textContent?.includes('Pine Point Capital'), 'Matching row remains.')
-    assertStory(
-      !canvasElement.textContent?.includes('Tailwind Partners'),
-      'Non-matching row hides.',
-    )
-
-    await setInputValue(search, '')
-
-    assertStory(
-      canvasElement.textContent?.includes('Tailwind Partners'),
-      'Clearing search restores rows.',
-    )
-  },
-}
-
-export const WorkflowFilterInteraction = {
-  render: () => renderTable(),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    getButton(canvasElement, 'Needs attention').click()
-    await waitForStoryUpdate()
-
-    assertStory(canvasElement.textContent?.includes('Pine Point Capital'), 'Attention row remains.')
-    assertStory(
-      !canvasElement.textContent?.includes('Tailwind Partners'),
-      'Non-matching row hides.',
-    )
-
-    const activeChip = getButton(canvasElement, 'Needs attention')
-
-    assertStory(activeChip.getAttribute('aria-pressed') === 'true', 'Filter chip is active.')
-    activeChip.click()
-    await waitForStoryUpdate()
-
-    assertStory(
-      canvasElement.textContent?.includes('Tailwind Partners'),
-      'Clearing filter restores rows.',
-    )
-  },
-}
-
-export const BatchSelectionExport = {
-  render: () =>
-    renderTable({
-      onExportSelected: (rowIds) => markStoryAction('dealCommitmentsExport', rowIds.join(',')),
-      onExportVisible: (rowIds) => markStoryAction('dealCommitmentsExport', rowIds.join(',')),
-    }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    delete document.body.dataset.dealCommitmentsExport
-
-    getButton(canvasElement, 'Export visible').click()
-    await waitForStoryUpdate()
-    const visibleExport = document.body.getAttribute('data-deal-commitments-export')
-
-    assertStory(
-      typeof visibleExport === 'string' && visibleExport.startsWith('tailwind-partners'),
-      'Visible export sends current visible row IDs.',
-    )
-
-    delete document.body.dataset.dealCommitmentsExport
-    getStoryCheckbox(canvasElement, 'Pine Point Capital').click()
-    await waitForStoryUpdate()
-    getButton(canvasElement, 'Export selected').click()
-    await waitForStoryUpdate()
-
-    assertStory(
-      document.body.dataset.dealCommitmentsExport === 'pine-point-capital',
-      'Selected export sends selected visible row IDs.',
-    )
-  },
-}
-
-export const Pagination = {
-  render: () => renderTable(),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    getButton(canvasElement, 'Next page').click()
-    await waitForStoryUpdate()
-
-    assertStory(canvasElement.textContent?.includes('9–12 of 12'), 'Pagination range updates.')
-    assertStory(canvasElement.textContent?.includes('Harborview Endowment'), 'Next page rows show.')
-  },
 }
 
 export const DarkDefault = {

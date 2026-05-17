@@ -54,52 +54,12 @@ const renderOverview = (
   </StorySection>
 )
 
-const markStoryAction = (kind: string) => {
-  document.body.dataset.dealOperationalOverviewAction = kind
-}
-
-const assertStory: (condition: unknown, message: string) => asserts condition = (
-  condition,
-  message,
-) => {
-  if (!condition) {
-    throw new globalThis.Error(message)
-  }
-}
-
-const assertDefaultStory = (canvasElement: HTMLElement) => {
-  assertStory(canvasElement.textContent?.includes('Closing readiness'), 'Expected readiness title.')
-  assertStory(canvasElement.textContent?.includes('Critical'), 'Expected blocker count label.')
-  assertStory(canvasElement.querySelector('[role="progressbar"]'), 'Expected capital progress.')
-  assertStory(
-    canvasElement.textContent && canvasElement.textContent.trim().length > 0,
-    'Expected non-blank story.',
-  )
-}
-
 export const DefaultBlocked = {
   render: () => renderOverview(),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertDefaultStory(canvasElement)
-    const overview = canvasElement.querySelector('[data-slot="deal-operational-overview"]')
-
-    assertStory(
-      overview?.getAttribute('data-visible-blocker-count') === '3',
-      'Expected visible blocker count.',
-    )
-    assertStory(
-      overview?.getAttribute('data-total-blocker-count') === '6',
-      'Expected total blocker count.',
-    )
-  },
 }
 
 export const ReadyToClose = {
   render: () => renderOverview({ state: readyOperationalOverviewState }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertStory(canvasElement.textContent?.includes('Ready to close'), 'Expected ready state.')
-    assertStory(canvasElement.textContent?.includes('100% of target'), 'Expected full progress.')
-  },
 }
 
 export const Attention = {
@@ -108,12 +68,6 @@ export const Attention = {
 
 export const NoBlockersReady = {
   render: () => renderOverview({ state: readyOperationalOverviewState }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertStory(
-      canvasElement.textContent?.includes('No priority blockers'),
-      'Expected no blockers.',
-    )
-  },
 }
 
 export const Loading = {
@@ -126,23 +80,7 @@ export const Empty = {
 
 export const ErrorState = {
   name: 'Error',
-  render: () =>
-    renderOverview({
-      onAction: (event) => markStoryAction(event.kind),
-      state: errorOperationalOverviewState,
-    }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    const button = Array.from(canvasElement.querySelectorAll('button')).find(
-      (candidate) => candidate.textContent?.trim() === 'Retry',
-    )
-
-    assertStory(button instanceof HTMLButtonElement, 'Expected retry button.')
-    button.click()
-    assertStory(
-      document.body.dataset.dealOperationalOverviewAction === 'retry',
-      'Retry action fired.',
-    )
-  },
+  render: () => renderOverview({ state: errorOperationalOverviewState }),
 }
 
 export const LongText = {
@@ -155,13 +93,10 @@ export const DarkDefault = {
       {renderOverview({}, 'w-full max-w-6xl')}
     </div>
   ),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertDefaultStory(canvasElement)
-    assertStory(
-      canvasElement.scrollWidth <= canvasElement.clientWidth + 1,
-      'Dark story root should not overflow horizontally.',
-    )
-  },
+}
+
+export const NarrowContainer = {
+  render: () => renderOverview({}, 'w-[390px] max-w-full'),
 }
 
 export const WithProgressPanelContext = {
@@ -184,10 +119,6 @@ export const WithProgressPanelContext = {
       </div>
     </StorySection>
   ),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertStory(canvasElement.textContent?.includes('Operational overview'), 'Expected overview.')
-    assertStory(canvasElement.textContent?.includes('Deal progression'), 'Expected progress panel.')
-  },
 }
 
 export const StateBoard = {

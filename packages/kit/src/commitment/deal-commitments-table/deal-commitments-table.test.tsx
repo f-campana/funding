@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'react'
@@ -62,9 +60,6 @@ const expectTableProps = (_props: ComponentProps<typeof DealCommitmentsTable>) =
 const openDetailsLabelPattern = /Open commitment detail for/u
 const selectTailwindLabelPattern = /Select Tailwind/u
 const sortByLabelPattern = /Sort by/u
-const forbiddenImportsPattern = /apps\/web|@repo\/app|trpc|createTRPC|router|route/u
-const consolePattern = /console\.(log|warn|error)/u
-const tableSourceFilePattern = /^deal-commitments-table.*\.(ts|tsx)$/u
 const noopActiveFilterIdsChange = (_ids: readonly CommitmentTableFilterId[]) => undefined
 const noopPageChange = (_page: number) => undefined
 const noopPageSizeChange = (_pageSize: number) => undefined
@@ -348,14 +343,11 @@ describe('DealCommitmentsTable', () => {
     const plainAlternateRow = getInvestorRow('Northbridge Advisors')
 
     expect(firstRow).toHaveAttribute('data-row-alternate', 'false')
-    expect(firstRow).not.toHaveClass('bg-muted/10')
     expect(attentionAlternateRow).toHaveAttribute('data-row-alternate', 'true')
-    expect(attentionAlternateRow).toHaveClass('bg-status-attention-muted/15')
-    expect(attentionAlternateRow).not.toHaveClass('bg-muted/10')
+    expect(attentionAlternateRow).toHaveAttribute('data-visual-state', 'attention')
     expect(thirdRow).toHaveAttribute('data-row-alternate', 'false')
-    expect(thirdRow).not.toHaveClass('bg-muted/10')
     expect(plainAlternateRow).toHaveAttribute('data-row-alternate', 'true')
-    expect(plainAlternateRow).toHaveClass('bg-muted/10')
+    expect(plainAlternateRow).toHaveAttribute('data-visual-state', 'default')
   })
 
   it('does not apply alternating data-row tint to skeleton, lifecycle, or group rows', () => {
@@ -367,7 +359,6 @@ describe('DealCommitmentsTable', () => {
       '[data-slot="commitment-row-skeleton"]',
     )) {
       expect(skeletonRow).not.toHaveAttribute('data-row-alternate')
-      expect(skeletonRow).not.toHaveClass('bg-muted/10')
     }
 
     loadingRender.unmount()
@@ -390,7 +381,6 @@ describe('DealCommitmentsTable', () => {
     const stateRow = emptyRender.container.querySelector('[data-slot="commitment-table-state-row"]')
 
     expect(stateRow).not.toHaveAttribute('data-row-alternate')
-    expect(stateRow).not.toHaveClass('bg-muted/10')
     emptyRender.unmount()
 
     const groupedRender = renderCommitmentsTable({
@@ -401,7 +391,6 @@ describe('DealCommitmentsTable', () => {
       '[data-slot="commitment-group-row"]',
     )) {
       expect(groupRow).not.toHaveAttribute('data-row-alternate')
-      expect(groupRow).not.toHaveClass('bg-muted/10')
     }
   })
 
@@ -566,11 +555,10 @@ describe('DealCommitmentsTable', () => {
     expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-active', 'true')
     expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-drawer-open', 'true')
     expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-row-alternate', 'true')
-    expect(getInvestorRow('Pine Point Capital')).toHaveClass(
-      'bg-status-info-muted/42',
-      'outline-status-info-border',
+    expect(getInvestorRow('Pine Point Capital')).toHaveAttribute(
+      'data-visual-state',
+      'active-drawer-open',
     )
-    expect(getInvestorRow('Pine Point Capital')).not.toHaveClass('bg-muted/10')
     expect(getInvestorRow('Tailwind Partners')).toHaveAttribute('data-active', 'false')
     expect(
       screen.getByRole('button', { name: 'Open commitment detail for Pine Point Capital' }),
@@ -603,8 +591,7 @@ describe('DealCommitmentsTable', () => {
     expect(pinePointRow).toHaveAttribute('data-active', 'false')
     expect(pinePointRow).toHaveAttribute('data-batch-selected', 'false')
     expect(pinePointRow).toHaveAttribute('data-row-alternate', 'true')
-    expect(pinePointRow).toHaveClass('cursor-not-allowed', 'bg-card', 'opacity-60', 'hover:bg-card')
-    expect(pinePointRow).not.toHaveClass('bg-muted/10')
+    expect(pinePointRow).toHaveAttribute('data-visual-state', 'disabled')
     expect(screen.getByRole('checkbox', { name: 'Select Pine Point Capital' })).toBeDisabled()
     expect(
       container.querySelector('[data-slot="commitment-drawer-connector"]'),
@@ -685,6 +672,37 @@ describe('DealCommitmentsTable', () => {
       container.querySelector('[data-slot="commitment-drawer-connector"]'),
     ).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: openDetailsLabelPattern })).not.toBeInTheDocument()
+  })
+
+  it('renders ready state with no source rows as no-data and disables row-scoped controls', async () => {
+    const user = userEvent.setup()
+    const onExportSelected = vi.fn()
+    const onExportVisible = vi.fn()
+
+    const { container } = renderCommitmentsTable({
+      onExportSelected,
+      onExportVisible,
+      state: readyTableState({ rows: [] }),
+    })
+
+    expect(screen.getByText('No commitments yet')).toBeInTheDocument()
+    expect(
+      screen.getByText('Invited investors and submitted commitments will appear here.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('0 investors')).toBeInTheDocument()
+    expect(screen.getByText('Total committed $0')).toBeInTheDocument()
+    expect(screen.getByText('0–0 of 0')).toBeInTheDocument()
+    expect(container.querySelectorAll('[data-slot="commitment-investor-row"]')).toHaveLength(0)
+    expect(screen.getByRole('textbox', { name: 'Search investors' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Needs attention' })).toBeDisabled()
+    expect(screen.getByRole('checkbox', { name: 'Select all visible commitments' })).toBeDisabled()
+
+    const exportButton = screen.getByRole('button', { name: 'Export visible' })
+
+    expect(exportButton).toBeDisabled()
+    await user.click(exportButton)
+    expect(onExportSelected).not.toHaveBeenCalled()
+    expect(onExportVisible).not.toHaveBeenCalled()
   })
 
   it('renders filtered empty state for ready rows without mutating source rows', async () => {
@@ -993,6 +1011,27 @@ describe('DealCommitmentsTable', () => {
     expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled()
   })
 
+  it('clamps controlled pagination to the available page range', async () => {
+    const user = userEvent.setup()
+    const onPageChange = vi.fn()
+
+    renderCommitmentsTable({
+      onPageChange,
+      state: readyTableState({ pagination: { page: 99, pageSize: 8 } }),
+    })
+
+    expect(screen.getByText('9–12 of 12')).toBeInTheDocument()
+    expect(screen.getByText('Harborview Endowment')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Next page' }))
+    expect(onPageChange).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Previous page' }))
+    expect(onPageChange).toHaveBeenCalledWith(1)
+  })
+
   it('changes page size locally, fires callbacks, and keeps pagination labels coherent', async () => {
     const user = userEvent.setup()
     const onPageChange = vi.fn()
@@ -1103,22 +1142,6 @@ describe('DealCommitmentsTable', () => {
         screen.getByRole('button', { name: 'Open commitment detail for Tailwind Partners' }),
       ),
     ).resolves.toBeUndefined()
-  })
-
-  it('does not import app, route, tRPC, or backend modules', () => {
-    const sourceDirectory = resolve(process.cwd(), 'src/commitment/deal-commitments-table')
-    const source = readdirSync(sourceDirectory)
-      .filter(
-        (fileName) =>
-          tableSourceFilePattern.test(fileName) &&
-          !fileName.endsWith('.stories.tsx') &&
-          !fileName.endsWith('.test.tsx'),
-      )
-      .map((fileName) => readFileSync(resolve(sourceDirectory, fileName), 'utf8'))
-      .join('\n')
-
-    expect(source).not.toMatch(forbiddenImportsPattern)
-    expect(source).not.toMatch(consolePattern)
   })
 
   it('has no accessibility violations across core light and dark table states', async () => {

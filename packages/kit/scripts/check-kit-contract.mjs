@@ -20,7 +20,8 @@ const forbiddenPatterns = [
   },
   {
     label: 'app import',
-    pattern: /from\s+['"](?:@\/[^'"]*|(?:\.\.\/)*apps\/[^'"]*|@repo\/web(?:\/[^'"]*)?)['"]/,
+    pattern:
+      /from\s+['"](?:@\/[^'"]*|(?:\.\.\/)*apps\/[^'"]*|@repo\/(?:app|web)(?:\/[^'"]*)?)['"]/,
   },
   {
     label: 'server/database import',
@@ -31,6 +32,8 @@ const forbiddenPatterns = [
     label: 'tRPC import',
     pattern: /from\s+['"][^'"]*(?:trpc|tRPC)[^'"]*['"]/,
   },
+  { label: 'createTRPC usage', pattern: /\bcreateTRPC\b/ },
+  { label: 'console statement', pattern: /console\.(?:log|warn|error)/ },
   { label: 'raw hex color', pattern: /#[0-9a-fA-F]{3,8}\b/ },
   { label: 'raw oklch color', pattern: /\boklch\(/ },
   {

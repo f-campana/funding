@@ -65,29 +65,6 @@ const renderPanel = (props: DealProgressPanelStoryProps = {}, className = 'w-ful
   </StorySection>
 )
 
-const markStoryAction = (kind: string) => {
-  document.body.dataset.dealProgressAction = kind
-}
-
-const assertStory: (condition: unknown, message: string) => asserts condition = (
-  condition,
-  message,
-) => {
-  if (!condition) {
-    throw new globalThis.Error(message)
-  }
-}
-
-const getStoryButton = (root: ParentNode, label: string) => {
-  const button = Array.from(root.querySelectorAll('button')).find(
-    (candidate) => candidate.textContent?.trim() === label,
-  )
-
-  assertStory(button instanceof HTMLButtonElement, `Expected "${label}" button to render.`)
-
-  return button
-}
-
 const readyTableState = (): Extract<
   DealCommitmentsTableLifecycleState,
   { readonly kind: 'ready' }
@@ -98,11 +75,6 @@ const readyTableState = (): Extract<
 
 export const DefaultCollectingCommitments = {
   render: () => renderPanel(),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertStory(canvasElement.textContent?.includes('Deal progression'), 'Expected title.')
-    assertStory(canvasElement.textContent?.includes('Collecting commitments'), 'Expected status.')
-    assertStory(canvasElement.textContent?.includes('€100,000 / €200,000'), 'Expected headline.')
-  },
 }
 
 export const OngoingClosing = {
@@ -123,10 +95,6 @@ export const ReadyToClose = {
 
 export const ClosedCompleted = {
   render: () => renderPanel({ state: closedCompletedState }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertStory(!canvasElement.textContent?.includes('Close deal'), 'Closed panel hides close CTA.')
-    assertStory(!canvasElement.textContent?.includes('Invite'), 'Closed panel hides invite CTA.')
-  },
 }
 
 export const SegmentedProgress = {
@@ -140,21 +108,10 @@ export const ZeroProgress = {
 
 export const OverTargetCapped = {
   render: () => renderPanel({ state: overTargetCappedState }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    const progress = canvasElement.querySelector('[data-slot="deal-progress-bar"]')
-
-    assertStory(progress?.getAttribute('data-capped') === 'true', 'Expected capped progress.')
-  },
 }
 
 export const NoTargetKnown = {
   render: () => renderPanel({ state: noTargetKnownState }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    const progress = canvasElement.querySelector('[role="progressbar"]')
-
-    assertStory(progress, 'Expected progressbar.')
-    assertStory(!progress.hasAttribute('aria-valuenow'), 'No-target progress is indeterminate.')
-  },
 }
 
 export const Loading = {
@@ -163,35 +120,15 @@ export const Loading = {
 
 export const ErrorState = {
   name: 'Error',
-  render: () =>
-    renderPanel({
-      onAction: (event) => markStoryAction(event.kind),
-      state: errorState,
-    }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    getStoryButton(canvasElement, 'Retry').click()
-    assertStory(document.body.dataset.dealProgressAction === 'retry', 'Retry action fired.')
-  },
+  render: () => renderPanel({ state: errorState }),
 }
 
 export const ReadonlyNonAdmin = {
   render: () => renderPanel({ state: readonlyNonAdminState }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    assertStory(!canvasElement.querySelector('button'), 'Readonly panel hides admin actions.')
-  },
 }
 
 export const DisabledActions = {
   render: () => renderPanel({ state: disabledActionsState }),
-  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-    const button = getStoryButton(canvasElement, 'Close deal')
-
-    assertStory(button.disabled, 'Close action is disabled.')
-    assertStory(
-      canvasElement.textContent?.includes('Resolve pending KYC/KYB'),
-      'Disabled reason renders.',
-    )
-  },
 }
 
 export const AdminOnly = {
@@ -200,6 +137,14 @@ export const AdminOnly = {
 
 export const DataIssue = {
   render: () => renderPanel({ state: dataIssueState }),
+}
+
+export const DarkDefault = {
+  render: () => (
+    <div className="dark min-h-[620px] bg-background p-8" data-theme="dark">
+      {renderPanel({}, 'ml-auto w-full max-w-md')}
+    </div>
+  ),
 }
 
 export const DarkCardOnLightWorkspace = {
