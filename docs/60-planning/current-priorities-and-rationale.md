@@ -19,6 +19,7 @@ The repository has:
 - generic UI primitives and chart infrastructure in `@repo/ui`
 - accepted `@repo/kit` baselines:
   - `DealCommitmentsTable`
+  - `DealOperationalOverview`
   - `DealProgressPanel`
 - an app-owned Northstar operational data spine in `apps/web/server/deals`
 - a narrow tRPC seam in `apps/web/server/trpc` and
@@ -38,6 +39,7 @@ Goal:
 - derive readiness dimensions from source operational statuses and unresolved
   blockers
 - harden `DealCommitmentsTable` row-open keyboard affordance
+- harden the `DealOperationalOverview` public baseline contract
 - complete the accepted kit label/copy contracts
 - remove internal public API leaks from kit exports
 - run the required web, kit, Storybook, lint, and diff validation

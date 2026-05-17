@@ -15,6 +15,7 @@ Root export:
 ```ts
 import {
   DealCommitmentsTable,
+  DealOperationalOverview,
   DealProgressPanel,
 } from '@repo/kit'
 ```
@@ -30,9 +31,11 @@ not be reintroduced without a dedicated future pass.
 Accepted baselines:
 
 - `DealCommitmentsTable` — commitment operations table baseline.
+- `DealOperationalOverview` — close readiness, capital, blockers, and activity
+  overview baseline.
 - `DealProgressPanel` — deal progress command panel baseline.
 
-Both baselines accept display-ready labels through props. Locale and translation
+All baselines accept display-ready labels through props. Locale and translation
 ownership stays in the app layer.
 
 ## Boundary Rules

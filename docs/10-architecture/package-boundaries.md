@@ -213,6 +213,7 @@ Product-shaped composed components built on top of `ui`.
 Owns:
 
 - the accepted `DealCommitmentsTable` baseline
+- the accepted `DealOperationalOverview` baseline
 - the accepted `DealProgressPanel` baseline
 - public props, state, action, label, and input types for those baselines
 - Storybook stories for realistic product states of accepted baselines
@@ -469,6 +470,7 @@ import { parseEuroCents } from "@repo/domain/money";
 import { Button } from "@repo/ui/button";
 
 // app can use accepted kit baselines
+import { DealOperationalOverview } from "@repo/kit";
 import { DealProgressPanel } from "@repo/kit";
 ```
 

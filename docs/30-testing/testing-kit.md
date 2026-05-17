@@ -9,6 +9,7 @@ and layout-safe rendering for the current exported kit components.
 The current kit baseline contains only:
 
 - `DealCommitmentsTable`
+- `DealOperationalOverview`
 - `DealProgressPanel`
 
 Tests for older deleted kit surfaces are historical and should not be revived
@@ -52,6 +53,23 @@ Cover:
 - header selection operates on visible enabled rows
 - search, filter, pagination, empty, loading, and error states
 - long text remains truncated with accessible tooltip behavior
+- representative accessibility checks in light and dark contexts
+
+## DealOperationalOverview Tests
+
+Cover:
+
+- ready, loading, error, empty, blocked, attention, no-blocker, and dark-mode
+  contexts
+- readiness, blocker counts, capital progress, metrics, blocker facts, and
+  latest activity render from display-ready state and label props
+- label overrides render without relying on component-internal English copy
+- retry emits the stable action event
+- progress values clamp to the accessible progressbar range
+- semantic state attributes distinguish visible blocker rows from total blocker
+  counts for app adapters and visual QA
+- package boundary checks reject app imports, console calls, and raw palette
+  classes
 - representative accessibility checks in light and dark contexts
 
 ## DealProgressPanel Tests

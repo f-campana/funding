@@ -18,6 +18,7 @@ the app without importing app routing, tRPC, auth, or provider concerns.
 The package currently exposes only:
 
 - `DealCommitmentsTable`
+- `DealOperationalOverview`
 - `DealProgressPanel`
 - public props, state, action, label, and input types needed by those
   components
@@ -85,6 +86,28 @@ Behavior:
   pagination copy
 - does not fetch investor details or own route state
 
+## `DealOperationalOverview`
+
+Public surface:
+
+- `DealOperationalOverview`
+- `DealOperationalOverviewProps`
+- `DealOperationalOverviewLabels`
+- operational readiness, blocker, capital summary, metric, activity, progress,
+  and action event types needed by adapters
+
+Behavior:
+
+- renders a composed close-operations overview for readiness, capital
+  reconciliation, priority blockers, and latest activity
+- accepts display-ready monetary, metric, blocker, activity, readiness, and
+  status labels
+- accepts static section labels, empty/loading copy, and progress aria labels
+  through `labels`
+- exposes loading, error, empty, and ready lifecycle states without fetching data
+  or owning app route state
+- emits stable action events for retry behavior
+
 ## `DealProgressPanel`
 
 Public surface:
@@ -119,7 +142,7 @@ the accepted kit baselines.
 
 ## Out Of Scope
 
-Do not add or restore kit surfaces in this baseline:
+Do not add or restore standalone kit surfaces outside the accepted baselines:
 
 - dashboard demos
 - money display primitives
@@ -133,8 +156,9 @@ Do not add or restore kit surfaces in this baseline:
 - document completeness cards
 - activity timelines
 
-These can be rebuilt later inside app routes or introduced as new kit surfaces
-only through an explicit future pass.
+These can appear only as internal parts of an accepted composed baseline, be
+rebuilt inside app routes, or be introduced as new kit surfaces through an
+explicit future pass.
 
 ## Verification
 

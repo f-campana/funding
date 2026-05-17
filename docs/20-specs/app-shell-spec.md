@@ -1,10 +1,10 @@
 # App Shell Spec
 
 Historical status note: this spec describes the earlier app-shell integration
-loop. The current kit API has since been narrowed to `DealCommitmentsTable` and
-`DealProgressPanel`, and the Northstar app vertical should now consume the
-app-owned operational data spine instead of the deleted `DealDashboardDemo`
-surface.
+loop. The current kit API has since been narrowed to `DealCommitmentsTable`,
+`DealOperationalOverview`, and `DealProgressPanel`, and the Northstar app
+vertical should now consume the app-owned operational data spine instead of the
+deleted `DealDashboardDemo` surface.
 
 ## Purpose
 

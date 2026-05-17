@@ -6,8 +6,8 @@ Dashboard V1 kit pass.
 
 Current status note: the kit components covered by this historical guide were
 removed during baseline cleanup. Current kit testing guidance lives in
-[testing-kit.md](./testing-kit.md) and covers only `DealCommitmentsTable` and
-`DealProgressPanel`.
+[testing-kit.md](./testing-kit.md) and covers only `DealCommitmentsTable`,
+`DealOperationalOverview`, and `DealProgressPanel`.
 
 ## 1. Purpose
 

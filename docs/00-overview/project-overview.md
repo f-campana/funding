@@ -54,7 +54,8 @@ Implemented and verified:
   infrastructure, shadcn monorepo configuration, Storybook stories, contract
   checks, and accessibility tests.
 - `@repo/kit` — accepted product baselines: `DealCommitmentsTable`,
-  `DealProgressPanel`, and their public props/state/action/label/input types.
+  `DealOperationalOverview`, `DealProgressPanel`, and their public
+  props/state/action/label/input types.
   Older exploratory kit surfaces were removed.
 - `apps/web` — Next.js App Router app shell with `next-intl`, token font/theme
   wiring, translated homepage, an app-owned Northstar operational data spine,
