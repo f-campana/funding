@@ -71,7 +71,7 @@ expectBlockerSeverity('info')
 expectBlockerSeverity('hi' + 'gh')
 
 describe('DealOperationalOverview', () => {
-  it('renders ready mission-control content with readiness, capital, blockers, and activity', () => {
+  it('renders ready overview content with readiness, capital, blockers, and activity', () => {
     const { container } = renderOverview()
 
     expect(screen.getByRole('heading', { name: 'Operational overview' })).toBeInTheDocument()

@@ -20,6 +20,7 @@ type DealProgressActionableVisibility = Exclude<
   { readonly kind: 'readonly' }
 >
 type DealProgressAvailableActions = Extract<DealProgressActions, { readonly kind: 'available' }>
+type DealProgressActionHandler = NonNullable<DealProgressPanelProps['onAction']>
 
 type ActiveDealProgressWorkflow =
   | {
@@ -76,6 +77,7 @@ type DealProgressWorkflow = ActiveDealProgressWorkflow | ClosedDealProgressWorkf
 
 export const mapDealProgressPanelProps = (
   data: DealOperationalCenterDTO,
+  onAction: DealProgressActionHandler,
 ): DealProgressPanelProps => ({
   labels: {
     capitalBreakdownLabel: 'Capital breakdown',
@@ -84,7 +86,7 @@ export const mapDealProgressPanelProps = (
     progressAriaLabel: 'Deal capital progress',
     title: 'Deal progression',
   },
-  onAction: () => undefined,
+  onAction,
   state: mapDealProgressPanelState(data),
 })
 

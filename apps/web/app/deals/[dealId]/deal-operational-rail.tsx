@@ -1,6 +1,8 @@
 'use client'
 
-import { DealProgressPanel } from '@repo/kit'
+import { DealProgressPanel, type DealProgressPanelProps } from '@repo/kit'
+import { useRouter } from 'next/navigation'
+import { useCallback } from 'react'
 
 import type { DealOperationsRouteData } from './data'
 import {
@@ -12,8 +14,27 @@ type DealOperationalRailProps = {
   readonly data: DealOperationsRouteData
 }
 
+type DealProgressActionHandler = NonNullable<DealProgressPanelProps['onAction']>
+
 export function DealOperationalRail({ data }: DealOperationalRailProps) {
+  const router = useRouter()
   const rail = getDealOperationalRailViewModel(data)
+  const handleProgressAction = useCallback<DealProgressActionHandler>(
+    (event) => {
+      if (event.kind === 'retry') {
+        router.refresh()
+        return
+      }
+
+      if (event.kind === 'invite' || event.kind === 'openForInterests') {
+        router.push(`/deals/${data.deal.slug}/commitments`)
+        return
+      }
+
+      router.push(`/deals/${data.deal.slug}/documents`)
+    },
+    [data.deal.slug, router],
+  )
 
   return (
     <aside
@@ -21,7 +42,10 @@ export function DealOperationalRail({ data }: DealOperationalRailProps) {
       className="grid content-start gap-3 lg:sticky lg:top-5"
       data-slot="deal-operational-rail"
     >
-      <DealProgressPanel {...mapDealProgressPanelProps(data)} className="max-w-none" />
+      <DealProgressPanel
+        {...mapDealProgressPanelProps(data, handleProgressAction)}
+        className="max-w-none"
+      />
 
       <section className="rounded-lg border border-border bg-background p-4 shadow-card">
         <h2 className="text-sm font-semibold text-foreground">Operational snapshot</h2>

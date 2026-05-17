@@ -2,7 +2,7 @@ import { expect, type Page, test } from '@playwright/test'
 
 const COMMITTED_AMOUNT_PATTERN = /4,850,000/
 const INTERNAL_ROUTE_COPY_PATTERN =
-  /rebuild|baseline|scaffold|placeholder|Storybook-first|adapter not wired|Deferred|Removed/i
+  /rebuild|baseline|scaffold|placeholder|Storybook-first|adapter not wired|Deferred|Removed|mission-control|mission control|admin dashboard/i
 
 async function expectActiveDealTab(page: Page, name: string) {
   await expect(
@@ -132,6 +132,19 @@ test('deal about overview avoids mobile page overflow', async ({ page }) => {
   )
 
   expect(hasHorizontalOverflow).toBe(false)
+})
+
+test('deal progression action opens the commitments workflow', async ({ page }) => {
+  await page.goto('/deals/northstar-energy/about')
+
+  await page
+    .locator('[data-slot="deal-progress-panel"]')
+    .getByRole('button', { name: 'Review 3 access requests' })
+    .click()
+
+  await expect(page).toHaveURL('/deals/northstar-energy/commitments')
+  await expectDealShell(page, 'Commitments')
+  await expectActiveDealTab(page, 'Commitments')
 })
 
 test('deal section navigation renders placeholder routes', async ({ page }) => {

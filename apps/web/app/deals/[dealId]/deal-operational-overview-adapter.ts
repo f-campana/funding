@@ -51,7 +51,7 @@ const dealOperationalOverviewLabels = {
   noActivityLabel: 'No recent operational activity.',
   noBlockersLabel: 'No priority blockers are open.',
   readinessTitle: 'Closing readiness',
-  subtitle: 'Mission-control view for close readiness, blockers, capital, and recent movement.',
+  subtitle: 'Close-readiness view for priority blockers, capital exceptions, and recent movement.',
   title: 'Operational overview',
 } as const satisfies DealOperationalOverviewLabels
 

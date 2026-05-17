@@ -42,7 +42,7 @@ const renderOverview = (
 ) => (
   <StorySection
     className={className}
-    description="Kit-first mission-control baseline for deal close readiness, capital reconciliation, blockers, and latest activity."
+    description="Kit-first baseline for deal close readiness, capital reconciliation, blockers, and latest activity."
     title="Deal operational overview"
   >
     <DealOperationalOverview
