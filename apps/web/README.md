@@ -17,7 +17,8 @@ implemented workspace layers into a real route:
   `DealOperationalOverview` with the accepted progress panel rail.
 - `/deals/northstar-energy/about` — compatibility redirect to `/overview`;
   reserved for a future investor lens.
-- `/deals/northstar-energy/commitments` — pending until T5D-C route wiring.
+- `/deals/northstar-energy/commitments` — DTO-backed operator commitments
+  workflow using `DealCommitmentsTable`.
 - `/deals/northstar-energy/documents` — pending until the documents route pass.
 - `/deals/unknown` — unsupported deal route, expected to render the app
   not-found UI.
@@ -43,7 +44,7 @@ Implemented:
 Not implemented yet:
 
 - investor `/about` lens
-- commitments and documents route workflows
+- documents route workflow
 - persona toggle
 - investor commitment form
 - React Hook Form

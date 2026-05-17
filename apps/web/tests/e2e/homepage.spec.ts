@@ -2,7 +2,7 @@ import { expect, type Page, test } from '@playwright/test'
 
 const COMMITTED_AMOUNT_PATTERN = /4,850,000/
 const INTERNAL_ROUTE_COPY_PATTERN =
-  /rebuild|baseline|scaffold|placeholder|Storybook-first|adapter not wired|Deferred|Removed|mission-control|mission control|admin dashboard/i
+  /rebuild|baseline|scaffold|placeholder|Storybook-first|adapter not wired|not wired|Deferred|Removed|mission-control|mission control|admin dashboard/i
 
 async function expectActiveDealTab(page: Page, name: string) {
   await expect(
@@ -22,15 +22,49 @@ async function expectDealShell(page: Page, activeModule: string) {
 }
 
 async function expectPendingWorkspaceSection(page: Page, sectionLabel: string) {
-  const section = page.locator('[data-slot="deal-pending-workspace-section"]')
-  await expect(section).toBeVisible()
-  await expect(section.getByText(sectionLabel, { exact: true })).toBeVisible()
   await expect(
-    section.getByRole('heading', { name: `${sectionLabel} workflow not available yet` }),
+    page.getByRole('heading', { name: `${sectionLabel} workflow not available yet` }),
   ).toBeVisible()
   await expect(
-    section.getByText(`${sectionLabel} records stay outside the active overview workflow.`),
+    page.getByText(`${sectionLabel} records stay outside the active overview workflow.`),
   ).toBeVisible()
+}
+
+async function expectCommitmentsTable(page: Page) {
+  await expect(
+    page.getByRole('heading', { name: 'Commitments workflow not available yet' }),
+  ).toHaveCount(0)
+  await expect(page.locator('body')).not.toContainText(INTERNAL_ROUTE_COPY_PATTERN)
+
+  const table = page.locator('[data-slot="deal-commitments-table"]')
+  await expect(table).toBeVisible()
+  await expect(table.getByRole('heading', { name: 'Commitments' })).toBeVisible()
+  await expect(
+    table.getByText('Investor readiness across KYC/KYB, signature, and wire'),
+  ).toBeVisible()
+  await expect(table.getByLabel('Search investors')).toBeVisible()
+  await expect(table.locator('[data-slot="commitments-workflow-filters"]')).toBeVisible()
+  await expect(table.getByRole('table', { name: 'Commitments' })).toBeVisible()
+  await expect(table.getByText('Investor', { exact: true })).toBeVisible()
+  await expect(table.getByText('Commitment', { exact: true })).toBeVisible()
+  await expect(table.getByText('KYC/KYB', { exact: true })).toBeVisible()
+  await expect(table.getByText('Signature', { exact: true })).toBeVisible()
+  await expect(table.getByText('Wire', { exact: true })).toBeVisible()
+  await expect(commitmentRow(page, 'Alba Family Office')).toBeVisible()
+  await expect(commitmentRow(page, 'Meridian Ventures')).toBeVisible()
+  await expect(commitmentRow(page, 'Riverbend Holdings')).toBeVisible()
+  await expect(table.getByText('Alba FO SARL')).toBeVisible()
+  await expect(table.getByText('Meridian Ventures II LP')).toBeVisible()
+  await expect(table.getByText('€1,500,000')).toBeVisible()
+  await expect(table).toContainText('Verified')
+  await expect(table).toContainText('Signed')
+  await expect(table).toContainText('Reconciled')
+  await expect(table).toContainText('Ready for closing')
+  await expect(table).toContainText('Needs attention')
+}
+
+function commitmentRow(page: Page, investorName: string) {
+  return page.locator('[data-slot="commitment-investor-row"]').filter({ hasText: investorName })
 }
 
 async function expectOperationalRail(page: Page) {
@@ -47,7 +81,9 @@ async function expectOperationalRail(page: Page) {
 }
 
 async function expectOperationalOverview(page: Page) {
-  await expect(page.locator('[data-slot="deal-pending-workspace-section"]')).toHaveCount(0)
+  await expect(
+    page.getByRole('heading', { name: 'Overview workflow not available yet' }),
+  ).toHaveCount(0)
   await expect(page.locator('body')).not.toContainText(INTERNAL_ROUTE_COPY_PATTERN)
 
   const overview = page.locator('[data-slot="deal-operational-overview"]')
@@ -180,19 +216,88 @@ test('deal progression action opens the commitments workflow', async ({ page }) 
   await expect(page).toHaveURL('/deals/northstar-energy/commitments')
   await expectDealShell(page, 'Commitments')
   await expectActiveDealTab(page, 'Commitments')
+  await expectCommitmentsTable(page)
 })
 
-test('deal section navigation renders pending routes', async ({ page }) => {
+test('deal commitments route renders the commitments table', async ({ page }) => {
+  await page.setViewportSize({ height: 900, width: 1440 })
+  await page.goto('/deals/northstar-energy/commitments')
+
+  await expect(page).toHaveURL('/deals/northstar-energy/commitments')
+  await expectDealShell(page, 'Commitments')
+  await expectActiveDealTab(page, 'Commitments')
+  await expectCommitmentsTable(page)
+  await expectOperationalRail(page)
+})
+
+test('deal commitments table supports search and workflow filters', async ({ page }) => {
+  await page.goto('/deals/northstar-energy/commitments')
+
+  await page.getByLabel('Search investors').fill('Meridian')
+  await expect(commitmentRow(page, 'Meridian Ventures')).toBeVisible()
+  await expect(commitmentRow(page, 'Alba Family Office')).toHaveCount(0)
+  await expect(page.getByText('1 investor')).toBeVisible()
+
+  await page.getByLabel('Search investors').fill('')
+  await page.getByRole('button', { name: 'Wire pending' }).click()
+  await expect(commitmentRow(page, 'Meridian Ventures')).toBeVisible()
+  await expect(commitmentRow(page, 'Riverbend Holdings')).toBeVisible()
+  await expect(commitmentRow(page, 'Alba Family Office')).toHaveCount(0)
+})
+
+test('deal commitments row opener is keyboard reachable and selection stays separate', async ({
+  page,
+}) => {
+  await page.goto('/deals/northstar-energy/commitments')
+
+  const meridianRow = commitmentRow(page, 'Meridian Ventures')
+  await expect(meridianRow).toBeVisible()
+  await expect(meridianRow).toHaveAttribute('data-drawer-open', 'false')
+  await page.getByRole('button', { name: 'Open Meridian Ventures commitment' }).focus()
+  await page.keyboard.press('Enter')
+  await expect(meridianRow).toHaveAttribute('data-drawer-open', 'true')
+
+  const helixRow = commitmentRow(page, 'Helix Capital')
+  await expect(helixRow).toBeVisible()
+  await page.getByRole('checkbox', { name: 'Select Helix Capital commitment' }).click()
+  await expect(helixRow).toHaveAttribute('data-batch-selected', 'true')
+  await expect(helixRow).toHaveAttribute('data-drawer-open', 'false')
+})
+
+test('deal commitments route avoids page overflow and keeps main content before rail on mobile', async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 900, width: 390 })
+  await page.goto('/deals/northstar-energy/commitments')
+
+  await expectDealShell(page, 'Commitments')
+  await expectActiveDealTab(page, 'Commitments')
+  await expectCommitmentsTable(page)
+  await expectOperationalRail(page)
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  )
+  const commitmentsTableAppearsBeforeRail = await page.evaluate(() => {
+    const table = document.querySelector('[data-slot="deal-commitments-table"]')
+    const rail = document.querySelector('[data-slot="deal-operational-rail"]')
+
+    if (!table || !rail) {
+      return false
+    }
+
+    return Boolean(table.compareDocumentPosition(rail) & Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
+  expect(hasHorizontalOverflow).toBe(false)
+  expect(commitmentsTableAppearsBeforeRail).toBe(true)
+})
+
+test('deal section navigation keeps documents pending', async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 1440 })
   await page.goto('/deals/northstar-energy/overview')
 
   const tabs = page.getByRole('navigation', { name: 'Deal sections' })
-
-  await tabs.getByRole('link', { name: 'Commitments' }).click()
-  await expect(page).toHaveURL('/deals/northstar-energy/commitments')
-  await expectDealShell(page, 'Commitments')
-  await expectPendingWorkspaceSection(page, 'Commitments')
-  await expectActiveDealTab(page, 'Commitments')
 
   await tabs.getByRole('link', { name: 'Documents' }).click()
   await expect(page).toHaveURL('/deals/northstar-energy/documents')
