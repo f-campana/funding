@@ -1,7 +1,8 @@
 import { expect, type Page, test } from '@playwright/test'
 
-const COMMITTED_AMOUNT_PATTERN = /4,850,000\.00/
-const COMMITTED_HEADING_PATTERN = /committed/
+const COMMITTED_AMOUNT_PATTERN = /4,850,000/
+const INTERNAL_ROUTE_COPY_PATTERN =
+  /rebuild|baseline|scaffold|placeholder|Storybook-first|adapter not wired|Deferred|Removed/i
 
 async function expectActiveDealTab(page: Page, name: string) {
   await expect(
@@ -47,28 +48,43 @@ async function expectOperationalRail(page: Page) {
 
 async function expectAboutOverview(page: Page) {
   await expect(page.locator('[data-slot="deal-rebuild-placeholder"]')).toHaveCount(0)
+  await expect(page.locator('body')).not.toContainText(INTERNAL_ROUTE_COPY_PATTERN)
 
-  const overview = page.locator('[data-slot="deal-about-overview"]')
+  const overview = page.locator('[data-slot="deal-operational-overview"]')
   await expect(overview).toBeVisible()
+  await expect(overview).toHaveAttribute('data-state', 'ready')
+  await expect(overview).toHaveAttribute('data-readiness-state', 'blocked')
+  await expect(overview.getByRole('heading', { name: 'Operational overview' })).toBeVisible()
+  await expect(overview.getByText('Blocked from close')).toBeVisible()
 
-  const readiness = overview.locator('[data-slot="closing-readiness-summary"]')
-  await expect(readiness.getByRole('heading', { name: 'Blocked' })).toBeVisible()
-  await expect(readiness.getByText('Resolve critical blockers before close')).toBeVisible()
-  await expect(readiness.getByText('5 open blockers')).toBeVisible()
-  await expect(readiness.getByText('Investor identity')).toBeVisible()
-
-  const capital = overview.locator('[data-slot="capital-summary"]')
-  await expect(capital.getByRole('heading', { name: COMMITTED_HEADING_PATTERN })).toBeVisible()
-  await expect(capital.getByText(COMMITTED_AMOUNT_PATTERN)).toBeVisible()
-  await expect(capital.getByText('97% of target')).toBeVisible()
-  await expect(capital.getByText('Net investable')).toBeVisible()
-
-  const blockers = overview.locator('[data-slot="closing-blocker-summary"]')
+  const readiness = overview.locator('[data-slot="deal-operational-readiness"]')
+  await expect(readiness.getByRole('heading', { name: 'Closing readiness' })).toBeVisible()
   await expect(
-    blockers.getByRole('heading', { name: '5 unresolved closing blockers' }),
+    readiness.getByText('Resolve blocking operational exceptions before close'),
   ).toBeVisible()
+  await expect(readiness.getByText('Investor identity')).toBeVisible()
+  await expect(readiness.getByText('Critical')).toBeVisible()
+  await expect(readiness.getByText('Warning')).toBeVisible()
+  await expect(readiness.getByText('Info')).toBeVisible()
+
+  const capital = overview.locator('[data-slot="deal-operational-capital"]')
+  await expect(capital.getByRole('heading', { name: 'Capital reconciliation' })).toBeVisible()
+  await expect(capital.getByText(COMMITTED_AMOUNT_PATTERN)).toBeVisible()
+  await expect(capital.getByText('€4,850,000 committed')).toBeVisible()
+  await expect(capital.getByText('97% of target committed')).toBeVisible()
+  await expect(capital.getByText('Net investable amount')).toBeVisible()
+
+  const blockers = overview.locator('[data-slot="deal-operational-blockers"]')
+  await expect(blockers.getByRole('heading', { name: 'Priority blockers' })).toBeVisible()
   await expect(blockers.getByText('Helix wire requires reconciliation')).toBeVisible()
   await expect(blockers.getByText('Closing date needs operator review')).toBeVisible()
+  await expect(blockers.getByText('Meridian KYB evidence incomplete')).toBeVisible()
+
+  const activity = overview.locator('[data-slot="deal-operational-activity"]')
+  await expect(activity.getByRole('heading', { name: 'Latest activity' })).toBeVisible()
+  await expect(
+    activity.getByText('Alba Family Office completed the subscription package.'),
+  ).toBeVisible()
 }
 
 test('homepage renders and redirects the Northstar deal route to about', async ({ page }) => {

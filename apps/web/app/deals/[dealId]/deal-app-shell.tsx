@@ -84,8 +84,8 @@ export function DealAppShell({
           <section className="mx-auto grid w-full max-w-[92rem] gap-4">
             {header}
             <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
-              <div className="order-2 min-w-0 lg:order-1">{children}</div>
-              <div className="order-1 lg:order-2">{rail}</div>
+              <div className="order-1 min-w-0">{children}</div>
+              <div className="order-2">{rail}</div>
             </div>
           </section>
         </div>
