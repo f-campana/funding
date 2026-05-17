@@ -295,10 +295,9 @@ describe('DealProgressPanel', () => {
 
     const issueRender = renderPanel(issueState)
 
-    expect(issueRender.container.querySelector('[data-slot="deal-progress-panel"]')).toHaveAttribute(
-      'data-visual-state',
-      'issue',
-    )
+    expect(
+      issueRender.container.querySelector('[data-slot="deal-progress-panel"]'),
+    ).toHaveAttribute('data-visual-state', 'issue')
     expect(screen.getByText('Progress data has an issue')).toBeInTheDocument()
     issueRender.unmount()
 

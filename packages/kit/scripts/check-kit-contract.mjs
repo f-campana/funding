@@ -20,8 +20,7 @@ const forbiddenPatterns = [
   },
   {
     label: 'app import',
-    pattern:
-      /from\s+['"](?:@\/[^'"]*|(?:\.\.\/)*apps\/[^'"]*|@repo\/(?:app|web)(?:\/[^'"]*)?)['"]/,
+    pattern: /from\s+['"](?:@\/[^'"]*|(?:\.\.\/)*apps\/[^'"]*|@repo\/(?:app|web)(?:\/[^'"]*)?)['"]/,
   },
   {
     label: 'server/database import',

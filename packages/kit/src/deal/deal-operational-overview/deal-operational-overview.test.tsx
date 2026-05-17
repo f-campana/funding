@@ -314,5 +314,4 @@ describe('DealOperationalOverview', () => {
 
     expect((await axe(container)).violations).toHaveLength(0)
   })
-
 })
