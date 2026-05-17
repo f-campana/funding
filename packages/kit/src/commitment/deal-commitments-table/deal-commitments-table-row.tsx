@@ -25,7 +25,11 @@ import type { ComponentProps, ReactNode } from 'react'
 import { match } from 'ts-pattern'
 
 import { statusToneClasses } from '../../status/status-tone'
-import { commitmentTableColumnCount, visibleReadinessKeys } from './deal-commitments-table.model'
+import {
+  commitmentTableColumnCount,
+  getCommitmentReadinessTone,
+  visibleReadinessKeys,
+} from './deal-commitments-table.model'
 import type {
   CommitmentInvestorAvatarTone,
   CommitmentInvestorRow as CommitmentInvestorRowData,
@@ -362,18 +366,19 @@ const ReadinessStatusCell = ({
   readonly readinessKey: CommitmentReadinessKey
   readonly state: CommitmentReadinessState
 }) => {
-  const { Icon, name: iconName } = getReadinessIcon(readinessKey, state.tone)
+  const tone = getCommitmentReadinessTone(state)
+  const { Icon, name: iconName } = getReadinessIcon(readinessKey, tone)
 
   return (
     <TableCell
       className="min-w-0 overflow-hidden border-l border-border/25 px-3 py-2"
       data-slot="readiness-status-cell"
-      data-tone={state.tone}
+      data-tone={tone}
     >
       <span
         className={cn(
           'flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden text-xs font-medium',
-          readinessToneClasses[state.tone],
+          readinessToneClasses[tone],
         )}
       >
         <Icon aria-hidden="true" className="size-4 shrink-0" data-readiness-icon={iconName} />

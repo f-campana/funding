@@ -66,6 +66,10 @@ docs/
 
 ## Proposed Specs
 
+- [Northstar deal workspace product design spec](./20-specs/northstar-deal-workspace-product-design-spec.md) —
+  source-of-truth product design spec for the operator-first Northstar vertical,
+  route IA, persona model, Roundtable-inspired visual grammar, and kit-to-app
+  composition rules.
 - [tRPC core readiness slice spec](./20-specs/trpc-core-readiness-slice-spec.md) —
   proposed single vertical slice for proving `tRPC`, `@repo/core`, domain
   reconciliation, and `ts-pattern` inside `apps/web`.

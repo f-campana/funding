@@ -3,7 +3,8 @@
 import type { StatusTone } from '@repo/domain'
 import { Badge, Button, cn, Skeleton } from '@repo/ui'
 import { AlertCircle, Eye } from 'lucide-react'
-import { useId } from 'react'
+import { type ReactNode, useId } from 'react'
+import { match } from 'ts-pattern'
 
 import {
   getActionDisabledReason,
@@ -18,11 +19,13 @@ import {
 } from './deal-progress-panel.model'
 import type {
   DealProgressAction,
+  DealProgressActionHandler,
   DealProgressDataQuality,
+  DealProgressErrorState,
   DealProgressMetric,
   DealProgressPanelLabels,
   DealProgressPanelProps,
-  DealProgressPanelState,
+  DealProgressReadyState,
   DealProgressSegmentKind,
   DealProgressSegmentTone,
 } from './deal-progress-panel.types'
@@ -62,16 +65,22 @@ export type {
   DealProgressAction,
   DealProgressActionAudience,
   DealProgressActionEvent,
+  DealProgressActionHandler,
   DealProgressActionKind,
   DealProgressActions,
+  DealProgressAvailableActions,
   DealProgressCapitalSummary,
   DealProgressDataQuality,
+  DealProgressErrorState,
   DealProgressMetric,
   DealProgressMetricTone,
   DealProgressMode,
+  DealProgressNoActions,
   DealProgressPanelLabels,
   DealProgressPanelProps,
   DealProgressPanelState,
+  DealProgressReadyState,
+  DealProgressRetryAction,
   DealProgressSegment,
   DealProgressSegmentKind,
   DealProgressSegmentTone,
@@ -79,6 +88,7 @@ export type {
   DealProgressStatus,
   DealProgressVisibility,
   DealProgressVisualProgress,
+  DealProgressWorkflowActionKind,
 } from './deal-progress-panel.types'
 
 export const DealProgressPanel = ({
@@ -90,6 +100,24 @@ export const DealProgressPanel = ({
 }: DealProgressPanelProps) => {
   const titleId = useId()
   const visualState = getPanelVisualState(state)
+  const content = match(state)
+    .returnType<ReactNode>()
+    .with({ kind: 'loading' }, (loadingState) => (
+      <LoadingContent label={loadingState.label ?? labels.title} titleId={titleId} />
+    ))
+    .with({ kind: 'error' }, (errorState) => (
+      <ErrorContent onAction={onAction} state={errorState} titleId={titleId} />
+    ))
+    .with({ kind: 'ready' }, (readyState) => (
+      <ReadyContent
+        labels={labels}
+        locale={locale}
+        onAction={onAction}
+        state={readyState}
+        titleId={titleId}
+      />
+    ))
+    .exhaustive()
 
   return (
     <section
@@ -105,21 +133,7 @@ export const DealProgressPanel = ({
       data-state={state.kind}
       data-visual-state={visualState}
     >
-      {state.kind === 'loading' ? (
-        <LoadingContent label={state.label ?? labels.title} titleId={titleId} />
-      ) : null}
-      {state.kind === 'error' ? (
-        <ErrorContent onAction={onAction} state={state} titleId={titleId} />
-      ) : null}
-      {state.kind === 'ready' ? (
-        <ReadyContent
-          labels={labels}
-          locale={locale}
-          onAction={onAction}
-          state={state}
-          titleId={titleId}
-        />
-      ) : null}
+      {content}
     </section>
   )
 }
@@ -155,8 +169,8 @@ const ErrorContent = ({
   state,
   titleId,
 }: {
-  readonly onAction: DealProgressPanelProps['onAction']
-  readonly state: Extract<DealProgressPanelState, { readonly kind: 'error' }>
+  readonly onAction: DealProgressActionHandler | undefined
+  readonly state: DealProgressErrorState
   readonly titleId: string
 }) => (
   <>
@@ -168,14 +182,14 @@ const ErrorContent = ({
         <p className="text-sm leading-6 text-command-foreground/70">{state.description}</p>
       ) : null}
     </div>
-    {state.retryLabel ? (
+    {state.retryAction && onAction ? (
       <Button
         className="w-full bg-command-accent text-command-accent-foreground hover:bg-command-accent/90 focus-visible:ring-command-accent focus-visible:ring-offset-command"
         data-slot="deal-progress-action"
-        onClick={() => onAction?.({ kind: 'retry' })}
+        onClick={() => onAction({ kind: state.retryAction.kind })}
         variant="default"
       >
-        {state.retryLabel}
+        {state.retryAction.label}
       </Button>
     ) : null}
   </>
@@ -190,8 +204,8 @@ const ReadyContent = ({
 }: {
   readonly labels: DealProgressPanelProps['labels']
   readonly locale?: DealProgressPanelProps['locale']
-  readonly onAction: DealProgressPanelProps['onAction']
-  readonly state: Extract<DealProgressPanelState, { readonly kind: 'ready' }>
+  readonly onAction: DealProgressActionHandler | undefined
+  readonly state: DealProgressReadyState
   readonly titleId: string
 }) => {
   const primaryAction = getPrimaryAction(state)
@@ -199,10 +213,20 @@ const ReadyContent = ({
   const visibleActions = [primaryAction, ...secondaryActions].filter(
     (action): action is DealProgressAction => action !== undefined,
   )
-  const disabledReasonId = useId()
-  const firstDisabledReason = visibleActions
+  const disabledReasonBaseId = useId()
+  const disabledReasonEntries = visibleActions
     .map((action) => getActionDisabledReason(action))
-    .find(Boolean)
+    .filter((reason): reason is string => reason !== undefined)
+    .filter((reason, index, reasons) => reasons.indexOf(reason) === index)
+    .map((reason, index) => ({
+      id: `${disabledReasonBaseId}-${index}`,
+      reason,
+    }))
+  const getDisabledReasonId = (action: DealProgressAction) => {
+    const reason = getActionDisabledReason(action)
+
+    return disabledReasonEntries.find((entry) => entry.reason === reason)?.id
+  }
 
   return (
     <>
@@ -249,7 +273,7 @@ const ReadyContent = ({
         </dl>
       ) : null}
 
-      {state.dataQuality && state.dataQuality.kind !== 'fresh' ? (
+      {state.dataQuality.kind !== 'fresh' ? (
         <DataQualityNotice dataQuality={state.dataQuality} />
       ) : null}
 
@@ -259,7 +283,7 @@ const ReadyContent = ({
             {primaryAction ? (
               <ActionButton
                 action={primaryAction}
-                describedById={disabledReasonId}
+                describedById={getDisabledReasonId(primaryAction)}
                 onAction={onAction}
                 primary={true}
               />
@@ -267,20 +291,25 @@ const ReadyContent = ({
             {secondaryActions.map((action) => (
               <ActionButton
                 action={action}
-                describedById={disabledReasonId}
+                describedById={getDisabledReasonId(action)}
                 key={action.kind}
                 onAction={onAction}
               />
             ))}
           </div>
-          {firstDisabledReason ? (
-            <p
-              className="rounded-md border border-command-border bg-command-muted px-3 py-2 text-xs leading-5 text-command-foreground/75"
-              data-slot="deal-progress-disabled-reason"
-              id={disabledReasonId}
-            >
-              {firstDisabledReason}
-            </p>
+          {disabledReasonEntries.length > 0 ? (
+            <div className="grid gap-2" data-slot="deal-progress-disabled-reasons">
+              {disabledReasonEntries.map(({ id, reason }) => (
+                <p
+                  className="rounded-md border border-command-border bg-command-muted px-3 py-2 text-xs leading-5 text-command-foreground/75"
+                  data-slot="deal-progress-disabled-reason"
+                  id={id}
+                  key={id}
+                >
+                  {reason}
+                </p>
+              ))}
+            </div>
           ) : null}
         </div>
       ) : null}
@@ -291,7 +320,7 @@ const ReadyContent = ({
 const VisibilityNote = ({
   visibility,
 }: {
-  readonly visibility: Extract<DealProgressPanelState, { readonly kind: 'ready' }>['visibility']
+  readonly visibility: DealProgressReadyState['visibility']
 }) => (
   <p
     className="flex min-w-0 items-center gap-2 text-sm leading-5 text-command-foreground/70"
@@ -309,10 +338,7 @@ const ProgressBar = ({
 }: {
   readonly labels: DealProgressPanelProps['labels']
   readonly locale?: DealProgressPanelProps['locale']
-  readonly progress: Extract<
-    DealProgressPanelState,
-    { readonly kind: 'ready' }
-  >['capital']['progress']
+  readonly progress: DealProgressReadyState['capital']['progress']
 }) => {
   const value = getProgressBarValue(progress)
   const ariaValueText = getProgressAriaValueText({
@@ -349,10 +375,7 @@ const CapitalBreakdown = ({
   segments,
 }: {
   readonly labels: DealProgressPanelLabels
-  readonly segments: Extract<
-    DealProgressPanelState,
-    { readonly kind: 'ready' }
-  >['capital']['breakdown']
+  readonly segments: DealProgressReadyState['capital']['breakdown']
 }) => {
   const breakdownSegments = normalizeSegments(segments)
   const compositionSegments = normalizeCompositionSegments(segments)
@@ -468,8 +491,8 @@ const ActionButton = ({
   primary = false,
 }: {
   readonly action: DealProgressAction
-  readonly describedById: string
-  readonly onAction: DealProgressPanelProps['onAction']
+  readonly describedById: string | undefined
+  readonly onAction: DealProgressActionHandler | undefined
   readonly primary?: boolean
 }) => {
   const disabled = isActionDisabled(action)

@@ -1,4 +1,8 @@
-import { summarizeCapitalReconciliation, summarizeClosingReadiness } from '@repo/domain'
+import {
+  summarizeCapitalReconciliation,
+  summarizeClosingReadiness,
+  summarizeDocumentCompleteness,
+} from '@repo/domain'
 import { describe, expect, it } from 'vitest'
 
 import { northstarOperationalFixture } from './fixtures/northstar-energy.fixture'
@@ -15,7 +19,9 @@ describe('getDealOperationalCenter', () => {
     expect(result.value._tag).toBe('DealOperationalCenter')
     expect(result.value.deal.slug).toBe('northstar-energy')
     expect(result.value.deal.stage).toBe('closing_review')
-    expect(result.value.routes.about).toBe('/deals/northstar-energy/about')
+    expect(result.value).not.toHaveProperty('rail')
+    expect(result.value).not.toHaveProperty('routes')
+    expect(result.value.readiness).not.toHaveProperty('nextActionLabel')
   })
 
   it('returns a typed unsupported-deal error for unknown deals', () => {
@@ -55,9 +61,23 @@ describe('getDealOperationalCenter', () => {
     expect(result.value.capital.economics.netInvestableAmount.amountMinor).toBeLessThan(
       result.value.capital.economics.grossCommitted.amountMinor,
     )
+    expect(result.value.capital.targetPosition).toEqual({
+      kind: 'under_target',
+      remainingToTarget: {
+        amountMinor: 15_000_000,
+        currency: 'EUR',
+      },
+    })
+    expect(result.value.capital.matching).toEqual({
+      kind: 'unmatched',
+      unmatchedReceived: {
+        amountMinor: 30_000_000,
+        currency: 'EUR',
+      },
+    })
   })
 
-  it('computes readiness, blockers, and rail facts from one fixture', () => {
+  it('computes readiness and blockers from one fixture', () => {
     const result = getDealOperationalCenter({ dealId: 'northstar-energy' })
 
     if (result.isError()) {
@@ -65,7 +85,7 @@ describe('getDealOperationalCenter', () => {
     }
 
     expect(result.value.readiness.state).toBe('blocked')
-    expect(result.value.readiness.criticalBlockerCount).toBe(2)
+    expect(countUnresolvedBlockersBySeverity(result.value.blockers).critical).toBe(2)
     expect(result.value.blockers.map((blocker) => blocker.routeHint)).toEqual([
       'commitments',
       'commitments',
@@ -73,8 +93,9 @@ describe('getDealOperationalCenter', () => {
       'documents',
       'about',
     ])
-    expect(result.value.rail.criticalBlockerCount).toBe(2)
-    expect(result.value.rail.investorsBlockedCount).toBe(2)
+    expect(
+      result.value.investors.filter((investor) => investor.readinessState === 'blocked'),
+    ).toHaveLength(2)
   })
 
   it('derives readiness dimensions from source operations and unresolved blockers', () => {
@@ -92,9 +113,7 @@ describe('getDealOperationalCenter', () => {
       vehicle_setup: 'attention',
       wires: 'blocked',
     })
-    expect(result.value.readiness.nextActionLabel).toBe(
-      'Resolve blocking operational exceptions before close',
-    )
+    expect(result.value.readiness).not.toHaveProperty('nextActionLabel')
   })
 
   it('does not mark dimensions ready when source operations are not ready but blockers are absent', () => {
@@ -111,7 +130,6 @@ describe('getDealOperationalCenter', () => {
     })
 
     expect(readiness.state).toBe('blocked')
-    expect(readiness.unresolvedBlockerCount).toBe(0)
     expect(readiness.dimensions.every((dimension) => dimension.blockerCount === 0)).toBe(true)
     expect(dimensionStates(readiness.dimensions)).toEqual({
       capital_reconciliation: 'attention',
@@ -177,9 +195,18 @@ describe('getDealOperationalCenter', () => {
 
     expect(meridian).toMatchObject({
       commitmentStatus: 'signature_sent',
+      entity: {
+        kind: 'legal_entity',
+        legalEntity: {
+          kyb: {
+            kind: 'available',
+            status: 'pending_review',
+          },
+          name: 'Meridian Ventures II LP',
+        },
+      },
       investorName: 'Meridian Ventures',
       kycStatus: 'approved',
-      kybStatus: 'pending_review',
       readinessState: 'blocked',
       signatureStatus: 'sent',
       wireStatus: 'not_requested',
@@ -192,6 +219,9 @@ describe('getDealOperationalCenter', () => {
     expect(
       result.value.investors.find((investor) => investor.id === 'inv-julien-moreau'),
     ).toMatchObject({
+      entity: {
+        kind: 'individual',
+      },
       readinessState: 'ready',
       wireStatus: 'matched',
     })
@@ -204,9 +234,11 @@ describe('getDealOperationalCenter', () => {
       throw new Error(`Expected DTO, received ${result.error._tag}`)
     }
 
-    expect(result.value.documents.summary.requiredMissingCount).toBe(1)
-    expect(result.value.documents.summary.requiredRejectedCount).toBe(1)
-    expect(result.value.documents.summary.requiredExpiredCount).toBe(1)
+    const summary = summarizeDocumentCompleteness(result.value.documents.requirements)
+
+    expect(summary.requiredMissingCount).toBe(1)
+    expect(summary.requiredRejectedCount).toBe(1)
+    expect(summary.requiredExpiredCount).toBe(1)
     expect(
       result.value.documents.requirements.filter((document) => document.blocksClosing),
     ).toHaveLength(4)
@@ -224,6 +256,23 @@ const dimensionStates = (
     readonly state: string
   }[],
 ) => Object.fromEntries(dimensions.map((dimension) => [dimension.id, dimension.state]))
+
+const countUnresolvedBlockersBySeverity = (
+  blockers: readonly {
+    readonly resolved: boolean
+    readonly severity: 'critical' | 'warning' | 'info'
+  }[],
+) => {
+  const counts = { critical: 0, info: 0, warning: 0 }
+
+  for (const blocker of blockers) {
+    if (!blocker.resolved) {
+      counts[blocker.severity] += 1
+    }
+  }
+
+  return counts
+}
 
 const getCapitalSummary = (capital: typeof northstarOperationalFixture.capital) => {
   const result = summarizeCapitalReconciliation(capital)

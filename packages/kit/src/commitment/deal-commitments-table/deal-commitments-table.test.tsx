@@ -8,11 +8,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { axe } from '../../test/axe'
 import {
   type CommitmentInvestorRow,
+  type CommitmentTableFilterId,
   DealCommitmentsTable,
   type DealCommitmentsTableLifecycleState,
 } from './deal-commitments-table'
 import {
   dataIssueCommitmentRows,
+  dealCommitmentsTableExportToolbarLabels,
   dealCommitmentsTableLabels,
   disabledCommitmentRows,
   emptyDealCommitmentsTableLabels,
@@ -43,25 +45,68 @@ const renderCommitmentsTable = (props: Partial<ComponentProps<typeof DealCommitm
         state: readyTableState(),
         subtitle: dealCommitmentsTableLabels.subtitle,
         title: dealCommitmentsTableLabels.title,
-        toolbar: dealCommitmentsTableLabels.toolbar,
+        toolbar:
+          props.onExportSelected && props.onExportVisible
+            ? {
+                ...dealCommitmentsTableLabels.toolbar,
+                ...dealCommitmentsTableExportToolbarLabels,
+              }
+            : dealCommitmentsTableLabels.toolbar,
         ...props,
       } as ComponentProps<typeof DealCommitmentsTable>)}
     />,
   )
 
 const expectLifecycleState = (_state: DealCommitmentsTableLifecycleState) => undefined
+const expectTableProps = (_props: ComponentProps<typeof DealCommitmentsTable>) => undefined
 const openDetailsLabelPattern = /Open commitment detail for/u
 const selectTailwindLabelPattern = /Select Tailwind/u
 const sortByLabelPattern = /Sort by/u
 const forbiddenImportsPattern = /apps\/web|@repo\/app|trpc|createTRPC|router|route/u
 const consolePattern = /console\.(log|warn|error)/u
 const tableSourceFilePattern = /^deal-commitments-table.*\.(ts|tsx)$/u
+const noopActiveFilterIdsChange = (_ids: readonly CommitmentTableFilterId[]) => undefined
+const noopPageChange = (_page: number) => undefined
+const noopPageSizeChange = (_pageSize: number) => undefined
+const noopSearchValueChange = (_value: string) => undefined
+const noopSelectedRowIdsChange = (_rowIds: readonly string[]) => undefined
 
 // @ts-expect-error Loading state cannot carry ready rows.
 expectLifecycleState({ kind: 'loading', rows: lockedCommitmentRows })
 
 // @ts-expect-error Error state cannot carry ready rows.
 expectLifecycleState({ kind: 'error', rows: lockedCommitmentRows, title: 'Failed' })
+
+// @ts-expect-error Retry labels and retry behavior travel as one retry action.
+expectLifecycleState({ kind: 'error', retryLabel: 'Retry', title: 'Failed' })
+
+// @ts-expect-error Export toolbar copy requires export behavior.
+expectTableProps({
+  footer: dealCommitmentsTableLabels.footer,
+  labels: dealCommitmentsTableLabels.labels,
+  state: readyTableState(),
+  subtitle: dealCommitmentsTableLabels.subtitle,
+  title: dealCommitmentsTableLabels.title,
+  toolbar: {
+    exportLabel: 'Export',
+    exportSelectedLabel: 'Export selected',
+    exportVisibleLabel: 'Export visible',
+    searchPlaceholder: 'Search investors',
+    selectedLabel: 'selected',
+    workflowFiltersLabel: 'Workflow filters',
+  },
+})
+
+// @ts-expect-error Export behavior requires both selected and visible handlers.
+expectTableProps({
+  footer: dealCommitmentsTableLabels.footer,
+  labels: dealCommitmentsTableLabels.labels,
+  onExportSelected: () => undefined,
+  state: readyTableState(),
+  subtitle: dealCommitmentsTableLabels.subtitle,
+  title: dealCommitmentsTableLabels.title,
+  toolbar: dealCommitmentsTableLabels.toolbar,
+})
 
 expectLifecycleState({
   kind: 'ready',
@@ -86,6 +131,27 @@ const _rowMissingCommitmentSortValue: CommitmentInvestorRow = {
   ...lockedCommitmentRows[0],
   // @ts-expect-error Commitment sorting requires a stable numeric sort value.
   commitmentSortValue: undefined,
+}
+
+const _rowWithReadinessTone: CommitmentInvestorRow = {
+  ...lockedCommitmentRows[0],
+  readiness: {
+    ...lockedCommitmentRows[0].readiness,
+    kycKyb: {
+      ...lockedCommitmentRows[0].readiness.kycKyb,
+      // @ts-expect-error Readiness tone is derived from the semantic variant.
+      tone: 'danger',
+    },
+  },
+}
+
+const _rowWithMismatchedReadinessKey: CommitmentInvestorRow = {
+  ...lockedCommitmentRows[0],
+  readiness: {
+    ...lockedCommitmentRows[0].readiness,
+    // @ts-expect-error Readiness record keys and inner semantic keys must match.
+    wire: { ...lockedCommitmentRows[0].readiness.wire, key: 'signature' },
+  },
 }
 
 const getInvestorRow = (investorName: string) => {
@@ -139,7 +205,7 @@ describe('DealCommitmentsTable', () => {
     expect(screen.getByRole('button', { name: 'Signature pending' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Wire pending' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ready for closing' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Export visible' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Export visible' })).not.toBeInTheDocument()
     expect(screen.getByText('12 investors')).toBeInTheDocument()
     expect(screen.getByText('Overall committed $187,600,000')).toBeInTheDocument()
     expect(screen.getByText('Rows per page 8')).toBeInTheDocument()
@@ -360,7 +426,7 @@ describe('DealCommitmentsTable', () => {
     expect(onSelectedRowIdsChange).toHaveBeenLastCalledWith(['pine-point-capital'])
     expect(onRowOpen).not.toHaveBeenCalled()
     expect(screen.getByText('1 selected')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Export selected' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Export selected' })).not.toBeInTheDocument()
     expect(pinePointRow).toHaveAttribute('data-batch-selected', 'true')
     expect(pinePointRow).toHaveAttribute('data-active', 'false')
     expect(pinePointRow).toHaveAttribute('data-drawer-open', 'false')
@@ -649,8 +715,10 @@ describe('DealCommitmentsTable', () => {
         state={{
           description: 'Refresh the page or try again.',
           kind: 'error',
-          onRetry,
-          retryLabel: 'Retry',
+          retry: {
+            label: 'Retry',
+            onRetry,
+          },
           title: 'Commitments could not be loaded',
         }}
         subtitle={errorDealCommitmentsTableLabels.subtitle}
@@ -680,7 +748,7 @@ describe('DealCommitmentsTable', () => {
     const pinePointRow = getInvestorRow('Pine Point Capital')
 
     expect(atlasFixture?.readiness.reconciliation).toMatchObject({
-      tone: 'danger',
+      variant: 'needsReview',
       value: 'Needs review',
     })
     expect(atlasRow).toHaveAttribute('data-data-issue', 'true')
@@ -747,6 +815,25 @@ describe('DealCommitmentsTable', () => {
     expect(screen.getByText('Pine Point Capital')).toBeInTheDocument()
   })
 
+  it('uses provided search state without a callback as editable initial local state', async () => {
+    const user = userEvent.setup()
+
+    renderCommitmentsTable({
+      state: readyTableState({ searchValue: 'Pine' }),
+    })
+
+    const searchInput = screen.getByRole('textbox', { name: 'Search investors' })
+
+    expect(searchInput).toHaveValue('Pine')
+    expect(screen.getByText('Pine Point Capital')).toBeInTheDocument()
+    expect(screen.queryByText('Tailwind Partners')).not.toBeInTheDocument()
+
+    await user.clear(searchInput)
+
+    expect(searchInput).toHaveValue('')
+    expect(screen.getByText('Tailwind Partners')).toBeInTheDocument()
+  })
+
   it('toggles workflow filter chips, updates rows, and clears filters', async () => {
     const user = userEvent.setup()
 
@@ -775,6 +862,8 @@ describe('DealCommitmentsTable', () => {
     const sourceRows = [...longTextCommitmentRows]
 
     renderCommitmentsTable({
+      onPageChange: noopPageChange,
+      onPageSizeChange: noopPageSizeChange,
       state: readyTableState({
         rows: sourceRows,
         pagination: { page: 1, pageSize: 8 },
@@ -795,6 +884,8 @@ describe('DealCommitmentsTable', () => {
 
   it('shows no-results empty state when filters hide every row', () => {
     renderCommitmentsTable({
+      onActiveFilterIdsChange: noopActiveFilterIdsChange,
+      onSearchValueChange: noopSearchValueChange,
       state: readyTableState({
         activeFilterIds: ['pendingKycKyb'],
         searchValue: 'Tailwind',
@@ -805,12 +896,57 @@ describe('DealCommitmentsTable', () => {
     expect(screen.queryByText('Tailwind Partners')).not.toBeInTheDocument()
   })
 
+  it('filters readiness from semantic variants instead of display copy', () => {
+    const localizedWirePendingRow: CommitmentInvestorRow = {
+      ...lockedCommitmentRows[0],
+      id: 'localized-wire-pending',
+      investorName: 'Localized Wire Pending',
+      readiness: {
+        ...lockedCommitmentRows[0].readiness,
+        wire: {
+          key: 'wire',
+          label: 'Virement',
+          variant: 'notReceived',
+          value: 'Aucun virement',
+        },
+      },
+    }
+    const misleadingWireReceivedRow: CommitmentInvestorRow = {
+      ...lockedCommitmentRows[0],
+      id: 'misleading-wire-received',
+      investorName: 'Misleading Wire Received',
+      readiness: {
+        ...lockedCommitmentRows[0].readiness,
+        wire: {
+          key: 'wire',
+          label: 'Wire',
+          variant: 'received',
+          value: 'Pending display copy',
+        },
+      },
+    }
+
+    renderCommitmentsTable({
+      onActiveFilterIdsChange: noopActiveFilterIdsChange,
+      state: readyTableState({
+        activeFilterIds: ['wirePending'],
+        rows: [localizedWirePendingRow, misleadingWireReceivedRow],
+      }),
+    })
+
+    expect(screen.getByText('Localized Wire Pending')).toBeInTheDocument()
+    expect(screen.queryByText('Misleading Wire Received')).not.toBeInTheDocument()
+  })
+
   it('exports visible rows when nothing is selected and selected visible rows when selected', async () => {
     const user = userEvent.setup()
     const onExportSelected = vi.fn()
     const onExportVisible = vi.fn()
 
-    renderCommitmentsTable({ onExportSelected, onExportVisible })
+    renderCommitmentsTable({
+      onExportSelected,
+      onExportVisible,
+    })
 
     await user.click(screen.getByRole('button', { name: 'Export visible' }))
 
@@ -830,7 +966,9 @@ describe('DealCommitmentsTable', () => {
 
     renderCommitmentsTable({
       onExportVisible,
+      onExportSelected: vi.fn(),
       state: readyTableState({ searchValue: 'Pine' }),
+      onSearchValueChange: noopSearchValueChange,
     })
 
     await user.click(screen.getByRole('button', { name: 'Export visible' }))
@@ -885,6 +1023,8 @@ describe('DealCommitmentsTable', () => {
     }
 
     renderCommitmentsTable({
+      onPageChange: noopPageChange,
+      onPageSizeChange: noopPageSizeChange,
       state: readyTableState({
         rows: longTextCommitmentRows,
         pagination: { page: 1, pageSize: 8 },
@@ -920,19 +1060,26 @@ describe('DealCommitmentsTable', () => {
       ...lockedCommitmentRows[0],
       id: 'localized-row',
       readiness: {
-        kycKyb: { key: 'kycKyb', label: 'KYC / KYB', tone: 'success', value: 'Local OK' },
+        kycKyb: { key: 'kycKyb', label: 'KYC / KYB', variant: 'verified', value: 'Local OK' },
         reconciliation: {
           key: 'reconciliation',
           label: 'Reconciliation',
-          tone: 'info',
+          variant: 'reconciling',
           value: 'Local sync',
         },
-        signature: { key: 'signature', label: 'Signature', tone: 'success', value: 'Local sign' },
-        wire: { key: 'wire', label: 'Wire', tone: 'success', value: 'Local wire' },
+        signature: {
+          key: 'signature',
+          label: 'Signature',
+          variant: 'signed',
+          value: 'Local sign',
+        },
+        wire: { key: 'wire', label: 'Wire', variant: 'received', value: 'Local wire' },
       },
     }
 
     renderCommitmentsTable({
+      onPageChange: noopPageChange,
+      onPageSizeChange: noopPageSizeChange,
       state: readyTableState({ rows: [localizedRow], pagination: { page: 1, pageSize: 8 } }),
     })
 
@@ -986,6 +1133,7 @@ describe('DealCommitmentsTable', () => {
     drawerOpenRender.unmount()
 
     const batchSelectedRender = renderCommitmentsTable({
+      onSelectedRowIdsChange: noopSelectedRowIdsChange,
       state: readyTableState({
         selectedRowIds: ['pine-point-capital', 'atlas-secure-fund'],
       }),
@@ -1004,6 +1152,7 @@ describe('DealCommitmentsTable', () => {
     disabledRender.unmount()
 
     const filteredEmptyRender = renderCommitmentsTable({
+      onSearchValueChange: noopSearchValueChange,
       state: readyTableState({ searchValue: 'missing investor' }),
     })
     expect((await axe(filteredEmptyRender.container)).violations).toHaveLength(0)
@@ -1039,7 +1188,6 @@ describe('DealCommitmentsTable', () => {
         state={{
           description: 'Refresh the page or try again.',
           kind: 'error',
-          retryLabel: 'Retry',
           title: 'Commitments could not be loaded',
         }}
         subtitle={errorDealCommitmentsTableLabels.subtitle}

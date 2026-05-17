@@ -2,18 +2,17 @@ import { Button, cn, TableCell, TableRow } from '@repo/ui'
 import { AlertCircle, CircleMinus } from 'lucide-react'
 
 import { commitmentTableColumnCount } from './deal-commitments-table.model'
+import type { CommitmentTableRetryAction } from './deal-commitments-table.types'
 
 export const CommitmentTableStateRow = ({
   description,
   kind,
-  onRetry,
-  retryLabel,
+  retry,
   title,
 }: {
   readonly description?: string | undefined
   readonly kind: 'empty' | 'error'
-  readonly onRetry?: (() => void) | undefined
-  readonly retryLabel?: string | undefined
+  readonly retry?: CommitmentTableRetryAction | undefined
   readonly title: string
 }) => {
   const StateIcon = kind === 'error' ? AlertCircle : CircleMinus
@@ -47,9 +46,9 @@ export const CommitmentTableStateRow = ({
               {description}
             </p>
           ) : null}
-          {kind === 'error' && retryLabel && onRetry ? (
-            <Button className="mt-2 rounded-lg" onClick={onRetry} size="sm" variant="outline">
-              {retryLabel}
+          {kind === 'error' && retry ? (
+            <Button className="mt-2 rounded-lg" onClick={retry.onRetry} size="sm" variant="outline">
+              {retry.label}
             </Button>
           ) : null}
         </div>

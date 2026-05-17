@@ -1,10 +1,10 @@
+'use client'
+
 import { DealProgressPanel } from '@repo/kit'
 
 import type { DealOperationsRouteData } from './data'
 import {
-  formatDateTimeLabel,
-  formatMoney,
-  getReadinessLabel,
+  getDealOperationalRailViewModel,
   mapDealProgressPanelProps,
 } from './deal-operational-adapters'
 
@@ -13,6 +13,8 @@ type DealOperationalRailProps = {
 }
 
 export function DealOperationalRail({ data }: DealOperationalRailProps) {
+  const rail = getDealOperationalRailViewModel(data)
+
   return (
     <aside
       aria-label="Deal operational rail"
@@ -24,22 +26,19 @@ export function DealOperationalRail({ data }: DealOperationalRailProps) {
       <section className="rounded-lg border border-border bg-background p-4 shadow-card">
         <h2 className="text-sm font-semibold text-foreground">Operational snapshot</h2>
         <div className="mt-3 grid gap-2 text-sm">
-          <RailMetric label="Readiness" value={getReadinessLabel(data.rail.readinessState)} />
-          <RailMetric label="Target close" value={formatDateTimeLabel(data.rail.targetCloseDate)} />
-          <RailMetric
-            label={data.rail.capitalCallout.label}
-            value={formatMoney(data.rail.capitalCallout.value)}
-          />
+          <RailMetric label="Readiness" value={rail.readinessLabel} />
+          <RailMetric label="Target close" value={rail.targetCloseDateLabel} />
+          <RailMetric label={rail.capitalCalloutLabel} value={rail.capitalCalloutValueLabel} />
         </div>
       </section>
 
       <section className="rounded-lg border border-border bg-background p-4 shadow-card">
         <h2 className="text-sm font-semibold text-foreground">Exception queue</h2>
         <div className="mt-3 grid gap-2 text-sm">
-          <RailMetric label="Critical blockers" value={String(data.rail.criticalBlockerCount)} />
-          <RailMetric label="Warning blockers" value={String(data.rail.warningBlockerCount)} />
-          <RailMetric label="Document issues" value={String(data.rail.documentIssueCount)} />
-          <RailMetric label="Blocked investors" value={String(data.rail.investorsBlockedCount)} />
+          <RailMetric label="Critical blockers" value={rail.criticalBlockerCountLabel} />
+          <RailMetric label="Warning blockers" value={rail.warningBlockerCountLabel} />
+          <RailMetric label="Document issues" value={rail.documentIssueCountLabel} />
+          <RailMetric label="Blocked investors" value={rail.blockedInvestorCountLabel} />
         </div>
       </section>
     </aside>

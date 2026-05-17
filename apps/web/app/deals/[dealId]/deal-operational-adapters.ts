@@ -7,16 +7,89 @@ import type {
   DealOperationalOverviewProps,
   DealOperationalOverviewState,
   DealOperationalReadinessState,
+  DealProgressActions,
   DealProgressPanelProps,
   DealProgressPanelState,
+  DealProgressStatus,
 } from '@repo/kit'
 
 import type {
+  CapitalMatchingDTO,
+  CapitalReconciliationDTO,
+  CapitalTargetPositionDTO,
   ClosingReadinessDTO,
   DealOperationalCenterDTO,
   DealSummaryDTO,
   MoneyMinorUnitsDTO,
 } from '@/server/deals'
+
+type ReadyProgressPanelState = Extract<DealProgressPanelState, { readonly kind: 'ready' }>
+type ActiveReadyProgressPanelState = Exclude<ReadyProgressPanelState, { readonly mode: 'closed' }>
+type ClosedReadyProgressPanelState = Extract<ReadyProgressPanelState, { readonly mode: 'closed' }>
+type ReadyOperationalOverviewState = Extract<
+  DealOperationalOverviewState,
+  { readonly kind: 'ready' }
+>
+type DealProgressVisibility = NonNullable<ReadyProgressPanelState['visibility']>
+type DealProgressActionableVisibility = Exclude<
+  DealProgressVisibility,
+  { readonly kind: 'readonly' }
+>
+type DealProgressAvailableActions = Extract<DealProgressActions, { readonly kind: 'available' }>
+type DealProgressStatusTone = DealProgressStatus['tone']
+
+type ActiveDealProgressWorkflow =
+  | {
+      readonly stage: 'draft'
+      readonly mode: 'openForInterests'
+      readonly status: Extract<DealProgressStatus, { readonly kind: 'draft' }>
+    }
+  | {
+      readonly stage: 'moderation'
+      readonly mode: 'openForInterests'
+      readonly status: Extract<DealProgressStatus, { readonly kind: 'moderation' }>
+    }
+  | {
+      readonly stage: 'open'
+      readonly mode: 'openForInterests'
+      readonly status: Extract<DealProgressStatus, { readonly kind: 'openForInterests' }>
+    }
+  | {
+      readonly stage: 'open'
+      readonly mode: 'collectingCommitments'
+      readonly status: Extract<DealProgressStatus, { readonly kind: 'collectingCommitments' }>
+    }
+  | {
+      readonly stage: 'open' | 'closing'
+      readonly mode: 'ongoingClosing'
+      readonly status: Extract<DealProgressStatus, { readonly kind: 'ongoingClosing' }>
+    }
+  | {
+      readonly stage: 'open' | 'closing'
+      readonly mode: 'standardClosing'
+      readonly status: Extract<DealProgressStatus, { readonly kind: 'standardClosing' }>
+    }
+  | {
+      readonly stage: 'preClosing' | 'closing'
+      readonly mode: 'contracting'
+      readonly status: Extract<DealProgressStatus, { readonly kind: 'contracting' }>
+    }
+  | {
+      readonly stage: 'preClosing' | 'closing'
+      readonly mode: 'readyToClose'
+      readonly status: Extract<DealProgressStatus, { readonly kind: 'readyToClose' }>
+    }
+
+type ClosedDealProgressWorkflow = {
+  readonly stage: 'invested' | 'completed' | 'exited' | 'canceled'
+  readonly mode: 'closed'
+  readonly status: Extract<
+    DealProgressStatus,
+    { readonly kind: 'invested' | 'completed' | 'exited' | 'canceled' }
+  >
+}
+
+type DealProgressWorkflow = ActiveDealProgressWorkflow | ClosedDealProgressWorkflow
 
 export const formatMoney = (money: MoneyMinorUnitsDTO): string =>
   new Intl.NumberFormat('en-US', {
@@ -33,13 +106,29 @@ export const formatDateTimeLabel = (value: string): string =>
     timeZone: 'Europe/Paris',
   }).format(new Date(value))
 
+const READINESS_LABELS = {
+  attention: 'Attention needed',
+  blocked: 'Blocked',
+  not_started: 'Not started',
+  ready: 'Ready',
+} as const satisfies Record<ClosingReadinessDTO['state'], string>
+
+const OPERATIONAL_READINESS_LABELS = {
+  attention: 'Attention needed',
+  blocked: 'Blocked from close',
+  not_started: 'Readiness not started',
+  ready: 'Ready to close',
+} as const satisfies Record<DealOperationalReadinessState, string>
+
+const READINESS_NEXT_ACTION_LABELS = {
+  attention: 'Review operational exceptions before close',
+  blocked: 'Resolve blocking operational exceptions before close',
+  not_started: 'Start operational readiness review',
+  ready: 'Proceed to closing review',
+} as const satisfies Record<ClosingReadinessDTO['state'], string>
+
 export const getReadinessLabel = (state: ClosingReadinessDTO['state']): string =>
-  ({
-    attention: 'Attention needed',
-    blocked: 'Blocked',
-    not_started: 'Not started',
-    ready: 'Ready',
-  })[state]
+  READINESS_LABELS[state]
 
 export const getDealHeaderViewModel = (deal: DealSummaryDTO) => ({
   description: `${deal.companyName} closing operations for ${deal.vehicle.name} in ${deal.vehicle.jurisdiction}.`,
@@ -82,91 +171,100 @@ export const mapDealOperationalOverviewProps = (
 
 const mapDealOperationalOverviewState = (
   data: DealOperationalCenterDTO,
-): DealOperationalOverviewState => ({
-  activity: [...data.activity]
-    .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt))
-    .slice(0, 4)
-    .map(mapOperationalActivity),
-  blockerSummary: getBlockerSummary(data),
-  blockers: selectPriorityBlockers(data).map((blocker) => mapOperationalBlocker(blocker, data)),
-  capital: {
-    economics: [
-      {
-        label: 'Net investable amount',
-        tone: 'success',
-        value: formatMoney(data.capital.economics.netInvestableAmount),
+): ReadyOperationalOverviewState => {
+  const blockerCounts = getUnresolvedBlockerCounts(data)
+  const matching = data.capital.matching
+  const unmatchedReceived = getUnmatchedReceivedAmount(
+    matching,
+    data.capital.receivedAmount.currency,
+  )
+
+  return {
+    activity: [...data.activity]
+      .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt))
+      .slice(0, 4)
+      .map(mapOperationalActivity),
+    blockerSummary: getBlockerSummary(data),
+    blockers: selectPriorityBlockers(data).map((blocker) => mapOperationalBlocker(blocker, data)),
+    capital: {
+      economics: [
+        {
+          label: 'Net investable amount',
+          tone: 'success',
+          value: formatMoney(data.capital.economics.netInvestableAmount),
+        },
+        {
+          label: 'Entry fees',
+          value: formatMoney(data.capital.economics.entryFees),
+        },
+        {
+          label: 'SPV fee',
+          value: formatMoney(data.capital.economics.spvFee),
+        },
+        {
+          label: 'Carry',
+          value: `${data.capital.economics.carryPercent}%`,
+        },
+      ],
+      headlineLabel: `${formatMoney(data.capital.committedAmount)} committed`,
+      matchedLabel: `${formatMoney(data.capital.matchedAmount)} matched`,
+      metrics: [
+        {
+          label: 'Signed',
+          value: formatMoney(data.capital.signedAmount),
+          ...amountDescription(data.capital.unsignedCommitted, 'committed capital not yet signed'),
+          tone: amountTone(data.capital.unsignedCommitted, 'attention', 'success'),
+        },
+        {
+          label: 'Received',
+          value: formatMoney(data.capital.receivedAmount),
+          ...amountDescription(data.capital.unreceivedSigned, 'signed capital not yet received'),
+          tone: amountTone(data.capital.unreceivedSigned, 'attention', 'success'),
+        },
+        {
+          label: 'Matched',
+          value: formatMoney(data.capital.matchedAmount),
+          ...(matching.kind === 'unmatched'
+            ? { description: 'Finance still needs to match received wires.' }
+            : {}),
+          tone: matching.kind === 'unmatched' ? 'danger' : 'success',
+        },
+        {
+          label: 'Unmatched received',
+          value: formatMoney(unmatchedReceived),
+          tone: amountTone(unmatchedReceived, 'danger', 'neutral'),
+        },
+      ],
+      progress: {
+        label: getCapitalProgressLabel(data.capital),
+        value: progressPercent(
+          data.capital.committedAmount.amountMinor,
+          data.capital.targetAmount.amountMinor,
+        ),
       },
-      {
-        label: 'Entry fees',
-        value: formatMoney(data.capital.economics.entryFees),
-      },
-      {
-        label: 'SPV fee',
-        value: formatMoney(data.capital.economics.spvFee),
-      },
-      {
-        label: 'Carry',
-        value: `${data.capital.economics.carryPercent}%`,
-      },
-    ],
-    headlineLabel: `${formatMoney(data.capital.committedAmount)} committed`,
-    matchedLabel: `${formatMoney(data.capital.matchedAmount)} matched`,
-    metrics: [
-      {
-        label: 'Signed',
-        value: formatMoney(data.capital.signedAmount),
-        ...amountDescription(data.capital.unsignedCommitted, 'committed capital not yet signed'),
-        tone: amountTone(data.capital.unsignedCommitted, 'attention', 'success'),
-      },
-      {
-        label: 'Received',
-        value: formatMoney(data.capital.receivedAmount),
-        ...amountDescription(data.capital.unreceivedSigned, 'signed capital not yet received'),
-        tone: amountTone(data.capital.unreceivedSigned, 'attention', 'success'),
-      },
-      {
-        label: 'Matched',
-        value: formatMoney(data.capital.matchedAmount),
-        ...(data.capital.hasUnmatchedFunds
-          ? { description: 'Finance still needs to match received wires.' }
-          : {}),
-        tone: data.capital.hasUnmatchedFunds ? 'danger' : 'success',
-      },
-      {
-        label: 'Unmatched received',
-        value: formatMoney(data.capital.unmatchedReceived),
-        tone: amountTone(data.capital.unmatchedReceived, 'danger', 'neutral'),
-      },
-    ],
-    progress: {
-      label: getCapitalProgressLabel(data),
-      value: progressPercent(
-        data.capital.committedAmount.amountMinor,
-        data.capital.targetAmount.amountMinor,
-      ),
+      supportingLabel: getCapitalSupportingLabel(data.capital.targetPosition),
+      targetLabel: `${formatMoney(data.capital.targetAmount)} target`,
     },
-    supportingLabel: `${formatMoney(data.capital.remainingToTarget)} remaining to target`,
-    targetLabel: `${formatMoney(data.capital.targetAmount)} target`,
-  },
-  kind: 'ready',
-  readiness: {
-    blockerCounts: [
-      { count: data.readiness.criticalBlockerCount, label: 'Critical', severity: 'critical' },
-      { count: data.readiness.warningBlockerCount, label: 'Warning', severity: 'warning' },
-      { count: data.readiness.infoBlockerCount, label: 'Info', severity: 'info' },
-    ],
-    dimensions: data.readiness.dimensions.map((dimension) => ({
-      blockerCount: dimension.blockerCount,
-      description: getDimensionDescription(dimension),
-      id: dimension.id,
-      label: dimension.label,
-      state: dimension.state,
-    })),
-    label: getOperationalReadinessLabel(data.readiness.state),
-    nextAction: data.readiness.nextActionLabel,
-    state: data.readiness.state,
-  },
-})
+    kind: 'ready',
+    readiness: {
+      blockerCounts: [
+        { count: blockerCounts.critical, label: 'Critical', severity: 'critical' },
+        { count: blockerCounts.warning, label: 'Warning', severity: 'warning' },
+        { count: blockerCounts.info, label: 'Info', severity: 'info' },
+      ],
+      dimensions: data.readiness.dimensions.map((dimension) => ({
+        blockerCount: dimension.blockerCount,
+        description: getDimensionDescription(dimension),
+        id: dimension.id,
+        label: dimension.label,
+        state: dimension.state,
+      })),
+      label: getOperationalReadinessLabel(data.readiness.state),
+      nextAction: getReadinessNextActionLabel(data.readiness.state),
+      state: data.readiness.state,
+    },
+  }
+}
 
 export const mapDealProgressPanelProps = (
   data: DealOperationalCenterDTO,
@@ -178,103 +276,106 @@ export const mapDealProgressPanelProps = (
     progressAriaLabel: 'Deal capital progress',
     title: 'Deal progression',
   },
+  onAction: () => undefined,
   state: mapDealProgressPanelState(data),
 })
 
-const mapDealProgressPanelState = (data: DealOperationalCenterDTO): DealProgressPanelState => ({
-  actions: {
-    primary: {
-      disabledReason: data.readiness.state === 'ready' ? undefined : data.readiness.nextActionLabel,
-      kind: 'closeDeal',
-      label: 'Close deal',
+const mapDealProgressPanelState = (data: DealOperationalCenterDTO): ReadyProgressPanelState => {
+  const workflow = mapDealProgressWorkflow(data)
+  const readyBase = {
+    capital: mapDealProgressCapital(data),
+    dataQuality: { kind: 'fresh' },
+    kind: 'ready',
+  } as const
+
+  if (workflow.mode === 'closed') {
+    return {
+      ...readyBase,
+      ...workflow,
+      actions: { kind: 'none' },
+      visibility: mapDealVisibility(data.deal.access),
+    } satisfies ClosedReadyProgressPanelState
+  }
+
+  return {
+    ...readyBase,
+    ...workflow,
+    actions: mapDealProgressActions(data),
+    visibility: mapDealVisibility(data.deal.access),
+  } satisfies ActiveReadyProgressPanelState
+}
+
+const mapDealProgressCapital = (
+  data: DealOperationalCenterDTO,
+): ReadyProgressPanelState['capital'] => ({
+  breakdown: [
+    {
+      amountLabel: formatMoney(data.capital.economics.netInvestableAmount),
+      basisPoints: compositionBasisPoints(data.capital.economics.netInvestableAmount, data.capital),
+      kind: 'investable',
+      label: 'Investable',
+      tone: 'success',
     },
-    secondary: [
-      {
-        kind: 'invite',
-        label:
-          data.deal.access.pendingAccessRequestCount > 0
-            ? `Review ${data.deal.access.pendingAccessRequestCount} access requests`
-            : 'Invite investors',
-      },
-    ],
-  },
-  capital: {
-    amountRaisedLabel: formatMoney(data.capital.committedAmount),
-    breakdown: [
-      {
-        amountLabel: formatMoney(data.capital.economics.netInvestableAmount),
-        basisPoints: compositionBasisPoints(
-          data.capital.economics.netInvestableAmount,
-          data.capital,
-        ),
-        kind: 'investable',
-        label: 'Investable',
-        tone: 'success',
-      },
-      {
-        amountLabel: formatMoney(data.capital.economics.entryFees),
-        basisPoints: compositionBasisPoints(data.capital.economics.entryFees, data.capital),
-        kind: 'entryFees',
-        label: 'Entry fees',
-        tone: 'info',
-      },
-      {
-        amountLabel: formatMoney(data.capital.economics.spvFee),
-        basisPoints: compositionBasisPoints(data.capital.economics.spvFee, data.capital),
-        kind: 'spvFees',
-        label: 'SPV fees',
-        tone: 'attention',
-      },
-    ],
-    details: [
-      {
-        label: 'Signed',
-        value: formatMoney(data.capital.signedAmount),
-      },
-      {
-        label: 'Received',
-        value: formatMoney(data.capital.receivedAmount),
-        tone: data.capital.unreceivedSigned.amountMinor > 0 ? 'attention' : 'default',
-      },
-      {
-        description: data.capital.hasUnmatchedFunds
+    {
+      amountLabel: formatMoney(data.capital.economics.entryFees),
+      basisPoints: compositionBasisPoints(data.capital.economics.entryFees, data.capital),
+      kind: 'entryFees',
+      label: 'Entry fees',
+      tone: 'info',
+    },
+    {
+      amountLabel: formatMoney(data.capital.economics.spvFee),
+      basisPoints: compositionBasisPoints(data.capital.economics.spvFee, data.capital),
+      kind: 'spvFees',
+      label: 'SPV fees',
+      tone: 'attention',
+    },
+  ],
+  details: [
+    {
+      label: 'Signed',
+      value: formatMoney(data.capital.signedAmount),
+    },
+    {
+      label: 'Received',
+      value: formatMoney(data.capital.receivedAmount),
+      tone: data.capital.unreceivedSigned.amountMinor > 0 ? 'attention' : 'default',
+    },
+    {
+      description:
+        data.capital.matching.kind === 'unmatched'
           ? 'Finance still needs to match received wires.'
           : undefined,
-        label: 'Matched',
-        value: formatMoney(data.capital.matchedAmount),
-        tone: data.capital.hasUnmatchedFunds ? 'danger' : 'default',
-      },
-    ],
-    headlineLabel: `${formatMoney(data.capital.committedAmount)} / ${formatMoney(
-      data.capital.targetAmount,
-    )}`,
-    progress: {
-      basisPoints: basisPoints(data.capital.committedAmount, data.capital.targetAmount),
-      capped: data.capital.isOverTarget,
-      kind: 'knownTarget',
-      label: 'Committed capital / target',
+      label: 'Matched',
+      value: formatMoney(data.capital.matchedAmount),
+      tone: data.capital.matching.kind === 'unmatched' ? 'danger' : 'default',
     },
-    targetAmountLabel: formatMoney(data.capital.targetAmount),
-  },
-  dataQuality: {
-    kind: 'fresh',
-    label: `Generated ${formatDateTimeLabel(data.generatedAt)}`,
-  },
-  kind: 'ready',
-  mode: data.deal.closingMode === 'ongoing' ? 'ongoingClosing' : 'standardClosing',
-  stage: mapDealProgressStage(data.deal.stage),
-  status: {
-    label: data.deal.stageLabel,
-    tone: readinessTone(data.readiness.state),
-  },
-  visibility: {
-    kind: data.deal.access.sharingMode === 'request_access' ? 'restricted' : 'adminOnly',
-    label:
-      data.deal.access.sharingMode === 'request_access'
-        ? `${data.deal.access.pendingAccessRequestCount} access requests pending`
-        : 'Admin-only deal workspace',
+  ],
+  headlineLabel: `${formatMoney(data.capital.committedAmount)} / ${formatMoney(
+    data.capital.targetAmount,
+  )}`,
+  progress: {
+    basisPoints: basisPoints(data.capital.committedAmount, data.capital.targetAmount),
+    capped: data.capital.targetPosition.kind === 'over_target',
+    kind: 'knownTarget',
+    label: 'Committed capital / target',
   },
 })
+
+export const getDealOperationalRailViewModel = (data: DealOperationalCenterDTO) => {
+  const blockerCounts = getUnresolvedBlockerCounts(data)
+
+  return {
+    blockedInvestorCountLabel: String(getBlockedInvestorCount(data)),
+    capitalCalloutLabel: 'Net investable amount',
+    capitalCalloutValueLabel: formatMoney(data.capital.economics.netInvestableAmount),
+    criticalBlockerCountLabel: String(blockerCounts.critical),
+    documentIssueCountLabel: String(getRequiredDocumentIssueCount(data)),
+    readinessLabel: getReadinessLabel(data.readiness.state),
+    targetCloseDateLabel: formatDateTimeLabel(data.deal.targetCloseDate),
+    warningBlockerCountLabel: String(blockerCounts.warning),
+  }
+}
 
 const basisPoints = (part: MoneyMinorUnitsDTO, total: MoneyMinorUnitsDTO): number => {
   if (total.amountMinor <= 0) {
@@ -300,57 +401,155 @@ const compositionBasisPoints = (
   return Math.max(0, Math.round((part.amountMinor / total) * 10_000))
 }
 
-const mapDealProgressStage = (
-  stage: DealSummaryDTO['stage'],
-): Extract<DealProgressPanelState, { readonly kind: 'ready' }>['stage'] => {
-  if (stage === 'draft') {
-    return 'draft'
-  }
+const mapDealProgressActions = (data: DealOperationalCenterDTO): DealProgressAvailableActions => ({
+  kind: 'available',
+  primary:
+    data.readiness.state === 'ready'
+      ? {
+          audience: 'admin',
+          availability: 'enabled',
+          kind: 'closeDeal',
+          label: 'Close deal',
+        }
+      : {
+          audience: 'admin',
+          availability: 'disabled',
+          disabledReason: getReadinessNextActionLabel(data.readiness.state),
+          kind: 'closeDeal',
+          label: 'Close deal',
+        },
+  secondary: [
+    {
+      audience: 'admin',
+      availability: 'enabled',
+      kind: 'invite',
+      label:
+        data.deal.access.pendingAccessRequestCount > 0
+          ? `Review ${data.deal.access.pendingAccessRequestCount} access requests`
+          : 'Invite investors',
+    },
+  ],
+})
 
-  if (stage === 'internal_review' || stage === 'open_for_preview') {
-    return 'moderation'
-  }
+type DealProgressWorkflowMapper = (data: DealOperationalCenterDTO) => DealProgressWorkflow
 
-  if (
-    stage === 'open_for_interests' ||
-    stage === 'collecting_commitments' ||
-    stage === 'reviewing_commitments'
-  ) {
-    return 'open'
-  }
+const DEAL_PROGRESS_WORKFLOW_BY_LIFECYCLE = {
+  awaiting_wires: (data) => ({
+    mode: 'contracting',
+    stage: 'preClosing',
+    status: { kind: 'contracting', ...progressStatusBase(data) },
+  }),
+  cancelled: (data) => ({
+    mode: 'closed',
+    stage: 'canceled',
+    status: { kind: 'canceled', ...progressStatusBase(data) },
+  }),
+  closed: (data) => ({
+    mode: 'closed',
+    stage: 'invested',
+    status: { kind: 'invested', ...progressStatusBase(data) },
+  }),
+  collecting_commitments: (data) => ({
+    mode: 'collectingCommitments',
+    stage: 'open',
+    status: { kind: 'collectingCommitments', ...progressStatusBase(data) },
+  }),
+  closing_review: (data) =>
+    data.deal.closingMode === 'ongoing'
+      ? {
+          mode: 'ongoingClosing',
+          stage: 'closing',
+          status: { kind: 'ongoingClosing', ...progressStatusBase(data) },
+        }
+      : {
+          mode: 'standardClosing',
+          stage: 'closing',
+          status: { kind: 'standardClosing', ...progressStatusBase(data) },
+        },
+  contracting: (data) => ({
+    mode: 'contracting',
+    stage: 'preClosing',
+    status: { kind: 'contracting', ...progressStatusBase(data) },
+  }),
+  draft: (data) => ({
+    mode: 'openForInterests',
+    stage: 'draft',
+    status: { kind: 'draft', ...progressStatusBase(data) },
+  }),
+  exited: (data) => ({
+    mode: 'closed',
+    stage: 'exited',
+    status: { kind: 'exited', ...progressStatusBase(data) },
+  }),
+  internal_review: (data) => ({
+    mode: 'openForInterests',
+    stage: 'moderation',
+    status: { kind: 'moderation', ...progressStatusBase(data) },
+  }),
+  open_for_interests: (data) => ({
+    mode: 'openForInterests',
+    stage: 'open',
+    status: { kind: 'openForInterests', ...progressStatusBase(data) },
+  }),
+  open_for_preview: (data) => ({
+    mode: 'openForInterests',
+    stage: 'moderation',
+    status: { kind: 'moderation', ...progressStatusBase(data) },
+  }),
+  partially_exited: (data) => ({
+    mode: 'closed',
+    stage: 'exited',
+    status: { kind: 'exited', ...progressStatusBase(data) },
+  }),
+  portfolio_active: (data) => ({
+    mode: 'closed',
+    stage: 'invested',
+    status: { kind: 'invested', ...progressStatusBase(data) },
+  }),
+  reviewing_commitments: (data) => ({
+    mode: 'collectingCommitments',
+    stage: 'open',
+    status: { kind: 'collectingCommitments', ...progressStatusBase(data) },
+  }),
+} as const satisfies Record<DealSummaryDTO['stage'], DealProgressWorkflowMapper>
 
-  if (stage === 'contracting' || stage === 'awaiting_wires') {
-    return 'preClosing'
-  }
+const mapDealProgressWorkflow = (data: DealOperationalCenterDTO): DealProgressWorkflow =>
+  DEAL_PROGRESS_WORKFLOW_BY_LIFECYCLE[data.deal.stage](data)
 
-  if (stage === 'closing_review') {
-    return 'closing'
-  }
+const progressStatusBase = (data: DealOperationalCenterDTO) => ({
+  label: data.deal.stageLabel,
+  tone: readinessTone(data.readiness.state),
+})
 
-  if (stage === 'closed' || stage === 'portfolio_active') {
-    return 'invested'
-  }
+const mapDealVisibility = (access: DealSummaryDTO['access']): DealProgressActionableVisibility =>
+  (
+    ({
+      anyone_with_link: {
+        kind: 'public',
+        label: 'Public deal workspace',
+      },
+      disabled: {
+        kind: 'adminOnly',
+        label: 'Admin-only deal workspace',
+      },
+      request_access: {
+        kind: 'restricted',
+        label: `${access.pendingAccessRequestCount} access requests pending`,
+      },
+    }) as const satisfies Record<
+      DealSummaryDTO['access']['sharingMode'],
+      DealProgressActionableVisibility
+    >
+  )[access.sharingMode]
 
-  if (stage === 'partially_exited' || stage === 'exited') {
-    return 'exited'
-  }
-
-  return 'canceled'
-}
-
-const readinessTone = (
-  state: ClosingReadinessDTO['state'],
-): Extract<DealProgressPanelState, { readonly kind: 'ready' }>['status']['tone'] =>
+const readinessTone = (state: ClosingReadinessDTO['state']): DealProgressStatusTone =>
   (
     ({
       attention: 'attention',
       blocked: 'danger',
       not_started: 'neutral',
       ready: 'success',
-    }) as const satisfies Record<
-      ClosingReadinessDTO['state'],
-      Extract<DealProgressPanelState, { readonly kind: 'ready' }>['status']['tone']
-    >
+    }) as const satisfies Record<ClosingReadinessDTO['state'], DealProgressStatusTone>
   )[state]
 
 const selectPriorityBlockers = (
@@ -408,12 +607,10 @@ const mapOperationalActivity = (
 })
 
 const getOperationalReadinessLabel = (state: DealOperationalReadinessState): string =>
-  ({
-    attention: 'Attention needed',
-    blocked: 'Blocked from close',
-    not_started: 'Readiness not started',
-    ready: 'Ready to close',
-  })[state]
+  OPERATIONAL_READINESS_LABELS[state]
+
+const getReadinessNextActionLabel = (state: ClosingReadinessDTO['state']): string =>
+  READINESS_NEXT_ACTION_LABELS[state]
 
 const getDimensionDescription = (
   dimension: DealOperationalCenterDTO['readiness']['dimensions'][number],
@@ -433,30 +630,83 @@ const getDimensionDescription = (
   return `${dimension.blockerCount} ${blockerNoun} need operator attention before close.`
 }
 
-const getCapitalProgressLabel = (data: DealOperationalCenterDTO): string => {
-  if (data.capital.isOverTarget) {
-    return `${formatMoney(data.capital.overTarget)} over target`
+const getCapitalProgressLabel = (capital: CapitalReconciliationDTO): string => {
+  if (capital.targetPosition.kind === 'over_target') {
+    return `${formatMoney(capital.targetPosition.overTarget)} over target`
   }
 
   return `${progressPercent(
-    data.capital.committedAmount.amountMinor,
-    data.capital.targetAmount.amountMinor,
+    capital.committedAmount.amountMinor,
+    capital.targetAmount.amountMinor,
   )}% of target committed`
 }
 
+const getCapitalSupportingLabel = (targetPosition: CapitalTargetPositionDTO): string => {
+  if (targetPosition.kind === 'over_target') {
+    return `${formatMoney(targetPosition.overTarget)} over target`
+  }
+
+  if (targetPosition.kind === 'under_target') {
+    return `${formatMoney(targetPosition.remainingToTarget)} remaining to target`
+  }
+
+  return 'Target reached'
+}
+
+const getUnmatchedReceivedAmount = (
+  matching: CapitalMatchingDTO,
+  currency: MoneyMinorUnitsDTO['currency'],
+): MoneyMinorUnitsDTO =>
+  matching.kind === 'unmatched' ? matching.unmatchedReceived : { amountMinor: 0, currency }
+
 const getBlockerSummary = (data: DealOperationalCenterDTO): string => {
-  if (data.readiness.unresolvedBlockerCount === 0) {
+  const blockerCounts = getUnresolvedBlockerCounts(data)
+  const unresolvedBlockerCount = blockerCounts.critical + blockerCounts.warning + blockerCounts.info
+
+  if (unresolvedBlockerCount === 0) {
     return 'All close-critical blockers are resolved.'
   }
 
-  const blockerNoun = pluralize(data.readiness.unresolvedBlockerCount, 'blocker')
+  const blockerNoun = pluralize(unresolvedBlockerCount, 'blocker')
   const criticalQualifier =
-    data.readiness.criticalBlockerCount > 0
-      ? ' Critical identity and wire blockers remain in view.'
-      : ''
+    blockerCounts.critical > 0 ? ' Critical identity and wire blockers remain in view.' : ''
 
-  return `${data.readiness.unresolvedBlockerCount} close-impacting ${blockerNoun} remain. Capital and timing blockers are shown first.${criticalQualifier}`
+  return `${unresolvedBlockerCount} close-impacting ${blockerNoun} remain. Capital and timing blockers are shown first.${criticalQualifier}`
 }
+
+export const getUnresolvedBlockerCounts = (
+  data: DealOperationalCenterDTO,
+): Record<DealOperationalCenterDTO['blockers'][number]['severity'], number> => {
+  const counts = { critical: 0, info: 0, warning: 0 }
+
+  for (const blocker of data.blockers) {
+    if (!blocker.resolved) {
+      counts[blocker.severity] += 1
+    }
+  }
+
+  return counts
+}
+
+export const getRequiredDocumentIssueCount = (data: DealOperationalCenterDTO): number =>
+  data.documents.requirements.filter(
+    (document) => document.required && REQUIRED_DOCUMENT_ISSUE_BY_STATUS[document.status],
+  ).length
+
+const REQUIRED_DOCUMENT_ISSUE_BY_STATUS = {
+  approved: false,
+  expired: true,
+  missing: true,
+  rejected: true,
+  under_review: false,
+  uploaded: false,
+} as const satisfies Record<
+  DealOperationalCenterDTO['documents']['requirements'][number]['status'],
+  boolean
+>
+
+export const getBlockedInvestorCount = (data: DealOperationalCenterDTO): number =>
+  data.investors.filter((investor) => investor.readinessState === 'blocked').length
 
 const getBlockerDueLabel = (
   blocker: DealOperationalCenterDTO['blockers'][number],

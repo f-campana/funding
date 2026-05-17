@@ -49,8 +49,6 @@ export type DealOperationalCenterDTO = {
   readonly investors: readonly InvestorOperationDTO[]
   readonly documents: DocumentCenterDTO
   readonly activity: readonly ActivityEventDTO[]
-  readonly rail: OperationalRailDTO
-  readonly routes: DealRoutesDTO
 }
 
 export type DealSummaryDTO = {
@@ -82,11 +80,6 @@ export type DealAccessDTO = {
 
 export type ClosingReadinessDTO = {
   readonly state: ClosingReadinessState
-  readonly unresolvedBlockerCount: number
-  readonly criticalBlockerCount: number
-  readonly warningBlockerCount: number
-  readonly infoBlockerCount: number
-  readonly nextActionLabel: string
   readonly dimensions: readonly ReadinessDimensionDTO[]
 }
 
@@ -109,16 +102,35 @@ export type CapitalReconciliationDTO = {
   readonly signedAmount: MoneyMinorUnitsDTO
   readonly receivedAmount: MoneyMinorUnitsDTO
   readonly matchedAmount: MoneyMinorUnitsDTO
-  readonly remainingToTarget: MoneyMinorUnitsDTO
-  readonly overTarget: MoneyMinorUnitsDTO
   readonly unsignedCommitted: MoneyMinorUnitsDTO
   readonly unreceivedSigned: MoneyMinorUnitsDTO
-  readonly unmatchedReceived: MoneyMinorUnitsDTO
   readonly unfundedCommitted: MoneyMinorUnitsDTO
-  readonly hasUnmatchedFunds: boolean
-  readonly isOverTarget: boolean
+  readonly targetPosition: CapitalTargetPositionDTO
+  readonly matching: CapitalMatchingDTO
   readonly economics: DealEconomicsDTO
 }
+
+export type CapitalTargetPositionDTO =
+  | {
+      readonly kind: 'under_target'
+      readonly remainingToTarget: MoneyMinorUnitsDTO
+    }
+  | {
+      readonly kind: 'at_target'
+    }
+  | {
+      readonly kind: 'over_target'
+      readonly overTarget: MoneyMinorUnitsDTO
+    }
+
+export type CapitalMatchingDTO =
+  | {
+      readonly kind: 'matched'
+    }
+  | {
+      readonly kind: 'unmatched'
+      readonly unmatchedReceived: MoneyMinorUnitsDTO
+    }
 
 export type DealEconomicsDTO = {
   readonly grossCommitted: MoneyMinorUnitsDTO
@@ -146,14 +158,12 @@ export type InvestorOperationDTO = {
   readonly id: string
   readonly investorName: string
   readonly investorEmail?: string
-  readonly legalEntityName?: string
   readonly commitmentAmount: MoneyMinorUnitsDTO
   readonly commitmentStatus: CommitmentLifecycleState
   readonly commitmentStatusLabel: string
   readonly kycStatus: KycOperationalStatus
   readonly kycStatusLabel: string
-  readonly kybStatus?: KybOperationalStatus
-  readonly kybStatusLabel?: string
+  readonly entity: InvestorEntityDTO
   readonly signatureStatus: SignatureOperationalStatus
   readonly signatureStatusLabel: string
   readonly wireStatus: WireOperationalStatus
@@ -164,26 +174,30 @@ export type InvestorOperationDTO = {
   readonly lastActivityAt?: string
 }
 
+export type InvestorEntityDTO =
+  | {
+      readonly kind: 'individual'
+    }
+  | {
+      readonly kind: 'legal_entity'
+      readonly legalEntity: {
+        readonly name: string
+        readonly kyb:
+          | {
+              readonly kind: 'available'
+              readonly status: KybOperationalStatus
+              readonly statusLabel: string
+            }
+          | {
+              readonly kind: 'missing'
+              readonly statusLabel: string
+            }
+      }
+    }
+
 export type DocumentCenterDTO = {
-  readonly summary: DocumentCompletenessDTO
   readonly requirements: readonly DocumentRequirementDTO[]
   readonly groups: readonly DocumentGroupDTO[]
-}
-
-export type DocumentCompletenessDTO = {
-  readonly totalCount: number
-  readonly requiredCount: number
-  readonly optionalCount: number
-  readonly approvedCount: number
-  readonly uploadedCount: number
-  readonly underReviewCount: number
-  readonly missingCount: number
-  readonly rejectedCount: number
-  readonly expiredCount: number
-  readonly requiredMissingCount: number
-  readonly requiredRejectedCount: number
-  readonly requiredExpiredCount: number
-  readonly isComplete: boolean
 }
 
 export type DocumentRequirementDTO = {
@@ -208,45 +222,44 @@ export type DocumentGroupDTO = {
   readonly documentIds: readonly string[]
 }
 
-export type ActivityEventDTO = {
+type ActivityEventBaseDTO = {
   readonly id: string
   readonly occurredAt: string
   readonly actorLabel: string
-  readonly eventType:
-    | 'commitment_updated'
-    | 'document_uploaded'
-    | 'document_rejected'
-    | 'signature_sent'
-    | 'signature_completed'
-    | 'wire_flagged'
-    | 'wire_matched'
-    | 'blocker_created'
-    | 'blocker_resolved'
   readonly summary: string
-  readonly relatedInvestorId?: string
-  readonly relatedDocumentId?: string
-  readonly relatedBlockerId?: string
 }
 
-export type OperationalRailDTO = {
-  readonly readinessState: ClosingReadinessDTO['state']
-  readonly nextActionLabel: string
-  readonly criticalBlockerCount: number
-  readonly warningBlockerCount: number
-  readonly documentIssueCount: number
-  readonly investorsBlockedCount: number
-  readonly targetCloseDate: string
-  readonly capitalCallout: {
-    readonly label: string
-    readonly value: MoneyMinorUnitsDTO
-  }
-}
+export type ActivityEventDTO =
+  | (ActivityEventBaseDTO & {
+      readonly eventType: 'commitment_updated'
+      readonly relatedInvestorId: string
+    })
+  | (ActivityEventBaseDTO & {
+      readonly eventType: 'document_uploaded' | 'document_rejected'
+      readonly relatedDocumentId: string
+      readonly relatedInvestorId?: string
+    })
+  | (ActivityEventBaseDTO & {
+      readonly eventType: 'signature_sent' | 'signature_completed'
+      readonly relatedInvestorId: string
+    })
+  | (ActivityEventBaseDTO & {
+      readonly eventType: 'wire_flagged'
+      readonly relatedInvestorId: string
+      readonly relatedBlockerId: string
+    })
+  | (ActivityEventBaseDTO & {
+      readonly eventType: 'wire_matched'
+      readonly relatedInvestorId: string
+    })
+  | (ActivityEventBaseDTO & {
+      readonly eventType: 'blocker_created' | 'blocker_resolved'
+      readonly relatedBlockerId: string
+      readonly relatedInvestorId?: string
+      readonly relatedDocumentId?: string
+    })
 
-export type DealRoutesDTO = {
-  readonly about: string
-  readonly commitments: string
-  readonly documents: string
-}
+export type ActivityEventTypeDTO = ActivityEventDTO['eventType']
 
 export type CapitalReconciliationErrorDTO =
   | {

@@ -13,7 +13,6 @@ export const dealProgressPanelLabels = {
 } as const satisfies DealProgressPanelProps['labels']
 
 const segmentedCapital = {
-  amountRaisedLabel: '€100,000',
   breakdown: [
     {
       amountLabel: '€95,500',
@@ -43,11 +42,9 @@ const segmentedCapital = {
     kind: 'knownTarget',
     label: 'Amount raised / target',
   },
-  targetAmountLabel: '€200,000',
 } as const satisfies DealProgressCapitalSummary
 
 const highValueCapital = {
-  amountRaisedLabel: '€87,800,000',
   details: [
     { label: 'Investable amount', value: '€86,746,400' },
     { label: 'SPV fees', value: '€1,053,600' },
@@ -59,20 +56,33 @@ const highValueCapital = {
     kind: 'knownTarget',
     label: 'Amount raised / target',
   },
-  targetAmountLabel: '€89.1M',
 } as const satisfies DealProgressCapitalSummary
 
 const readyBase = {
   actions: {
-    primary: { kind: 'closeDeal', label: 'Close deal' },
-    secondary: [{ kind: 'invite', label: 'Invite' }],
+    kind: 'available',
+    primary: {
+      audience: 'admin',
+      availability: 'enabled',
+      kind: 'closeDeal',
+      label: 'Close deal',
+    },
+    secondary: [
+      {
+        audience: 'admin',
+        availability: 'enabled',
+        kind: 'invite',
+        label: 'Invite',
+      },
+    ],
   },
   capital: segmentedCapital,
+  dataQuality: { kind: 'fresh' },
   mode: 'collectingCommitments',
   stage: 'open',
-  status: { label: 'Collecting commitments', tone: 'success' },
+  status: { kind: 'collectingCommitments', label: 'Collecting commitments', tone: 'success' },
   visibility: { kind: 'adminOnly', label: 'Only visible to admins' },
-} as const satisfies Omit<Extract<DealProgressPanelState, { readonly kind: 'ready' }>, 'kind'>
+} as const
 
 export const defaultCollectingCommitmentsState = {
   ...readyBase,
@@ -92,16 +102,21 @@ export const ongoingClosingState = {
   },
   kind: 'ready',
   mode: 'ongoingClosing',
-  status: { label: 'Ongoing closing', tone: 'success' },
+  status: { kind: 'ongoingClosing', label: 'Ongoing closing', tone: 'success' },
 } as const satisfies DealProgressPanelState
 
 export const openForInterestsState = {
   ...readyBase,
   actions: {
-    primary: { kind: 'invite', label: 'Invite investors' },
+    kind: 'available',
+    primary: {
+      audience: 'admin',
+      availability: 'enabled',
+      kind: 'invite',
+      label: 'Invite investors',
+    },
   },
   capital: {
-    amountRaisedLabel: '€0',
     details: [{ label: 'Target allocation', value: '€2,000,000' }],
     headlineLabel: '€0 / €2,000,000',
     progress: {
@@ -109,31 +124,49 @@ export const openForInterestsState = {
       kind: 'knownTarget',
       label: 'Interest collection progress',
     },
-    targetAmountLabel: '€2,000,000',
   },
   kind: 'ready',
   mode: 'openForInterests',
   stage: 'open',
-  status: { label: 'Open for interests', tone: 'info' },
+  status: { kind: 'openForInterests', label: 'Open for interests', tone: 'info' },
 } as const satisfies DealProgressPanelState
 
 export const moveToContractingState = {
   ...readyBase,
   actions: {
-    primary: { kind: 'moveToContracting', label: 'Move deal to contracting', audience: 'admin' },
-    secondary: [{ kind: 'invite', label: 'Invite' }],
+    kind: 'available',
+    primary: {
+      audience: 'admin',
+      availability: 'enabled',
+      kind: 'moveToContracting',
+      label: 'Move deal to contracting',
+    },
+    secondary: [
+      {
+        audience: 'admin',
+        availability: 'enabled',
+        kind: 'invite',
+        label: 'Invite',
+      },
+    ],
   },
   capital: highValueCapital,
   kind: 'ready',
   mode: 'contracting',
   stage: 'preClosing',
-  status: { label: 'Ready for contracting', tone: 'attention' },
+  status: { kind: 'contracting', label: 'Ready for contracting', tone: 'attention' },
 } as const satisfies DealProgressPanelState
 
 export const readyToCloseState = {
   ...readyBase,
   actions: {
-    primary: { kind: 'closeDeal', label: 'Close deal', audience: 'admin' },
+    kind: 'available',
+    primary: {
+      audience: 'admin',
+      availability: 'enabled',
+      kind: 'closeDeal',
+      label: 'Close deal',
+    },
   },
   capital: {
     ...segmentedCapital,
@@ -147,14 +180,13 @@ export const readyToCloseState = {
   kind: 'ready',
   mode: 'readyToClose',
   stage: 'closing',
-  status: { label: 'Ready to close', tone: 'success' },
+  status: { kind: 'readyToClose', label: 'Ready to close', tone: 'success' },
 } as const satisfies DealProgressPanelState
 
 export const closedCompletedState = {
   ...readyBase,
   actions: {
-    primary: { kind: 'closeDeal', label: 'Close deal', audience: 'admin' },
-    secondary: [{ kind: 'invite', label: 'Invite', audience: 'admin' }],
+    kind: 'none',
   },
   capital: {
     ...segmentedCapital,
@@ -168,7 +200,7 @@ export const closedCompletedState = {
   kind: 'ready',
   mode: 'closed',
   stage: 'completed',
-  status: { label: 'Completed', tone: 'success' },
+  status: { kind: 'completed', label: 'Completed', tone: 'success' },
   visibility: { kind: 'restricted', label: 'Visible to deal admins and investors' },
 } as const satisfies DealProgressPanelState
 
@@ -187,7 +219,6 @@ export const overTargetCappedState = {
   ...readyBase,
   capital: {
     ...segmentedCapital,
-    amountRaisedLabel: '€225,000',
     headlineLabel: '€225,000 / €200,000',
     progress: {
       basisPoints: 11_250,
@@ -197,13 +228,12 @@ export const overTargetCappedState = {
     },
   },
   kind: 'ready',
-  status: { label: 'Over target', tone: 'attention' },
+  status: { kind: 'collectingCommitments', label: 'Over target', tone: 'attention' },
 } as const satisfies DealProgressPanelState
 
 export const noTargetKnownState = {
   ...readyBase,
   capital: {
-    amountRaisedLabel: '€640,000',
     details: [
       {
         description: 'Target allocation has not been confirmed by operations.',
@@ -219,14 +249,13 @@ export const noTargetKnownState = {
   },
   kind: 'ready',
   mode: 'standardClosing',
-  status: { label: 'Target pending', tone: 'pending' },
+  status: { kind: 'standardClosing', label: 'Target pending', tone: 'pending' },
 } as const satisfies DealProgressPanelState
 
 export const readonlyNonAdminState = {
   ...readyBase,
   actions: {
-    primary: { audience: 'admin', kind: 'closeDeal', label: 'Close deal' },
-    secondary: [{ audience: 'admin', kind: 'invite', label: 'Invite' }],
+    kind: 'none',
   },
   kind: 'ready',
   visibility: { kind: 'readonly', label: 'Read-only view' },
@@ -235,16 +264,25 @@ export const readonlyNonAdminState = {
 export const disabledActionsState = {
   ...readyBase,
   actions: {
+    kind: 'available',
     primary: {
       audience: 'admin',
+      availability: 'disabled',
       disabledReason: 'Resolve pending KYC/KYB and wire confirmations before closing.',
       kind: 'closeDeal',
       label: 'Close deal',
     },
-    secondary: [{ kind: 'invite', label: 'Invite' }],
+    secondary: [
+      {
+        audience: 'admin',
+        availability: 'enabled',
+        kind: 'invite',
+        label: 'Invite',
+      },
+    ],
   },
   kind: 'ready',
-  status: { label: 'Action blocked', tone: 'attention' },
+  status: { kind: 'collectingCommitments', label: 'Action blocked', tone: 'attention' },
 } as const satisfies DealProgressPanelState
 
 export const adminOnlyState = {
@@ -282,6 +320,6 @@ export const loadingState = {
 export const errorState = {
   description: 'Refresh the page or try again.',
   kind: 'error',
-  retryLabel: 'Retry',
+  retryAction: { kind: 'retry', label: 'Retry' },
   title: 'Deal progression could not be loaded',
 } as const satisfies DealProgressPanelState

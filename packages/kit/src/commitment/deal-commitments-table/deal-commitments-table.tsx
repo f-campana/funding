@@ -1,7 +1,7 @@
 'use client'
 
 import { cn, Table, TableBody, TooltipProvider } from '@repo/ui'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   defaultPageSize,
   getCommitmentTableModel,
@@ -11,6 +11,7 @@ import type {
   CommitmentInvestorRow,
   CommitmentTableFilterId,
   CommitmentTableSortState,
+  DealCommitmentsTableExportProps,
   DealCommitmentsTableProps,
 } from './deal-commitments-table.types'
 import { CommitmentsTableBody } from './deal-commitments-table-body'
@@ -23,53 +24,111 @@ export type {
   CommitmentInvestorRow,
   CommitmentInvestorStatusTone,
   CommitmentReadinessKey,
+  CommitmentReadinessRecord,
   CommitmentReadinessState,
   CommitmentReadinessTone,
+  CommitmentReadinessVariant,
+  CommitmentReadinessVariantByKey,
   CommitmentRowDataIssueTone,
+  CommitmentTableExportHandler,
   CommitmentTableFilterId,
   CommitmentTableGroupValue,
   CommitmentTablePaginationState,
+  CommitmentTableRetryAction,
   CommitmentTableSortDirection,
   CommitmentTableSortKey,
   CommitmentTableSortState,
   CommitmentTableViewValue,
+  DealCommitmentsTableBaseToolbarLabels,
+  DealCommitmentsTableExportProps,
+  DealCommitmentsTableExportToolbarLabels,
   DealCommitmentsTableLabels,
   DealCommitmentsTableLifecycleState,
+  DealCommitmentsTableNoExportProps,
+  DealCommitmentsTableNoExportToolbarLabels,
   DealCommitmentsTableProps,
 } from './deal-commitments-table.types'
 
-export const DealCommitmentsTable = ({
-  className,
-  footer,
-  labels,
-  onActiveFilterIdsChange,
-  onExportSelected,
-  onExportVisible,
-  onPageChange,
-  onPageSizeChange,
-  onRowOpen,
-  onSearchValueChange,
-  onSelectedRowIdsChange,
-  state,
-  subtitle,
-  title,
-  toolbar,
-}: DealCommitmentsTableProps) => {
+export const DealCommitmentsTable = (props: DealCommitmentsTableProps) => {
+  const {
+    className,
+    footer,
+    labels,
+    onActiveFilterIdsChange,
+    onPageChange,
+    onPageSizeChange,
+    onRowOpen,
+    onSearchValueChange,
+    onSelectedRowIdsChange,
+    state,
+    subtitle,
+    title,
+    toolbar,
+  } = props
   const [localActiveFilterIds, setLocalActiveFilterIds] = useState<
     readonly CommitmentTableFilterId[]
-  >([])
+  >(() => (state.kind === 'ready' ? (state.activeFilterIds ?? []) : []))
   const [localActiveRowId, setLocalActiveRowId] = useState<string>()
   const [localDrawerOpenRowId, setLocalDrawerOpenRowId] = useState<string>()
-  const [localPage, setLocalPage] = useState(1)
-  const [localPageSize, setLocalPageSize] = useState(defaultPageSize)
-  const [localSearchValue, setLocalSearchValue] = useState('')
-  const [localSelectedRowIds, setLocalSelectedRowIds] = useState<readonly string[]>([])
+  const [localPage, setLocalPage] = useState(() =>
+    state.kind === 'ready' ? (state.pagination?.page ?? 1) : 1,
+  )
+  const [localPageSize, setLocalPageSize] = useState(() =>
+    state.kind === 'ready' ? (state.pagination?.pageSize ?? defaultPageSize) : defaultPageSize,
+  )
+  const [localSearchValue, setLocalSearchValue] = useState(() =>
+    state.kind === 'ready' ? (state.searchValue ?? '') : '',
+  )
+  const [localSelectedRowIds, setLocalSelectedRowIds] = useState<readonly string[]>(() =>
+    state.kind === 'ready' ? (state.selectedRowIds ?? []) : [],
+  )
   const localSort: CommitmentTableSortState | undefined = undefined
+  const readyActiveFilterIds = state.kind === 'ready' ? state.activeFilterIds : undefined
+  const readyPage = state.kind === 'ready' ? state.pagination?.page : undefined
+  const readyPageSize = state.kind === 'ready' ? state.pagination?.pageSize : undefined
+  const readySearchValue = state.kind === 'ready' ? state.searchValue : undefined
+  const readySelectedRowIds = state.kind === 'ready' ? state.selectedRowIds : undefined
 
-  // Ready-state controls are semi-controlled: provided state values win; omitted values use local
-  // state for Storybook/demo interaction. Sort/group/view remain non-default controlled inputs for
-  // downstream experiments; T3E does not render visible controls for them.
+  useEffect(() => {
+    if (onActiveFilterIdsChange === undefined && readyActiveFilterIds) {
+      setLocalActiveFilterIds(readyActiveFilterIds)
+    }
+  }, [onActiveFilterIdsChange, readyActiveFilterIds])
+
+  useEffect(() => {
+    if (onPageChange === undefined && readyPage !== undefined) {
+      setLocalPage(readyPage)
+    }
+  }, [onPageChange, readyPage])
+
+  useEffect(() => {
+    if (onPageSizeChange === undefined && readyPageSize !== undefined) {
+      setLocalPageSize(readyPageSize)
+    }
+  }, [onPageSizeChange, readyPageSize])
+
+  useEffect(() => {
+    if (onSearchValueChange === undefined && readySearchValue !== undefined) {
+      setLocalSearchValue(readySearchValue)
+    }
+  }, [onSearchValueChange, readySearchValue])
+
+  useEffect(() => {
+    if (onSelectedRowIdsChange === undefined && readySelectedRowIds) {
+      setLocalSelectedRowIds(readySelectedRowIds)
+    }
+  }, [onSelectedRowIdsChange, readySelectedRowIds])
+
+  // Ready-state controls are controlled only when the matching callback is present. Without the
+  // callback, provided values seed local state so interactive controls do not become frozen.
   const controls = getReadyControls({
+    controlled: {
+      activeFilterIds: onActiveFilterIdsChange !== undefined,
+      page: onPageChange !== undefined,
+      pageSize: onPageSizeChange !== undefined,
+      searchValue: onSearchValueChange !== undefined,
+      selectedRowIds: onSelectedRowIdsChange !== undefined,
+    },
     local: {
       activeFilterIds: localActiveFilterIds,
       activeRowId: localActiveRowId,
@@ -171,18 +230,25 @@ export const DealCommitmentsTable = ({
     setSelectedRowIds([...next])
   }
 
-  const exportRows = () => {
-    if (!model) {
-      return
-    }
+  const exportAction = isExportEnabled(props)
+    ? {
+        disabled: !model || model.visibleExportRowIds.length === 0,
+        exportSelectedLabel: props.toolbar.exportSelectedLabel,
+        exportVisibleLabel: props.toolbar.exportVisibleLabel,
+        onExport: () => {
+          if (!model) {
+            return
+          }
 
-    if (model.selectedVisibleRowIds.length > 0) {
-      onExportSelected?.(model.selectedVisibleRowIds)
-      return
-    }
+          if (model.selectedVisibleRowIds.length > 0) {
+            props.onExportSelected(model.selectedVisibleRowIds)
+            return
+          }
 
-    onExportVisible?.(model.visibleExportRowIds)
-  }
+          props.onExportVisible(model.visibleExportRowIds)
+        },
+      }
+    : undefined
 
   return (
     <TooltipProvider delayDuration={250}>
@@ -197,9 +263,8 @@ export const DealCommitmentsTable = ({
         <CommitmentsTableToolbar
           controls={controls}
           disabled={!isReady || (model ? !model.hasSourceRows : true)}
-          exportDisabled={!model || model.visibleExportRowIds.length === 0}
+          exportAction={exportAction}
           model={model}
-          onExport={exportRows}
           onFilterChange={setActiveFilterIds}
           onSearchChange={setSearchValue}
           subtitle={subtitle}
@@ -244,3 +309,8 @@ export const DealCommitmentsTable = ({
     </TooltipProvider>
   )
 }
+
+const isExportEnabled = (
+  props: DealCommitmentsTableProps,
+): props is DealCommitmentsTableExportProps =>
+  props.onExportSelected !== undefined && props.onExportVisible !== undefined

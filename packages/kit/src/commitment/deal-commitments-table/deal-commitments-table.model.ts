@@ -2,6 +2,8 @@ import { match } from 'ts-pattern'
 
 import type {
   CommitmentInvestorRow,
+  CommitmentReadinessState,
+  CommitmentReadinessTone,
   CommitmentRowVisualState,
   CommitmentTableBodyItem,
   CommitmentTableFilterId,
@@ -34,8 +36,6 @@ export const filterOptions = [
   { id: 'readyForClosing' },
 ] as const satisfies readonly { readonly id: CommitmentTableFilterId }[]
 
-const wirePendingPattern = /not received|pending/iu
-
 const statusToneRank = {
   attention: 0,
   pending: 1,
@@ -47,9 +47,17 @@ export const loadingRows = (count: number) =>
   Array.from({ length: count }, (_, index) => `commitment-row-skeleton-${index}`)
 
 export const getReadyControls = ({
+  controlled,
   local,
   state,
 }: {
+  readonly controlled: {
+    readonly activeFilterIds: boolean
+    readonly page: boolean
+    readonly pageSize: boolean
+    readonly searchValue: boolean
+    readonly selectedRowIds: boolean
+  }
   readonly local: LocalReadyControls
   readonly state: DealCommitmentsTableLifecycleState
 }): ReadyControls => {
@@ -70,19 +78,33 @@ export const getReadyControls = ({
   }
 
   return {
-    activeFilterIds: state.activeFilterIds ?? local.activeFilterIds,
+    activeFilterIds: getControlValue(
+      controlled.activeFilterIds,
+      state.activeFilterIds,
+      local.activeFilterIds,
+    ),
     activeRowId: state.activeRowId ?? local.activeRowId,
     drawerOpenRowId: state.drawerOpenRowId ?? local.drawerOpenRowId,
     group: state.group ?? local.group,
     hoveredRowId: state.hoveredRowId,
-    page: state.pagination?.page ?? local.page,
-    pageSize: state.pagination?.pageSize ?? local.pageSize,
-    searchValue: state.searchValue ?? local.searchValue,
-    selectedRowIds: state.selectedRowIds ?? local.selectedRowIds,
+    page: getControlValue(controlled.page, state.pagination?.page, local.page),
+    pageSize: getControlValue(controlled.pageSize, state.pagination?.pageSize, local.pageSize),
+    searchValue: getControlValue(controlled.searchValue, state.searchValue, local.searchValue),
+    selectedRowIds: getControlValue(
+      controlled.selectedRowIds,
+      state.selectedRowIds,
+      local.selectedRowIds,
+    ),
     sort: state.sort ?? local.sort,
     view: state.view ?? local.view,
   }
 }
+
+const getControlValue = <Value>(
+  controlled: boolean,
+  controlledValue: Value | undefined,
+  localValue: Value,
+) => (controlled ? (controlledValue ?? localValue) : localValue)
 
 export const getCommitmentTableModel = (
   rows: readonly CommitmentInvestorRow[],
@@ -224,33 +246,29 @@ export const getCommitmentRowVisualState = ({
   readonly drawerOpenRowId: string | undefined
   readonly hoveredRowId: string | undefined
   readonly row: CommitmentInvestorRow
-}): CommitmentRowVisualState =>
-  match({ activeRowId, drawerOpenRowId, hoveredRowId, row })
-    .returnType<CommitmentRowVisualState>()
-    .when(
-      ({ row: candidate }) => candidate.disabled === true,
-      () => ({ kind: 'disabled' }),
-    )
-    .when(
-      ({ drawerOpenRowId: candidateDrawerOpenRowId, row: candidate }) =>
-        candidateDrawerOpenRowId === candidate.id,
-      () => ({ drawerOpen: true, kind: 'active' }),
-    )
-    .when(
-      ({ activeRowId: candidateActiveRowId, row: candidate }) =>
-        candidateActiveRowId === candidate.id,
-      () => ({ drawerOpen: false, kind: 'active' }),
-    )
-    .when(
-      ({ hoveredRowId: candidateHoveredRowId, row: candidate }) =>
-        candidateHoveredRowId === candidate.id,
-      () => ({ kind: 'hovered' }),
-    )
-    .when(
-      ({ row: candidate }) => candidate.attention === true,
-      () => ({ kind: 'attention' }),
-    )
-    .otherwise(() => ({ kind: 'default' }))
+}): CommitmentRowVisualState => {
+  if (row.disabled) {
+    return { kind: 'disabled' }
+  }
+
+  if (drawerOpenRowId === row.id) {
+    return { drawerOpen: true, kind: 'active' }
+  }
+
+  if (activeRowId === row.id) {
+    return { drawerOpen: false, kind: 'active' }
+  }
+
+  if (hoveredRowId === row.id) {
+    return { kind: 'hovered' }
+  }
+
+  if (row.attention) {
+    return { kind: 'attention' }
+  }
+
+  return { kind: 'default' }
+}
 
 export const getHeaderCheckboxState = (
   selectableVisibleCount: number,
@@ -280,7 +298,7 @@ export const rowNeedsAttention = (row: CommitmentInvestorRow) =>
   row.attention === true ||
   row.dataIssue !== undefined ||
   row.status.tone === 'attention' ||
-  readinessKeys.some((key) => ['danger', 'attention'].includes(row.readiness[key].tone))
+  readinessKeys.some((key) => readinessNeedsAttention(row.readiness[key]))
 
 export const toggleFilterId = (
   activeFilterIds: readonly CommitmentTableFilterId[],
@@ -316,25 +334,74 @@ const rowMatchesFilter = (row: CommitmentInvestorRow, filterId: CommitmentTableF
   match(filterId)
     .returnType<boolean>()
     .with('needsAttention', () => rowNeedsAttention(row))
-    .with('pendingKycKyb', () => row.readiness.kycKyb.tone !== 'success')
-    .with('completedKycKyb', () => row.readiness.kycKyb.tone === 'success')
-    .with('signaturePending', () => row.readiness.signature.tone === 'attention')
+    .with('pendingKycKyb', () => row.readiness.kycKyb.variant !== 'verified')
+    .with('completedKycKyb', () => row.readiness.kycKyb.variant === 'verified')
+    .with('signaturePending', () => row.readiness.signature.variant === 'pending')
     .with(
       'wirePending',
       () =>
-        ['attention', 'neutral'].includes(row.readiness.wire.tone) &&
-        wirePendingPattern.test(row.readiness.wire.value),
+        row.readiness.wire.variant === 'pending' || row.readiness.wire.variant === 'notReceived',
     )
     .with(
       'readyForClosing',
       () =>
-        row.readiness.kycKyb.tone === 'success' &&
-        row.readiness.signature.tone === 'success' &&
-        row.readiness.wire.tone === 'success' &&
+        row.readiness.kycKyb.variant === 'verified' &&
+        row.readiness.signature.variant === 'signed' &&
+        row.readiness.wire.variant === 'received' &&
         !row.dataIssue &&
         !row.disabled,
     )
     .exhaustive()
+
+export const getCommitmentReadinessTone = (
+  state: CommitmentReadinessState,
+): CommitmentReadinessTone => {
+  switch (state.key) {
+    case 'kycKyb':
+      return match(state.variant)
+        .returnType<CommitmentReadinessTone>()
+        .with('verified', () => 'success')
+        .with('inReview', () => 'info')
+        .with('expired', () => 'danger')
+        .with('unavailable', () => 'neutral')
+        .exhaustive()
+    case 'signature':
+      return match(state.variant)
+        .returnType<CommitmentReadinessTone>()
+        .with('signed', () => 'success')
+        .with('pending', () => 'attention')
+        .with('unavailable', () => 'neutral')
+        .exhaustive()
+    case 'wire':
+      return match(state.variant)
+        .returnType<CommitmentReadinessTone>()
+        .with('received', () => 'success')
+        .with('pending', () => 'attention')
+        .with('notReceived', () => 'neutral')
+        .with('syncFailed', () => 'danger')
+        .exhaustive()
+    case 'reconciliation':
+      return match(state.variant)
+        .returnType<CommitmentReadinessTone>()
+        .with('reconciled', () => 'success')
+        .with('pending', () => 'attention')
+        .with('notStarted', () => 'neutral')
+        .with('reconciling', () => 'info')
+        .with('needsReview', () => 'danger')
+        .exhaustive()
+  }
+}
+
+const readinessNeedsAttention = (state: CommitmentReadinessState) =>
+  match(state)
+    .returnType<boolean>()
+    .with({ key: 'kycKyb', variant: 'expired' }, () => true)
+    .with({ key: 'signature', variant: 'pending' }, () => true)
+    .with({ key: 'wire', variant: 'pending' }, () => true)
+    .with({ key: 'wire', variant: 'syncFailed' }, () => true)
+    .with({ key: 'reconciliation', variant: 'pending' }, () => true)
+    .with({ key: 'reconciliation', variant: 'needsReview' }, () => true)
+    .otherwise(() => false)
 
 const compareText = (first: string, second: string) =>
   first.localeCompare(second, undefined, { numeric: true, sensitivity: 'base' })

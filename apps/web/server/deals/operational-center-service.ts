@@ -1,5 +1,6 @@
 import { Result } from '@repo/core'
 import {
+  type Brand,
   type CapitalReconciliationError,
   type CapitalReconciliationSummary,
   type ClosingBlockerType,
@@ -19,7 +20,6 @@ import {
   serializeEuroCentsToNumber,
   summarizeCapitalReconciliation,
   summarizeClosingReadiness,
-  summarizeDocumentCompleteness,
   type WireOperationalStatus,
 } from '@repo/domain'
 
@@ -37,15 +37,18 @@ import type {
   ClosingReadinessDTO,
   DealOperationalCenterDTO,
   DocumentCenterDTO,
-  DocumentCompletenessDTO,
   DocumentRequirementDTO,
   GetOperationalCenterInputDTO,
+  InvestorOperationDTO,
   MoneyMinorUnitsDTO,
   MoneySerializationErrorDTO,
-  OperationalRailDTO,
   ReadinessDimensionDTO,
   ReadinessDimensionStateDTO,
 } from './operational-center-dto'
+
+type DealSlug = Brand<string, 'DealSlug'>
+
+const dealSlugFromInput = (value: string): DealSlug => value.trim() as DealSlug
 
 export type GetDealOperationalCenterError =
   | {
@@ -64,20 +67,22 @@ export type GetDealOperationalCenterError =
 export const getDealOperationalCenter = (
   input: GetOperationalCenterInputDTO,
 ): Result<DealOperationalCenterDTO, GetDealOperationalCenterError> => {
-  const dealId = input.dealId.trim()
+  const dealId = dealSlugFromInput(input.dealId)
 
   if (dealId !== NORTHSTAR_DEAL_SLUG) {
     return Result.Error({ _tag: 'UnsupportedDeal', dealId })
   }
 
-  const moneyContext = createMoneySerializationContext()
   const capitalResult = summarizeCapitalReconciliation(northstarOperationalFixture.capital)
 
   if (capitalResult.isError()) {
-    return Result.Error({
-      _tag: 'ReconciliationError',
-      error: mapCapitalReconciliationError(capitalResult.error, moneyContext.money),
-    })
+    const errorResult = mapCapitalReconciliationError(capitalResult.error)
+
+    if (errorResult.isError()) {
+      return Result.Error({ _tag: 'MoneySerializationError', error: errorResult.error })
+    }
+
+    return Result.Error({ _tag: 'ReconciliationError', error: errorResult.value })
   }
 
   const readinessSummary = summarizeClosingReadiness({
@@ -86,10 +91,6 @@ export const getDealOperationalCenter = (
   })
   const documents = mapDocuments(northstarOperationalFixture.documents)
   const blockers = northstarOperationalFixture.blockers.map(mapBlocker)
-  const investors = northstarOperationalFixture.investors.map((investor) =>
-    mapInvestor(investor, northstarOperationalFixture.blockers, moneyContext.money),
-  )
-  const documentSummary = summarizeDocumentCompleteness(northstarOperationalFixture.documents)
   const readiness = deriveClosingReadiness({
     blockers: northstarOperationalFixture.blockers,
     capital: capitalResult.value,
@@ -98,131 +99,189 @@ export const getDealOperationalCenter = (
     summary: readinessSummary,
     vehicle: northstarOperationalFixture.deal.vehicle,
   })
-  const capital = mapCapital(capitalResult.value, moneyContext.money)
   const documentsCenter: DocumentCenterDTO = {
     groups: northstarOperationalFixture.documentGroups,
     requirements: documents,
-    summary: mapDocumentSummary(documentSummary),
   }
-  const routes = {
-    about: `/deals/${northstarOperationalFixture.deal.slug}/about`,
-    commitments: `/deals/${northstarOperationalFixture.deal.slug}/commitments`,
-    documents: `/deals/${northstarOperationalFixture.deal.slug}/documents`,
-  } as const
-  const rail = mapRail({
-    capital,
-    documentSummary: documentsCenter.summary,
-    investors,
-    readiness,
-  })
+  const capitalDtoResult = mapCapital(capitalResult.value)
 
-  const moneyError = moneyContext.firstError()
+  if (capitalDtoResult.isError()) {
+    return Result.Error({ _tag: 'MoneySerializationError', error: capitalDtoResult.error })
+  }
 
-  if (moneyError !== undefined) {
-    return Result.Error({ _tag: 'MoneySerializationError', error: moneyError })
+  const investorsResult = Result.traverse(northstarOperationalFixture.investors, (investor) =>
+    mapInvestor(investor, northstarOperationalFixture.blockers),
+  ).mapError(firstError)
+
+  if (investorsResult.isError()) {
+    return Result.Error({ _tag: 'MoneySerializationError', error: investorsResult.error })
   }
 
   return Result.Ok({
     _tag: 'DealOperationalCenter',
     activity: northstarOperationalFixture.activity,
     blockers,
-    capital,
+    capital: capitalDtoResult.value,
     deal: {
       ...northstarOperationalFixture.deal,
       stageLabel: getDealLifecycleLabel(northstarOperationalFixture.deal.stage),
     },
     documents: documentsCenter,
     generatedAt: northstarOperationalFixture.generatedAt,
-    investors,
-    rail,
+    investors: investorsResult.value,
     readiness,
-    routes,
   })
 }
 
-type MoneySerializer = (value: EuroCents, field: string) => MoneyMinorUnitsDTO
+type MoneySerializationResult<T> = Result<T, MoneySerializationErrorDTO>
 
-const createMoneySerializationContext = () => {
-  const errors: MoneySerializationErrorDTO[] = []
-
-  const money: MoneySerializer = (value, field) => {
-    const serialized = serializeEuroCentsToNumber(value)
-
-    if (serialized.isError()) {
-      errors.push({
+const money = (value: EuroCents, field: string): MoneySerializationResult<MoneyMinorUnitsDTO> =>
+  serializeEuroCentsToNumber(value).match({
+    Error: () =>
+      Result.Error({
         _tag: 'UnsafeMoneyAmount',
         amountMinor: euroCentsToMinorUnits(value).toString(),
         field,
-      })
+      }),
+    Ok: (amountMinor) => Result.Ok({ amountMinor, currency: 'EUR' }),
+  })
 
-      return { amountMinor: 0, currency: 'EUR' }
-    }
+const firstError = <ErrorValue>(errors: readonly ErrorValue[]): ErrorValue => {
+  const [first] = errors
 
-    return { amountMinor: serialized.value, currency: 'EUR' }
+  if (first === undefined) {
+    throw new Error('Expected at least one Result error')
   }
 
-  return {
-    firstError: (): MoneySerializationErrorDTO | undefined => errors.at(0),
-    money,
-  }
+  return first
 }
 
 const mapCapital = (
   summary: CapitalReconciliationSummary,
-  money: MoneySerializer,
-): CapitalReconciliationDTO => ({
-  committedAmount: money(summary.committedAmountCents, 'capital.committedAmount'),
-  economics: {
-    carryPercent: northstarOperationalFixture.capital.carryPercent,
-    entryFees: money(northstarOperationalFixture.capital.entryFeesCents, 'capital.entryFees'),
-    grossCommitted: money(summary.committedAmountCents, 'capital.grossCommitted'),
-    netInvestableAmount: money(
-      northstarOperationalFixture.capital.netInvestableAmountCents,
-      'capital.netInvestableAmount',
-    ),
-    spvFee: money(northstarOperationalFixture.capital.spvFeeCents, 'capital.spvFee'),
-  },
-  hasUnmatchedFunds: summary.hasUnmatchedFunds,
-  isOverTarget: summary.isOverTarget,
-  matchedAmount: money(summary.matchedAmountCents, 'capital.matchedAmount'),
-  overTarget: money(summary.overTargetCents, 'capital.overTarget'),
-  receivedAmount: money(summary.receivedAmountCents, 'capital.receivedAmount'),
-  remainingToTarget: money(summary.remainingToTargetCents, 'capital.remainingToTarget'),
-  signedAmount: money(summary.signedAmountCents, 'capital.signedAmount'),
-  targetAmount: money(summary.targetAmountCents, 'capital.targetAmount'),
-  unfundedCommitted: money(summary.unfundedCommittedCents, 'capital.unfundedCommitted'),
-  unmatchedReceived: money(summary.unmatchedReceivedCents, 'capital.unmatchedReceived'),
-  unreceivedSigned: money(summary.unreceivedSignedCents, 'capital.unreceivedSigned'),
-  unsignedCommitted: money(summary.unsignedCommittedCents, 'capital.unsignedCommitted'),
-})
+): MoneySerializationResult<CapitalReconciliationDTO> =>
+  mapMoneyFields([
+    {
+      field: 'capital.committedAmount',
+      key: 'committedAmount',
+      value: summary.committedAmountCents,
+    },
+    {
+      field: 'capital.entryFees',
+      key: 'entryFees',
+      value: northstarOperationalFixture.capital.entryFeesCents,
+    },
+    { field: 'capital.grossCommitted', key: 'grossCommitted', value: summary.committedAmountCents },
+    { field: 'capital.matchedAmount', key: 'matchedAmount', value: summary.matchedAmountCents },
+    {
+      field: 'capital.netInvestableAmount',
+      key: 'netInvestableAmount',
+      value: northstarOperationalFixture.capital.netInvestableAmountCents,
+    },
+    { field: 'capital.overTarget', key: 'overTarget', value: summary.overTargetCents },
+    { field: 'capital.receivedAmount', key: 'receivedAmount', value: summary.receivedAmountCents },
+    {
+      field: 'capital.remainingToTarget',
+      key: 'remainingToTarget',
+      value: summary.remainingToTargetCents,
+    },
+    { field: 'capital.signedAmount', key: 'signedAmount', value: summary.signedAmountCents },
+    {
+      field: 'capital.spvFee',
+      key: 'spvFee',
+      value: northstarOperationalFixture.capital.spvFeeCents,
+    },
+    { field: 'capital.targetAmount', key: 'targetAmount', value: summary.targetAmountCents },
+    {
+      field: 'capital.unfundedCommitted',
+      key: 'unfundedCommitted',
+      value: summary.unfundedCommittedCents,
+    },
+    {
+      field: 'capital.unmatchedReceived',
+      key: 'unmatchedReceived',
+      value: summary.unmatchedReceivedCents,
+    },
+    {
+      field: 'capital.unreceivedSigned',
+      key: 'unreceivedSigned',
+      value: summary.unreceivedSignedCents,
+    },
+    {
+      field: 'capital.unsignedCommitted',
+      key: 'unsignedCommitted',
+      value: summary.unsignedCommittedCents,
+    },
+  ] as const).map((amounts) => ({
+    committedAmount: amounts.committedAmount,
+    economics: {
+      carryPercent: northstarOperationalFixture.capital.carryPercent,
+      entryFees: amounts.entryFees,
+      grossCommitted: amounts.grossCommitted,
+      netInvestableAmount: amounts.netInvestableAmount,
+      spvFee: amounts.spvFee,
+    },
+    matchedAmount: amounts.matchedAmount,
+    matching:
+      amounts.unmatchedReceived.amountMinor > 0
+        ? { kind: 'unmatched', unmatchedReceived: amounts.unmatchedReceived }
+        : { kind: 'matched' },
+    receivedAmount: amounts.receivedAmount,
+    signedAmount: amounts.signedAmount,
+    targetAmount: amounts.targetAmount,
+    targetPosition:
+      amounts.overTarget.amountMinor > 0
+        ? { kind: 'over_target', overTarget: amounts.overTarget }
+        : amounts.remainingToTarget.amountMinor > 0
+          ? { kind: 'under_target', remainingToTarget: amounts.remainingToTarget }
+          : { kind: 'at_target' },
+    unfundedCommitted: amounts.unfundedCommitted,
+    unreceivedSigned: amounts.unreceivedSigned,
+    unsignedCommitted: amounts.unsignedCommitted,
+  }))
 
 const mapCapitalReconciliationError = (
   error: CapitalReconciliationError,
-  money: MoneySerializer,
-): CapitalReconciliationErrorDTO => {
+): MoneySerializationResult<CapitalReconciliationErrorDTO> => {
   if (error._tag === 'NegativeAmount') {
-    return {
+    return money(error.amountCents, `capital.${error.field}`).map((amount) => ({
       _tag: 'NegativeAmount',
-      amount: money(error.amountCents, `capital.${error.field}`),
+      amount,
       field: error.field,
-    }
+    }))
   }
 
-  return {
-    _tag: 'StageOrderViolation',
-    earlierAmount: money(error.earlierAmountCents, `capital.${error.earlierStage}`),
-    earlierStage: error.earlierStage,
-    laterAmount: money(error.laterAmountCents, `capital.${error.laterStage}`),
-    laterStage: error.laterStage,
-  }
+  return Result.all([
+    money(error.earlierAmountCents, `capital.${error.earlierStage}`),
+    money(error.laterAmountCents, `capital.${error.laterStage}`),
+  ])
+    .mapError(firstError)
+    .map(([earlierAmount, laterAmount]) => ({
+      _tag: 'StageOrderViolation',
+      earlierAmount,
+      earlierStage: error.earlierStage,
+      laterAmount,
+      laterStage: error.laterStage,
+    }))
 }
 
-const READINESS_NEXT_ACTION_LABELS = {
-  attention: 'Review operational exceptions before close',
-  blocked: 'Resolve blocking operational exceptions before close',
-  not_started: 'Start operational readiness review',
-  ready: 'Proceed to closing review',
-} as const satisfies Record<ClosingReadinessDTO['state'], string>
+type MoneyField<Key extends string> = {
+  readonly key: Key
+  readonly field: string
+  readonly value: EuroCents
+}
+
+type MoneyFieldValues<Fields extends readonly MoneyField<string>[]> = {
+  readonly [Field in Fields[number] as Field['key']]: MoneyMinorUnitsDTO
+}
+
+const mapMoneyFields = <const Fields extends readonly MoneyField<string>[]>(
+  fields: Fields,
+): MoneySerializationResult<MoneyFieldValues<Fields>> =>
+  Result.traverse(fields, ({ field, key, value }) =>
+    money(value, field).map((amount) => [key, amount] as const),
+  )
+    .mapError(firstError)
+    .map((entries) => Object.fromEntries(entries) as MoneyFieldValues<Fields>)
 
 export const deriveClosingReadiness = ({
   blockers,
@@ -232,7 +291,7 @@ export const deriveClosingReadiness = ({
   summary,
   vehicle,
 }: {
-  readonly summary: Omit<ClosingReadinessDTO, 'dimensions'>
+  readonly summary: { readonly state: ClosingReadinessDTO['state'] }
   readonly blockers: readonly NorthstarClosingBlockerFixture[]
   readonly investors: readonly NorthstarInvestorOperationFixture[]
   readonly documents: readonly NorthstarDocumentRequirementFixture[]
@@ -289,9 +348,7 @@ export const deriveClosingReadiness = ({
   ])
 
   return {
-    ...summary,
     dimensions,
-    nextActionLabel: READINESS_NEXT_ACTION_LABELS[state],
     state,
   }
 }
@@ -321,21 +378,8 @@ const mapDimension = ({
 
 const readinessStateFromBlockers = (
   blockers: readonly NorthstarClosingBlockerFixture[],
-): ReadinessDimensionStateDTO => {
-  if (blockers.some((blocker) => blocker.severity === 'critical')) {
-    return 'blocked'
-  }
-
-  if (blockers.some((blocker) => blocker.severity === 'warning')) {
-    return 'attention'
-  }
-
-  if (blockers.some((blocker) => blocker.severity === 'info')) {
-    return 'attention'
-  }
-
-  return 'ready'
-}
+): ReadinessDimensionStateDTO =>
+  combineReadinessStates(blockers.map((blocker) => BLOCKER_SEVERITY_READINESS[blocker.severity]))
 
 const combineReadinessStates = (
   states: readonly ReadinessDimensionStateDTO[],
@@ -355,40 +399,66 @@ const combineReadinessStates = (
   return 'ready'
 }
 
-const IDENTITY_BLOCKED_STATUSES = new Set<KycOperationalStatus>(['blocked', 'expired', 'rejected'])
-const IDENTITY_ATTENTION_STATUSES = new Set<KycOperationalStatus>([
-  'in_progress',
-  'not_started',
-  'pending_review',
-])
-const SIGNATURE_BLOCKED_STATUSES = new Set<SignatureOperationalStatus>([
-  'declined',
-  'expired',
-  'failed',
-])
-const SIGNATURE_ATTENTION_STATUSES = new Set<SignatureOperationalStatus>([
-  'not_sent',
-  'part_signed',
-  'prepared',
-  'sent',
-  'viewed',
-])
-const WIRE_BLOCKED_STATUSES = new Set<WireOperationalStatus>(['failed', 'returned'])
-const WIRE_ATTENTION_STATUSES = new Set<WireOperationalStatus>([
-  'instructions_sent',
-  'not_requested',
-  'partially_matched',
-  'pending',
-  'received',
-  'under_review',
-  'unmatched',
-])
-const DOCUMENT_BLOCKED_STATUSES = new Set<DocumentRequirementStatus>([
-  'expired',
-  'missing',
-  'rejected',
-])
-const DOCUMENT_ATTENTION_STATUSES = new Set<DocumentRequirementStatus>(['under_review', 'uploaded'])
+const IDENTITY_STATUS_READINESS = {
+  approved: 'ready',
+  blocked: 'blocked',
+  expired: 'blocked',
+  in_progress: 'attention',
+  not_started: 'attention',
+  pending_review: 'attention',
+  rejected: 'blocked',
+} as const satisfies Record<KycOperationalStatus, ReadinessDimensionStateDTO>
+
+const SIGNATURE_STATUS_READINESS = {
+  completed: 'ready',
+  declined: 'blocked',
+  expired: 'blocked',
+  failed: 'blocked',
+  not_sent: 'attention',
+  part_signed: 'attention',
+  prepared: 'attention',
+  sent: 'attention',
+  viewed: 'attention',
+} as const satisfies Record<SignatureOperationalStatus, ReadinessDimensionStateDTO>
+
+const WIRE_STATUS_READINESS = {
+  failed: 'blocked',
+  instructions_sent: 'attention',
+  matched: 'ready',
+  not_requested: 'attention',
+  partially_matched: 'attention',
+  pending: 'attention',
+  received: 'attention',
+  reconciled: 'ready',
+  returned: 'blocked',
+  under_review: 'attention',
+  unmatched: 'attention',
+} as const satisfies Record<WireOperationalStatus, ReadinessDimensionStateDTO>
+
+const DOCUMENT_STATUS_READINESS = {
+  approved: 'ready',
+  expired: 'blocked',
+  missing: 'blocked',
+  rejected: 'blocked',
+  under_review: 'attention',
+  uploaded: 'attention',
+} as const satisfies Record<DocumentRequirementStatus, ReadinessDimensionStateDTO>
+
+const BLOCKER_SEVERITY_READINESS = {
+  critical: 'blocked',
+  info: 'attention',
+  warning: 'attention',
+} as const satisfies Record<NorthstarClosingBlockerFixture['severity'], ReadinessDimensionStateDTO>
+
+const VEHICLE_SETUP_STATUS_READINESS = {
+  blocked: 'blocked',
+  in_progress: 'attention',
+  not_started: 'attention',
+  ready: 'ready',
+} as const satisfies Record<
+  NorthstarOperationalFixture['deal']['vehicle']['setupStatus'],
+  ReadinessDimensionStateDTO
+>
 
 const getInvestorIdentitySourceState = (
   investors: readonly NorthstarInvestorOperationFixture[],
@@ -411,7 +481,7 @@ const getSingleInvestorIdentitySourceState = (
     return 'attention'
   }
 
-  return sourceStateFromStatuses(statuses, IDENTITY_BLOCKED_STATUSES, IDENTITY_ATTENTION_STATUSES)
+  return sourceStateFromStatuses(statuses, IDENTITY_STATUS_READINESS)
 }
 
 const getSignatureSourceState = (
@@ -419,8 +489,7 @@ const getSignatureSourceState = (
 ): ReadinessDimensionStateDTO =>
   sourceStateFromStatuses(
     investors.map((investor) => investor.signatureStatus),
-    SIGNATURE_BLOCKED_STATUSES,
-    SIGNATURE_ATTENTION_STATUSES,
+    SIGNATURE_STATUS_READINESS,
   )
 
 const getWireSourceState = (
@@ -428,8 +497,7 @@ const getWireSourceState = (
 ): ReadinessDimensionStateDTO =>
   sourceStateFromStatuses(
     investors.map((investor) => investor.wireStatus),
-    WIRE_BLOCKED_STATUSES,
-    WIRE_ATTENTION_STATUSES,
+    WIRE_STATUS_READINESS,
   )
 
 const getDocumentSourceState = (
@@ -437,8 +505,7 @@ const getDocumentSourceState = (
 ): ReadinessDimensionStateDTO =>
   sourceStateFromStatuses(
     documents.filter((document) => document.required).map((document) => document.status),
-    DOCUMENT_BLOCKED_STATUSES,
-    DOCUMENT_ATTENTION_STATUSES,
+    DOCUMENT_STATUS_READINESS,
   )
 
 const getCapitalSourceState = (
@@ -448,36 +515,17 @@ const getCapitalSourceState = (
 
 const getVehicleSourceState = (
   setupStatus: NorthstarOperationalFixture['deal']['vehicle']['setupStatus'],
-): ReadinessDimensionStateDTO => {
-  if (setupStatus === 'blocked') {
-    return 'blocked'
-  }
-
-  if (setupStatus === 'in_progress' || setupStatus === 'not_started') {
-    return 'attention'
-  }
-
-  return 'ready'
-}
+): ReadinessDimensionStateDTO => VEHICLE_SETUP_STATUS_READINESS[setupStatus]
 
 const sourceStateFromStatuses = <Status extends string>(
   statuses: readonly Status[],
-  blockedStatuses: ReadonlySet<Status>,
-  attentionStatuses: ReadonlySet<Status>,
+  readinessByStatus: Record<Status, ReadinessDimensionStateDTO>,
 ): ReadinessDimensionStateDTO => {
   if (statuses.length === 0) {
     return 'not_started'
   }
 
-  if (statuses.some((status) => blockedStatuses.has(status))) {
-    return 'blocked'
-  }
-
-  if (statuses.some((status) => attentionStatuses.has(status))) {
-    return 'attention'
-  }
-
-  return 'ready'
+  return combineReadinessStates(statuses.map((status) => readinessByStatus[status]))
 }
 
 const mapBlocker = (blocker: NorthstarClosingBlockerFixture) => ({
@@ -497,39 +545,69 @@ const mapBlocker = (blocker: NorthstarClosingBlockerFixture) => ({
 const mapInvestor = (
   investor: NorthstarInvestorOperationFixture,
   blockers: readonly NorthstarClosingBlockerFixture[],
-  money: MoneySerializer,
-) => {
+): MoneySerializationResult<InvestorOperationDTO> => {
   const unresolvedBlockersById = new Map(
     blockers.filter((blocker) => !blocker.resolved).map((blocker) => [blocker.id, blocker]),
   )
   const investorBlockers = investor.blockerIds
     .map((blockerId) => unresolvedBlockersById.get(blockerId))
     .filter((blocker): blocker is NorthstarClosingBlockerFixture => blocker !== undefined)
-  const kybStatusLabel =
-    investor.kybStatus === undefined ? undefined : getKybOperationalStatusLabel(investor.kybStatus)
+
+  return money(investor.commitmentAmountCents, `investors.${investor.id}.commitment`).map(
+    (commitmentAmount) =>
+      buildInvestorOperation({
+        commitmentAmount,
+        investor,
+        investorBlockers,
+      }),
+  )
+}
+
+const buildInvestorOperation = ({
+  commitmentAmount,
+  investor,
+  investorBlockers,
+}: {
+  readonly investor: NorthstarInvestorOperationFixture
+  readonly investorBlockers: readonly NorthstarClosingBlockerFixture[]
+  readonly commitmentAmount: MoneyMinorUnitsDTO
+}): InvestorOperationDTO => {
+  const entity =
+    investor.legalEntityName === undefined
+      ? ({ kind: 'individual' } as const)
+      : {
+          kind: 'legal_entity' as const,
+          legalEntity: {
+            kyb:
+              investor.kybStatus === undefined
+                ? {
+                    kind: 'missing' as const,
+                    statusLabel: 'KYB status missing',
+                  }
+                : {
+                    kind: 'available' as const,
+                    status: investor.kybStatus,
+                    statusLabel: getKybOperationalStatusLabel(investor.kybStatus),
+                  },
+            name: investor.legalEntityName,
+          },
+        }
 
   return {
     blockerIds: investor.blockerIds,
-    commitmentAmount: money(investor.commitmentAmountCents, `investors.${investor.id}.commitment`),
+    commitmentAmount,
     commitmentStatus: investor.commitmentStatus,
     commitmentStatusLabel: getCommitmentLifecycleLabel(investor.commitmentStatus),
     documentIds: investor.documentIds,
+    entity,
     id: investor.id,
     investorName: investor.investorName,
     kycStatus: investor.kycStatus,
     kycStatusLabel: getKycOperationalStatusLabel(investor.kycStatus),
     readinessState: combineReadinessStates([
       getSingleInvestorIdentitySourceState(investor),
-      sourceStateFromStatuses(
-        [investor.signatureStatus],
-        SIGNATURE_BLOCKED_STATUSES,
-        SIGNATURE_ATTENTION_STATUSES,
-      ),
-      sourceStateFromStatuses(
-        [investor.wireStatus],
-        WIRE_BLOCKED_STATUSES,
-        WIRE_ATTENTION_STATUSES,
-      ),
+      sourceStateFromStatuses([investor.signatureStatus], SIGNATURE_STATUS_READINESS),
+      sourceStateFromStatuses([investor.wireStatus], WIRE_STATUS_READINESS),
       readinessStateFromBlockers(investorBlockers),
     ]),
     signatureStatus: investor.signatureStatus,
@@ -537,16 +615,7 @@ const mapInvestor = (
     wireStatus: investor.wireStatus,
     wireStatusLabel: getWireOperationalStatusLabel(investor.wireStatus),
     ...(investor.investorEmail === undefined ? {} : { investorEmail: investor.investorEmail }),
-    ...(investor.kybStatus === undefined
-      ? {}
-      : {
-          kybStatus: investor.kybStatus,
-          ...(kybStatusLabel === undefined ? {} : { kybStatusLabel }),
-        }),
     ...(investor.lastActivityAt === undefined ? {} : { lastActivityAt: investor.lastActivityAt }),
-    ...(investor.legalEntityName === undefined
-      ? {}
-      : { legalEntityName: investor.legalEntityName }),
   }
 }
 
@@ -569,47 +638,3 @@ const mapDocuments = (
       ? {}
       : { relatedInvestorId: document.relatedInvestorId }),
   }))
-
-const mapDocumentSummary = (summary: DocumentCompletenessDTO): DocumentCompletenessDTO => ({
-  approvedCount: summary.approvedCount,
-  expiredCount: summary.expiredCount,
-  isComplete: summary.isComplete,
-  missingCount: summary.missingCount,
-  optionalCount: summary.optionalCount,
-  rejectedCount: summary.rejectedCount,
-  requiredCount: summary.requiredCount,
-  requiredExpiredCount: summary.requiredExpiredCount,
-  requiredMissingCount: summary.requiredMissingCount,
-  requiredRejectedCount: summary.requiredRejectedCount,
-  totalCount: summary.totalCount,
-  underReviewCount: summary.underReviewCount,
-  uploadedCount: summary.uploadedCount,
-})
-
-const mapRail = ({
-  capital,
-  documentSummary,
-  investors,
-  readiness,
-}: {
-  readonly capital: CapitalReconciliationDTO
-  readonly documentSummary: DocumentCompletenessDTO
-  readonly investors: readonly { readonly readinessState: ReadinessDimensionStateDTO }[]
-  readonly readiness: ClosingReadinessDTO
-}): OperationalRailDTO => ({
-  capitalCallout: {
-    label: 'Net investable amount',
-    value: capital.economics.netInvestableAmount,
-  },
-  criticalBlockerCount: readiness.criticalBlockerCount,
-  documentIssueCount:
-    documentSummary.requiredMissingCount +
-    documentSummary.requiredRejectedCount +
-    documentSummary.requiredExpiredCount,
-  investorsBlockedCount: investors.filter((investor) => investor.readinessState === 'blocked')
-    .length,
-  nextActionLabel: readiness.nextActionLabel,
-  readinessState: readiness.state,
-  targetCloseDate: northstarOperationalFixture.deal.targetCloseDate,
-  warningBlockerCount: readiness.warningBlockerCount,
-})

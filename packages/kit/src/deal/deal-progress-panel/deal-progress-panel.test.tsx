@@ -15,7 +15,11 @@ import {
   normalizeCompositionSegments,
   normalizeSegments,
 } from './deal-progress-panel.model'
-import type { DealProgressPanelState } from './deal-progress-panel.types'
+import type {
+  DealProgressAction,
+  DealProgressPanelProps,
+  DealProgressPanelState,
+} from './deal-progress-panel.types'
 import {
   adminOnlyState,
   closedCompletedState,
@@ -47,6 +51,8 @@ const panelSurfaceInversionPattern =
 const panelSourceFilePattern = /^deal-progress-panel.*\.(ts|tsx)$/u
 
 const expectLifecycleState = (_state: DealProgressPanelState) => undefined
+const expectPanelProps = (_props: DealProgressPanelProps) => undefined
+const expectProgressAction = (_action: DealProgressAction) => undefined
 
 // @ts-expect-error Loading state cannot carry ready capital data.
 expectLifecycleState({ kind: 'loading', capital: defaultCollectingCommitmentsState.capital })
@@ -56,6 +62,62 @@ expectLifecycleState({ actions: defaultCollectingCommitmentsState.actions, kind:
 
 // @ts-expect-error Ready state requires capital summary.
 expectLifecycleState({ kind: 'ready', mode: 'collectingCommitments', stage: 'open' })
+
+// @ts-expect-error Retryable error state requires an action handler.
+expectPanelProps({ labels: dealProgressPanelLabels, state: errorState })
+
+// @ts-expect-error Available workflow actions require an action handler.
+expectPanelProps({ labels: dealProgressPanelLabels, state: defaultCollectingCommitmentsState })
+
+expectLifecycleState({
+  actions: {
+    // @ts-expect-error Terminal ready states cannot carry workflow actions.
+    kind: 'available',
+    primary: {
+      audience: 'admin',
+      availability: 'enabled',
+      kind: 'closeDeal',
+      label: 'Close deal',
+    },
+  },
+  capital: defaultCollectingCommitmentsState.capital,
+  dataQuality: { kind: 'fresh' },
+  kind: 'ready',
+  mode: 'closed',
+  stage: 'completed',
+  status: { kind: 'completed', label: 'Completed', tone: 'success' },
+})
+
+// @ts-expect-error Readonly ready states cannot carry hidden admin actions.
+expectLifecycleState({
+  ...defaultCollectingCommitmentsState,
+  visibility: { kind: 'readonly', label: 'Read-only view' },
+})
+
+expectProgressAction({
+  audience: 'admin',
+  availability: 'enabled',
+  // @ts-expect-error Retry is not a ready-state workflow action.
+  kind: 'retry',
+  label: 'Retry',
+})
+
+// @ts-expect-error Disabled actions require an explicit disabled reason.
+expectProgressAction({
+  audience: 'admin',
+  availability: 'disabled',
+  kind: 'closeDeal',
+  label: 'Close deal',
+})
+
+expectProgressAction({
+  audience: 'admin',
+  availability: 'enabled',
+  // @ts-expect-error Enabled actions cannot carry stale disabled reasons.
+  disabledReason: 'Already resolved.',
+  kind: 'closeDeal',
+  label: 'Close deal',
+})
 
 describe('DealProgressPanel', () => {
   it('renders the ready command panel with status, visibility, capital, progress, and actions', () => {
@@ -169,7 +231,14 @@ describe('DealProgressPanel', () => {
       },
     } as const satisfies DealProgressPanelState
 
-    render(<DealProgressPanel labels={localizedLabels} locale="fr-FR" state={localizedState} />)
+    render(
+      <DealProgressPanel
+        labels={localizedLabels}
+        locale="fr-FR"
+        onAction={() => undefined}
+        state={localizedState}
+      />,
+    )
 
     expect(screen.getByRole('heading', { name: 'Progression' })).toBeInTheDocument()
     expect(screen.getByText('Composition du capital')).toBeInTheDocument()
@@ -358,6 +427,7 @@ describe('DealProgressPanel', () => {
       <div className="dark bg-background p-6" data-theme="dark">
         <DealProgressPanel
           labels={dealProgressPanelLabels}
+          onAction={() => undefined}
           state={defaultCollectingCommitmentsState}
         />
       </div>,

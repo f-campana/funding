@@ -3,6 +3,7 @@ import { match } from 'ts-pattern'
 import type {
   DealProgressAction,
   DealProgressPanelState,
+  DealProgressReadyState,
   DealProgressSegment,
   DealProgressVisualProgress,
 } from './deal-progress-panel.types'
@@ -146,14 +147,13 @@ export const normalizeCompositionSegments = (
   })
 }
 
-export const isActionDisabled = (action: DealProgressAction) =>
-  action.disabledReason !== undefined && action.disabledReason.length > 0
+export const isActionDisabled = (action: DealProgressAction) => action.availability === 'disabled'
 
 export const getActionDisabledReason = (action: DealProgressAction) =>
-  isActionDisabled(action) ? action.disabledReason : undefined
+  action.availability === 'disabled' ? action.disabledReason : undefined
 
 export const getPrimaryAction = (state: DealProgressPanelState): DealProgressAction | undefined => {
-  if (state.kind !== 'ready' || !state.actions.primary) {
+  if (state.kind !== 'ready' || state.actions.kind === 'none') {
     return undefined
   }
 
@@ -163,7 +163,7 @@ export const getPrimaryAction = (state: DealProgressPanelState): DealProgressAct
 export const getSecondaryActions = (
   state: DealProgressPanelState,
 ): readonly DealProgressAction[] => {
-  if (state.kind !== 'ready') {
+  if (state.kind !== 'ready' || state.actions.kind === 'none') {
     return []
   }
 
@@ -175,16 +175,13 @@ export const getPanelVisualState = (state: DealProgressPanelState) =>
     .returnType<'loading' | 'error' | 'ready' | 'stale' | 'issue' | 'unavailable'>()
     .with({ kind: 'loading' }, () => 'loading')
     .with({ kind: 'error' }, () => 'error')
+    .with({ kind: 'ready', dataQuality: { kind: 'fresh' } }, () => 'ready')
     .with({ kind: 'ready', dataQuality: { kind: 'stale' } }, () => 'stale')
     .with({ kind: 'ready', dataQuality: { kind: 'issue' } }, () => 'issue')
     .with({ kind: 'ready', dataQuality: { kind: 'unavailable' } }, () => 'unavailable')
-    .with({ kind: 'ready' }, () => 'ready')
     .exhaustive()
 
-const isActionVisibleForState = (
-  action: DealProgressAction,
-  state: Extract<DealProgressPanelState, { readonly kind: 'ready' }>,
-) => {
+const isActionVisibleForState = (action: DealProgressAction, state: DealProgressReadyState) => {
   if ((terminalStages as readonly string[]).includes(state.stage) || state.mode === 'closed') {
     return !(terminalActionKinds as readonly string[]).includes(action.kind)
   }

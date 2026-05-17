@@ -78,12 +78,7 @@ export type DealOperationalOverviewState =
       readonly kind: 'loading'
       readonly label?: string | undefined
     }
-  | {
-      readonly kind: 'error'
-      readonly title: string
-      readonly description?: string | undefined
-      readonly retryLabel?: string | undefined
-    }
+  | DealOperationalOverviewErrorState
   | {
       readonly kind: 'empty'
       readonly title: string
@@ -101,6 +96,29 @@ export type DealOperationalOverviewState =
 export type DealOperationalOverviewActionEvent = {
   readonly kind: 'retry'
 }
+
+export type DealOperationalOverviewActionHandler = (
+  event: DealOperationalOverviewActionEvent,
+) => void
+
+export type DealOperationalOverviewRetryAction = {
+  readonly kind: 'retry'
+  readonly label: string
+}
+
+export type DealOperationalOverviewErrorState =
+  | {
+      readonly kind: 'error'
+      readonly title: string
+      readonly description?: string | undefined
+      readonly retryAction?: undefined
+    }
+  | {
+      readonly kind: 'error'
+      readonly title: string
+      readonly description?: string | undefined
+      readonly retryAction: DealOperationalOverviewRetryAction
+    }
 
 export type DealOperationalOverviewLabels = {
   readonly title: string
@@ -125,9 +143,31 @@ export type DealOperationalOverviewLabels = {
   readonly loadingLabel: string
 }
 
-export type DealOperationalOverviewProps = {
-  readonly state: DealOperationalOverviewState
+type DealOperationalOverviewPropsBase = {
   readonly labels: DealOperationalOverviewLabels
   readonly className?: string | undefined
-  readonly onAction?: (event: DealOperationalOverviewActionEvent) => void
 }
+
+type DealOperationalOverviewRetryableState = Extract<
+  DealOperationalOverviewState,
+  { readonly kind: 'error'; readonly retryAction: DealOperationalOverviewRetryAction }
+>
+
+type DealOperationalOverviewNonRetryableState = Exclude<
+  DealOperationalOverviewState,
+  DealOperationalOverviewRetryableState
+>
+
+export type DealOperationalOverviewProps =
+  | (DealOperationalOverviewPropsBase & {
+      readonly state: DealOperationalOverviewRetryableState
+      readonly onAction: DealOperationalOverviewActionHandler
+    })
+  | (DealOperationalOverviewPropsBase & {
+      readonly state: DealOperationalOverviewNonRetryableState
+      readonly onAction?: DealOperationalOverviewActionHandler | undefined
+    })
+  | (DealOperationalOverviewPropsBase & {
+      readonly state: DealOperationalOverviewState
+      readonly onAction: DealOperationalOverviewActionHandler
+    })

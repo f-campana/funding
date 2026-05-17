@@ -2,6 +2,15 @@ export type CommitmentReadinessKey = 'kycKyb' | 'signature' | 'wire' | 'reconcil
 
 export type CommitmentReadinessTone = 'success' | 'danger' | 'attention' | 'info' | 'neutral'
 
+export type CommitmentReadinessVariantByKey = {
+  readonly kycKyb: 'verified' | 'inReview' | 'expired' | 'unavailable'
+  readonly signature: 'signed' | 'pending' | 'unavailable'
+  readonly wire: 'received' | 'pending' | 'notReceived' | 'syncFailed'
+  readonly reconciliation: 'reconciled' | 'pending' | 'notStarted' | 'reconciling' | 'needsReview'
+}
+
+export type CommitmentReadinessVariant = CommitmentReadinessVariantByKey[CommitmentReadinessKey]
+
 export type CommitmentInvestorStatusTone = 'complete' | 'attention' | 'inProgress' | 'pending'
 
 export type CommitmentInvestorAvatarTone =
@@ -40,19 +49,50 @@ export type CommitmentTableGroupValue = 'none' | 'status' | 'readinessIssue'
 export type CommitmentTablePaginationState = {
   readonly page: number
   readonly pageSize: number
-  readonly totalRows?: number | undefined
 }
 
-/**
- * Readiness objects stay self-describing for fixtures and future app adapters. The enclosing
- * Record still provides the structural guarantee that every readiness key is present.
- */
-export type CommitmentReadinessState = {
-  readonly key: CommitmentReadinessKey
+export type CommitmentReadinessState<Key extends CommitmentReadinessKey = CommitmentReadinessKey> =
+  Key extends CommitmentReadinessKey
+    ? {
+        readonly key: Key
+        readonly variant: CommitmentReadinessVariantByKey[Key]
+        /**
+         * Display labels remain caller-owned for localization. Table behavior derives from
+         * `variant`, not from these strings.
+         */
+        readonly label: string
+        readonly value: string
+        readonly detail?: string | undefined
+      }
+    : never
+
+export type CommitmentReadinessRecord = {
+  readonly [Key in CommitmentReadinessKey]: CommitmentReadinessState<Key>
+}
+
+export type CommitmentTableRetryAction = {
   readonly label: string
-  readonly value: string
-  readonly detail?: string | undefined
-  readonly tone: CommitmentReadinessTone
+  readonly onRetry: () => void
+}
+
+export type CommitmentTableExportHandler = (rowIds: readonly string[]) => void
+
+export type DealCommitmentsTableBaseToolbarLabels = {
+  readonly searchPlaceholder: string
+  readonly workflowFiltersLabel: string
+  readonly selectedLabel: string
+}
+
+export type DealCommitmentsTableExportToolbarLabels = {
+  readonly exportLabel: string
+  readonly exportSelectedLabel: string
+  readonly exportVisibleLabel: string
+}
+
+export type DealCommitmentsTableNoExportToolbarLabels = DealCommitmentsTableBaseToolbarLabels & {
+  readonly exportLabel?: never
+  readonly exportSelectedLabel?: never
+  readonly exportVisibleLabel?: never
 }
 
 export type CommitmentInvestorRow = {
@@ -64,7 +104,7 @@ export type CommitmentInvestorRow = {
   readonly entityName: string
   readonly commitmentLabel: string
   readonly commitmentSortValue: number
-  readonly readiness: Record<CommitmentReadinessKey, CommitmentReadinessState>
+  readonly readiness: CommitmentReadinessRecord
   readonly status: {
     readonly label: string
     readonly tone: CommitmentInvestorStatusTone
@@ -87,8 +127,7 @@ export type DealCommitmentsTableLifecycleState =
       readonly kind: 'error'
       readonly title: string
       readonly description?: string | undefined
-      readonly retryLabel?: string | undefined
-      readonly onRetry?: (() => void) | undefined
+      readonly retry?: CommitmentTableRetryAction | undefined
     }
   | {
       readonly kind: 'empty'
@@ -115,18 +154,10 @@ export type DealCommitmentsTableLifecycleState =
       readonly pagination?: CommitmentTablePaginationState | undefined
     }
 
-export type DealCommitmentsTableProps = {
+export type DealCommitmentsTableBaseProps = {
   readonly title: string
   readonly subtitle: string
   readonly labels: DealCommitmentsTableLabels
-  readonly toolbar: {
-    readonly searchPlaceholder: string
-    readonly workflowFiltersLabel: string
-    readonly exportLabel: string
-    readonly exportSelectedLabel: string
-    readonly exportVisibleLabel: string
-    readonly selectedLabel: string
-  }
   readonly footer: {
     readonly investorsLabel: string
     /**
@@ -144,10 +175,24 @@ export type DealCommitmentsTableProps = {
   readonly onActiveFilterIdsChange?: (ids: readonly CommitmentTableFilterId[]) => void
   readonly onPageChange?: (page: number) => void
   readonly onPageSizeChange?: (pageSize: number) => void
-  readonly onExportSelected?: (rowIds: readonly string[]) => void
-  readonly onExportVisible?: (rowIds: readonly string[]) => void
   readonly className?: string
 }
+
+export type DealCommitmentsTableNoExportProps = DealCommitmentsTableBaseProps & {
+  readonly toolbar: DealCommitmentsTableNoExportToolbarLabels
+  readonly onExportSelected?: never
+  readonly onExportVisible?: never
+}
+
+export type DealCommitmentsTableExportProps = DealCommitmentsTableBaseProps & {
+  readonly toolbar: DealCommitmentsTableBaseToolbarLabels & DealCommitmentsTableExportToolbarLabels
+  readonly onExportSelected: CommitmentTableExportHandler
+  readonly onExportVisible: CommitmentTableExportHandler
+}
+
+export type DealCommitmentsTableProps =
+  | DealCommitmentsTableNoExportProps
+  | DealCommitmentsTableExportProps
 
 export type DealCommitmentsTableLabels = {
   readonly columns: {

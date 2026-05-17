@@ -44,14 +44,8 @@ export const CommitmentsTableBody = ({
     .with({ kind: 'empty' }, ({ description, title }) => (
       <CommitmentTableStateRow description={description} kind="empty" title={title} />
     ))
-    .with({ kind: 'error' }, ({ description, onRetry, retryLabel, title }) => (
-      <CommitmentTableStateRow
-        description={description}
-        kind="error"
-        onRetry={onRetry}
-        retryLabel={retryLabel}
-        title={title}
-      />
+    .with({ kind: 'error' }, ({ description, retry, title }) => (
+      <CommitmentTableStateRow description={description} kind="error" retry={retry} title={title} />
     ))
     .with({ kind: 'ready' }, () => (
       <>{model && getReadyBodyRows(labels, model, selectedRowIds, onRowOpen, onRowSelect)}</>

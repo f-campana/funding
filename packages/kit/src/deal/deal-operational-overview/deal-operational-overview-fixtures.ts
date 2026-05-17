@@ -412,6 +412,6 @@ export const emptyOperationalOverviewState = {
 export const errorOperationalOverviewState = {
   description: 'Refresh the workspace or retry loading the deal operations summary.',
   kind: 'error',
-  retryLabel: 'Retry',
+  retryAction: { kind: 'retry', label: 'Retry' },
   title: 'Operational overview could not be loaded',
 } as const satisfies DealOperationalOverviewState

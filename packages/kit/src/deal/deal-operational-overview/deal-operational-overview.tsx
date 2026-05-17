@@ -13,7 +13,8 @@ import {
   ListChecks,
   UserRound,
 } from 'lucide-react'
-import { useId } from 'react'
+import { type ReactNode, useId } from 'react'
+import { match } from 'ts-pattern'
 
 import {
   getOperationalBlockerTotal,
@@ -28,6 +29,8 @@ import type {
   DealOperationalCapitalSummary,
   DealOperationalMetric,
   DealOperationalMetricTone,
+  DealOperationalOverviewActionHandler,
+  DealOperationalOverviewErrorState,
   DealOperationalOverviewLabels,
   DealOperationalOverviewProps,
   DealOperationalOverviewState,
@@ -46,8 +49,11 @@ export type {
   DealOperationalMetric,
   DealOperationalMetricTone,
   DealOperationalOverviewActionEvent,
+  DealOperationalOverviewActionHandler,
+  DealOperationalOverviewErrorState,
   DealOperationalOverviewLabels,
   DealOperationalOverviewProps,
+  DealOperationalOverviewRetryAction,
   DealOperationalOverviewState,
   DealOperationalProgress,
   DealOperationalReadinessDimension,
@@ -92,6 +98,19 @@ export const DealOperationalOverview = ({
 }: DealOperationalOverviewProps) => {
   const titleId = useId()
   const readinessState = getOperationalReadinessState(state)
+  const content = match(state)
+    .returnType<ReactNode>()
+    .with({ kind: 'loading' }, (loadingState) => (
+      <LoadingContent label={loadingState.label ?? labels.loadingLabel} titleId={titleId} />
+    ))
+    .with({ kind: 'error' }, (errorState) => (
+      <ErrorContent onAction={onAction} state={errorState} titleId={titleId} />
+    ))
+    .with({ kind: 'empty' }, (emptyState) => <EmptyContent state={emptyState} titleId={titleId} />)
+    .with({ kind: 'ready' }, (readyState) => (
+      <ReadyContent labels={labels} state={readyState} titleId={titleId} />
+    ))
+    .exhaustive()
 
   return (
     <section
@@ -111,16 +130,7 @@ export const DealOperationalOverview = ({
       }
       data-visible-blocker-count={state.kind === 'ready' ? state.blockers.length : undefined}
     >
-      {state.kind === 'loading' ? (
-        <LoadingContent label={state.label ?? labels.loadingLabel} titleId={titleId} />
-      ) : null}
-      {state.kind === 'error' ? (
-        <ErrorContent onAction={onAction} state={state} titleId={titleId} />
-      ) : null}
-      {state.kind === 'empty' ? <EmptyContent state={state} titleId={titleId} /> : null}
-      {state.kind === 'ready' ? (
-        <ReadyContent labels={labels} state={state} titleId={titleId} />
-      ) : null}
+      {content}
     </section>
   )
 }
@@ -164,8 +174,8 @@ const ErrorContent = ({
   state,
   titleId,
 }: {
-  readonly onAction: DealOperationalOverviewProps['onAction']
-  readonly state: Extract<DealOperationalOverviewState, { readonly kind: 'error' }>
+  readonly onAction: DealOperationalOverviewActionHandler | undefined
+  readonly state: DealOperationalOverviewErrorState
   readonly titleId: string
 }) => (
   <div className="grid gap-4 p-5" data-slot="deal-operational-error">
@@ -180,9 +190,13 @@ const ErrorContent = ({
         ) : null}
       </div>
     </div>
-    {state.retryLabel ? (
-      <Button className="w-fit" onClick={() => onAction?.({ kind: 'retry' })} variant="outline">
-        {state.retryLabel}
+    {state.retryAction && onAction ? (
+      <Button
+        className="w-fit"
+        onClick={() => onAction({ kind: state.retryAction.kind })}
+        variant="outline"
+      >
+        {state.retryAction.label}
       </Button>
     ) : null}
   </div>
@@ -361,36 +375,24 @@ const DimensionItem = ({
 const DimensionIcon = ({ state }: { readonly state: DealOperationalReadinessState }) => {
   const className = cn('size-4 shrink-0', metricToneClasses[getDimensionTone(state)])
 
-  if (state === 'ready') {
-    return <CheckCircle2 aria-hidden="true" className={className} />
-  }
-
-  if (state === 'blocked') {
-    return <AlertTriangle aria-hidden="true" className={className} />
-  }
-
-  if (state === 'attention') {
-    return <CircleAlert aria-hidden="true" className={className} />
-  }
-
-  return <CircleDotDashed aria-hidden="true" className={className} />
+  return match(state)
+    .returnType<ReactNode>()
+    .with('ready', () => <CheckCircle2 aria-hidden="true" className={className} />)
+    .with('blocked', () => <AlertTriangle aria-hidden="true" className={className} />)
+    .with('attention', () => <CircleAlert aria-hidden="true" className={className} />)
+    .with('not_started', () => <CircleDotDashed aria-hidden="true" className={className} />)
+    .exhaustive()
 }
 
-const getDimensionTone = (state: DealOperationalReadinessState): DealOperationalMetricTone => {
-  if (state === 'ready') {
-    return 'success'
-  }
+const dimensionToneByState = {
+  attention: 'attention',
+  blocked: 'danger',
+  not_started: 'neutral',
+  ready: 'success',
+} as const satisfies Record<DealOperationalReadinessState, DealOperationalMetricTone>
 
-  if (state === 'blocked') {
-    return 'danger'
-  }
-
-  if (state === 'attention') {
-    return 'attention'
-  }
-
-  return 'neutral'
-}
+const getDimensionTone = (state: DealOperationalReadinessState): DealOperationalMetricTone =>
+  dimensionToneByState[state]
 
 const CapitalSection = ({
   capital,
@@ -636,23 +638,16 @@ const BlockerFactIcon = ({
 }: {
   readonly icon: 'documents' | 'due' | 'investors' | 'owner' | 'surface'
 }) => {
-  if (icon === 'owner') {
-    return <UserRound aria-hidden="true" className="size-3.5 shrink-0" />
-  }
+  const className = 'size-3.5 shrink-0'
 
-  if (icon === 'surface') {
-    return <ListChecks aria-hidden="true" className="size-3.5 shrink-0" />
-  }
-
-  if (icon === 'documents') {
-    return <FileCheck2 aria-hidden="true" className="size-3.5 shrink-0" />
-  }
-
-  if (icon === 'due') {
-    return <Clock3 aria-hidden="true" className="size-3.5 shrink-0" />
-  }
-
-  return <Landmark aria-hidden="true" className="size-3.5 shrink-0" />
+  return match(icon)
+    .returnType<ReactNode>()
+    .with('owner', () => <UserRound aria-hidden="true" className={className} />)
+    .with('surface', () => <ListChecks aria-hidden="true" className={className} />)
+    .with('documents', () => <FileCheck2 aria-hidden="true" className={className} />)
+    .with('due', () => <Clock3 aria-hidden="true" className={className} />)
+    .with('investors', () => <Landmark aria-hidden="true" className={className} />)
+    .exhaustive()
 }
 
 const ActivitySection = ({

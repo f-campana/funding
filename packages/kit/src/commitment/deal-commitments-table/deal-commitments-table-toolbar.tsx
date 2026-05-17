@@ -6,6 +6,7 @@ import { filterOptions, toggleFilterId } from './deal-commitments-table.model'
 import type {
   CommitmentTableFilterId,
   CommitmentTableModel,
+  DealCommitmentsTableExportToolbarLabels,
   DealCommitmentsTableLabels,
   DealCommitmentsTableProps,
   ReadyControls,
@@ -14,10 +15,9 @@ import type {
 export const CommitmentsTableToolbar = ({
   controls,
   disabled,
-  exportDisabled,
+  exportAction,
   labels,
   model,
-  onExport,
   onFilterChange,
   onSearchChange,
   subtitle,
@@ -26,10 +26,17 @@ export const CommitmentsTableToolbar = ({
 }: {
   readonly controls: ReadyControls
   readonly disabled: boolean
-  readonly exportDisabled: boolean
+  readonly exportAction:
+    | (Pick<
+        DealCommitmentsTableExportToolbarLabels,
+        'exportSelectedLabel' | 'exportVisibleLabel'
+      > & {
+        readonly disabled: boolean
+        readonly onExport: () => void
+      })
+    | undefined
   readonly labels: DealCommitmentsTableLabels
   readonly model: CommitmentTableModel | undefined
-  readonly onExport: () => void
   readonly onFilterChange: (filterIds: readonly CommitmentTableFilterId[]) => void
   readonly onSearchChange: (value: string) => void
   readonly subtitle: string
@@ -37,7 +44,11 @@ export const CommitmentsTableToolbar = ({
   readonly toolbar: DealCommitmentsTableProps['toolbar']
 }) => {
   const selectedCount = model?.selectedVisibleRowIds.length ?? 0
-  const exportLabel = selectedCount > 0 ? toolbar.exportSelectedLabel : toolbar.exportVisibleLabel
+  const exportLabel = exportAction
+    ? selectedCount > 0
+      ? exportAction.exportSelectedLabel
+      : exportAction.exportVisibleLabel
+    : undefined
 
   return (
     <header
@@ -73,14 +84,16 @@ export const CommitmentsTableToolbar = ({
                 {selectedCount} {toolbar.selectedLabel}
               </span>
             ) : null}
-            <ToolbarButton
-              className={selectedCount > 0 ? 'w-44' : 'w-36'}
-              disabled={exportDisabled}
-              icon={<Download />}
-              onClick={onExport}
-            >
-              {exportLabel}
-            </ToolbarButton>
+            {exportAction && exportLabel ? (
+              <ToolbarButton
+                className={selectedCount > 0 ? 'w-44' : 'w-36'}
+                disabled={exportAction.disabled}
+                icon={<Download />}
+                onClick={exportAction.onExport}
+              >
+                {exportLabel}
+              </ToolbarButton>
+            ) : null}
           </div>
         </div>
         <fieldset

@@ -1,15 +1,18 @@
-import type { ComponentProps } from 'react'
-
 import {
   DealCommitmentsTable,
   type DealCommitmentsTableLifecycleState,
 } from '../../commitment/deal-commitments-table'
 import {
+  dealCommitmentsTableExportToolbarLabels,
   dealCommitmentsTableLabels,
   lockedCommitmentRows,
 } from '../../commitment/deal-commitments-table/deal-commitments-table-fixtures'
 import { StoryGrid, StorySection, StoryStack } from '../../stories/story-layout'
-import { DealProgressPanel } from './deal-progress-panel'
+import {
+  type DealProgressActionHandler,
+  DealProgressPanel,
+  type DealProgressPanelState,
+} from './deal-progress-panel'
 import {
   adminOnlyState,
   closedCompletedState,
@@ -37,19 +40,27 @@ const meta = {
 
 export default meta
 
-const renderPanel = (
-  props: Partial<ComponentProps<typeof DealProgressPanel>> = {},
-  className = 'w-full max-w-md',
-) => (
+type DealProgressPanelStoryProps = {
+  readonly className?: string | undefined
+  readonly locale?: string | undefined
+  readonly onAction?: DealProgressActionHandler | undefined
+  readonly state?: DealProgressPanelState | undefined
+}
+
+const noopProgressAction: DealProgressActionHandler = () => undefined
+
+const renderPanel = (props: DealProgressPanelStoryProps = {}, className = 'w-full max-w-md') => (
   <StorySection
     className={className}
     description="Roundtable-style command panel for deal progression, capital breakdown, and workflow actions."
     title="Deal progression panel"
   >
     <DealProgressPanel
+      className={props.className}
       labels={dealProgressPanelLabels}
-      state={defaultCollectingCommitmentsState}
-      {...props}
+      locale={props.locale}
+      onAction={props.onAction ?? noopProgressAction}
+      state={props.state ?? defaultCollectingCommitmentsState}
     />
   </StorySection>
 )
@@ -213,6 +224,7 @@ export const MacBook14RightRailContext = {
         </div>
         <DealProgressPanel
           labels={dealProgressPanelLabels}
+          onAction={noopProgressAction}
           state={defaultCollectingCommitmentsState}
         />
       </div>
@@ -231,12 +243,21 @@ export const WithCommitmentsTableContext = {
         <DealCommitmentsTable
           footer={dealCommitmentsTableLabels.footer}
           labels={dealCommitmentsTableLabels.labels}
+          onExportSelected={() => undefined}
+          onExportVisible={() => undefined}
           state={readyTableState()}
           subtitle={dealCommitmentsTableLabels.subtitle}
           title={dealCommitmentsTableLabels.title}
-          toolbar={dealCommitmentsTableLabels.toolbar}
+          toolbar={{
+            ...dealCommitmentsTableLabels.toolbar,
+            ...dealCommitmentsTableExportToolbarLabels,
+          }}
         />
-        <DealProgressPanel labels={dealProgressPanelLabels} state={ongoingClosingState} />
+        <DealProgressPanel
+          labels={dealProgressPanelLabels}
+          onAction={noopProgressAction}
+          state={ongoingClosingState}
+        />
       </div>
     </StorySection>
   ),
@@ -248,13 +269,34 @@ export const StateBoard = {
       <StoryGrid>
         <DealProgressPanel
           labels={dealProgressPanelLabels}
+          onAction={noopProgressAction}
           state={defaultCollectingCommitmentsState}
         />
-        <DealProgressPanel labels={dealProgressPanelLabels} state={readyToCloseState} />
-        <DealProgressPanel labels={dealProgressPanelLabels} state={overTargetCappedState} />
-        <DealProgressPanel labels={dealProgressPanelLabels} state={noTargetKnownState} />
-        <DealProgressPanel labels={dealProgressPanelLabels} state={disabledActionsState} />
-        <DealProgressPanel labels={dealProgressPanelLabels} state={dataIssueState} />
+        <DealProgressPanel
+          labels={dealProgressPanelLabels}
+          onAction={noopProgressAction}
+          state={readyToCloseState}
+        />
+        <DealProgressPanel
+          labels={dealProgressPanelLabels}
+          onAction={noopProgressAction}
+          state={overTargetCappedState}
+        />
+        <DealProgressPanel
+          labels={dealProgressPanelLabels}
+          onAction={noopProgressAction}
+          state={noTargetKnownState}
+        />
+        <DealProgressPanel
+          labels={dealProgressPanelLabels}
+          onAction={noopProgressAction}
+          state={disabledActionsState}
+        />
+        <DealProgressPanel
+          labels={dealProgressPanelLabels}
+          onAction={noopProgressAction}
+          state={dataIssueState}
+        />
       </StoryGrid>
     </StoryStack>
   ),

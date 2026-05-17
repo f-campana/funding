@@ -7,6 +7,7 @@ import {
 } from './deal-commitments-table'
 import {
   dataIssueCommitmentRows,
+  dealCommitmentsTableExportToolbarLabels,
   dealCommitmentsTableLabels,
   disabledCommitmentRows,
   emptyDealCommitmentsTableLabels,
@@ -56,7 +57,13 @@ const renderTable = (
         state: readyTableState(),
         subtitle: labels.subtitle,
         title: labels.title,
-        toolbar: labels.toolbar,
+        toolbar:
+          props.onExportSelected && props.onExportVisible
+            ? {
+                ...labels.toolbar,
+                ...dealCommitmentsTableExportToolbarLabels,
+              }
+            : labels.toolbar,
         ...props,
       } as ComponentProps<typeof DealCommitmentsTable>)}
     />
@@ -126,6 +133,11 @@ const markStoryAction = (key: string, value: string) => {
   document.body.dataset[key] = value
 }
 
+const noopPageChange = (_page: number) => undefined
+const noopPageSizeChange = (_pageSize: number) => undefined
+const noopSearchValueChange = (_value: string) => undefined
+const noopSelectedRowIdsChange = (_rowIds: readonly string[]) => undefined
+
 const renderRowStateTable = (
   title: string,
   props: Partial<ComponentProps<typeof DealCommitmentsTable>> = {},
@@ -139,6 +151,8 @@ const renderRowStateTable = (
           pagination: { page: 1, pageSize: 3 },
           rows: lockedCommitmentRows.slice(0, 3),
         }),
+        onPageChange: noopPageChange,
+        onPageSizeChange: noopPageSizeChange,
         subtitle: dealCommitmentsTableLabels.subtitle,
         title: dealCommitmentsTableLabels.title,
         toolbar: dealCommitmentsTableLabels.toolbar,
@@ -248,6 +262,7 @@ export const EmptyNoData = {
 export const EmptyFiltered = {
   render: () =>
     renderTable({
+      onSearchValueChange: noopSearchValueChange,
       state: readyTableState({
         searchValue: 'no matching investor',
       }),
@@ -272,8 +287,10 @@ export const TableError = {
         state: {
           description: 'Refresh the page or try again.',
           kind: 'error',
-          onRetry: () => markStoryAction('dealCommitmentsRetry', 'true'),
-          retryLabel: 'Retry',
+          retry: {
+            label: 'Retry',
+            onRetry: () => markStoryAction('dealCommitmentsRetry', 'true'),
+          },
           title: 'Commitments could not be loaded',
         },
       },
@@ -295,6 +312,7 @@ export const RowDataIssue = {
 export const BatchSelection = {
   render: () =>
     renderTable({
+      onSelectedRowIdsChange: noopSelectedRowIdsChange,
       state: readyTableState({
         selectedRowIds: ['pine-point-capital', 'atlas-secure-fund'],
       }),
@@ -467,6 +485,7 @@ export const DarkDrawerOpen = {
 export const DarkBatchSelected = {
   render: () =>
     renderDarkTable({
+      onSelectedRowIdsChange: noopSelectedRowIdsChange,
       state: readyTableState({
         selectedRowIds: ['pine-point-capital', 'atlas-secure-fund'],
       }),
@@ -480,7 +499,6 @@ export const DarkError = {
         state: {
           description: 'Refresh the page or try again.',
           kind: 'error',
-          retryLabel: 'Retry',
           title: 'Commitments could not be loaded',
         },
       },

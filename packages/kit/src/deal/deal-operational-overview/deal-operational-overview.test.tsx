@@ -13,6 +13,7 @@ import {
 } from './deal-operational-overview.model'
 import type {
   DealOperationalBlockerSeverity,
+  DealOperationalOverviewProps,
   DealOperationalOverviewState,
   DealOperationalReadinessState,
 } from './deal-operational-overview.types'
@@ -44,6 +45,7 @@ const rawPalettePattern =
 const overviewSourceFilePattern = /^deal-operational-overview.*\.(ts|tsx)$/u
 
 const expectLifecycleState = (_state: DealOperationalOverviewState) => undefined
+const expectOverviewProps = (_props: DealOperationalOverviewProps) => undefined
 const expectReadinessState = (_state: DealOperationalReadinessState) => undefined
 const expectBlockerSeverity = (_severity: DealOperationalBlockerSeverity) => undefined
 
@@ -55,6 +57,15 @@ expectLifecycleState({ blockers: blockedOperationalOverviewState.blockers, kind:
 
 // @ts-expect-error Ready state requires capital summary.
 expectLifecycleState({ kind: 'ready', readiness: blockedOperationalOverviewState.readiness })
+
+// @ts-expect-error Error retry UI uses retryAction, not a detached retry label.
+expectLifecycleState({ kind: 'error', retryLabel: 'Retry', title: 'Could not load' })
+
+// @ts-expect-error Retryable error state requires an action handler.
+expectOverviewProps({
+  labels: dealOperationalOverviewLabels,
+  state: errorOperationalOverviewState,
+})
 
 expectReadinessState('not_started')
 

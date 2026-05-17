@@ -1,4 +1,5 @@
 import type {
+  Brand,
   CapitalReconciliationInput,
   ClosingBlocker,
   DealLifecycleState,
@@ -19,7 +20,11 @@ import type {
 
 const cents = (amountMinor: number): EuroCents => euroCentsFromMinorUnits(BigInt(amountMinor))
 
-export const NORTHSTAR_DEAL_SLUG = 'northstar-energy'
+type NorthstarDealSlug = Brand<string, 'DealSlug'>
+
+const dealSlug = (value: string): NorthstarDealSlug => value as NorthstarDealSlug
+
+export const NORTHSTAR_DEAL_SLUG = dealSlug('northstar-energy')
 
 export type NorthstarClosingBlockerFixture = ClosingBlocker & {
   readonly routeHint: ClosingBlockerRouteHintDTO

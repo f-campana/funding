@@ -1,12 +1,14 @@
-import type { ComponentProps } from 'react'
-
 import { StorySection, StoryStack } from '../../stories/story-layout'
-import { DealProgressPanel } from '../deal-progress-panel'
+import { type DealProgressActionHandler, DealProgressPanel } from '../deal-progress-panel'
 import {
   dealProgressPanelLabels,
   ongoingClosingState,
 } from '../deal-progress-panel/deal-progress-panel-fixtures'
-import { DealOperationalOverview } from './deal-operational-overview'
+import {
+  DealOperationalOverview,
+  type DealOperationalOverviewActionHandler,
+  type DealOperationalOverviewState,
+} from './deal-operational-overview'
 import {
   attentionOperationalOverviewState,
   blockedOperationalOverviewState,
@@ -25,8 +27,17 @@ const meta = {
 
 export default meta
 
+type DealOperationalOverviewStoryProps = {
+  readonly className?: string | undefined
+  readonly onAction?: DealOperationalOverviewActionHandler | undefined
+  readonly state?: DealOperationalOverviewState | undefined
+}
+
+const noopOverviewAction: DealOperationalOverviewActionHandler = () => undefined
+const noopProgressAction: DealProgressActionHandler = () => undefined
+
 const renderOverview = (
-  props: Partial<ComponentProps<typeof DealOperationalOverview>> = {},
+  props: DealOperationalOverviewStoryProps = {},
   className = 'w-full max-w-6xl',
 ) => (
   <StorySection
@@ -35,9 +46,10 @@ const renderOverview = (
     title="Deal operational overview"
   >
     <DealOperationalOverview
+      className={props.className}
       labels={dealOperationalOverviewLabels}
-      state={blockedOperationalOverviewState}
-      {...props}
+      onAction={props.onAction ?? noopOverviewAction}
+      state={props.state ?? blockedOperationalOverviewState}
     />
   </StorySection>
 )
@@ -164,7 +176,11 @@ export const WithProgressPanelContext = {
           labels={dealOperationalOverviewLabels}
           state={blockedOperationalOverviewState}
         />
-        <DealProgressPanel labels={dealProgressPanelLabels} state={ongoingClosingState} />
+        <DealProgressPanel
+          labels={dealProgressPanelLabels}
+          onAction={noopProgressAction}
+          state={ongoingClosingState}
+        />
       </div>
     </StorySection>
   ),
