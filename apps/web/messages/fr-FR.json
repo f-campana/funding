@@ -1,16 +1,16 @@
 {
   "HomePage": {
-    "caseStudyBody": "La route suivante affiche un shell deal temporaire avec les tokens, les polices, les traductions et les frontieres de route de l'application.",
+    "caseStudyBody": "La route suivante affiche l'espace operateur Northstar avec les tokens, les polices, les traductions et les frontieres de route de l'application.",
     "caseStudyTitle": "Surface de demo active",
     "dealLink": "Ouvrir le deal Northstar Energy",
     "heading": "Funding, etude frontend de marches prives",
-    "intro": "Cette application valide l'integration du shell Next.js avec les couches design tokens, UI et routes du workspace.",
+    "intro": "Cette application valide l'integration du workspace Next.js avec les couches design tokens, UI et routes du produit.",
     "status": "Demo locale, sans donnees live ni formulaire d'engagement."
   },
   "DealPage": {
     "backLink": "Retour a l'accueil",
-    "heading": "Tableau de bord Northstar Energy",
-    "intro": "Vue d'integration statique pour verifier le rendu du shell deal temporaire dans l'application Next.js."
+    "heading": "Espace operateur Northstar Energy",
+    "intro": "Vue d'integration statique pour verifier le rendu de l'espace deal dans l'application Next.js."
   },
   "DealLayout": {
     "backLink": "Retour a l'accueil",
@@ -19,7 +19,7 @@
     "lastUpdated": "Derniere mise a jour",
     "lifecycle": "Cycle de vie",
     "tabs": {
-      "about": "About",
+      "overview": "Overview",
       "commitments": "Commitments",
       "documents": "Documents"
     },

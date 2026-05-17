@@ -12,16 +12,18 @@ implemented workspace layers into a real route:
 ## Current Routes
 
 - `/` — translated entry page for the case-study app.
-- `/deals/northstar-energy` — redirects to `/deals/northstar-energy/about`.
-- `/deals/northstar-energy/about` — DTO-backed deal overview using the accepted
-  progress panel baseline.
-- `/deals/northstar-energy/commitments` — placeholder until T5D-B route wiring.
-- `/deals/northstar-energy/documents` — placeholder until T5D-B route wiring.
+- `/deals/northstar-energy` — redirects to `/deals/northstar-energy/overview`.
+- `/deals/northstar-energy/overview` — DTO-backed operator overview using
+  `DealOperationalOverview` with the accepted progress panel rail.
+- `/deals/northstar-energy/about` — compatibility redirect to `/overview`;
+  reserved for a future investor lens.
+- `/deals/northstar-energy/commitments` — pending until T5D-C route wiring.
+- `/deals/northstar-energy/documents` — pending until the documents route pass.
 - `/deals/unknown` — unsupported deal route, expected to render the app
   not-found UI.
-- `/deals/unknown/about`, `/deals/unknown/commitments`, and
-  `/deals/unknown/documents` — unsupported nested deal routes, expected to
-  render the app not-found UI.
+- `/deals/unknown/overview`, `/deals/unknown/about`,
+  `/deals/unknown/commitments`, and `/deals/unknown/documents` — unsupported
+  nested deal routes, expected to render the app not-found UI.
 
 ## Integration Scope
 
@@ -35,13 +37,14 @@ Implemented:
 - app-owned Northstar operational data spine under `server/deals`
 - tRPC seam under `server/trpc` and `app/api/trpc/[trpc]/route.ts`
 - route data loader at `app/deals/[dealId]`
-- Playwright e2e tests for homepage navigation, the DTO-backed about route,
-  active tabs, and not-found behavior
+- Playwright e2e tests for homepage navigation, the DTO-backed overview route,
+  the legacy `/about` redirect, active tabs, and not-found behavior
 
 Not implemented yet:
 
-- full T5D-B route wiring for about, commitments, and documents workflows
-- commitments and documents route rebuilds
+- investor `/about` lens
+- commitments and documents route workflows
+- persona toggle
 - investor commitment form
 - React Hook Form
 - GraphQL

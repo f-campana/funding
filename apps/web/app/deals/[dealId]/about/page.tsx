@@ -1,20 +1,19 @@
-import { DealOperationalOverview } from '@repo/kit'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
-import { getDealOperationsData } from '../data'
-import { mapDealOperationalOverviewProps } from '../deal-operational-adapters'
+import { isSupportedDealId } from '../data'
 
-type DealAboutPageProps = {
+type LegacyInvestorRouteRedirectProps = {
   params: Promise<{ dealId: string }>
 }
 
-export default async function DealAboutPage({ params }: DealAboutPageProps) {
+export default async function LegacyInvestorRouteRedirectPage({
+  params,
+}: LegacyInvestorRouteRedirectProps) {
   const { dealId } = await params
-  const data = getDealOperationsData(dealId)
 
-  if (!data) {
+  if (!isSupportedDealId(dealId)) {
     notFound()
   }
 
-  return <DealOperationalOverview {...mapDealOperationalOverviewProps(data)} />
+  redirect(`/deals/${dealId}/overview`)
 }

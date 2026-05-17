@@ -146,13 +146,13 @@ Current high-authority docs:
 
 ## Next Work
 
-Next implementation pass: T5D-B route wiring.
+Next implementation pass: T5D-C commitments wiring.
 
 Why: the accepted kit baselines and app-owned Northstar DTO/tRPC spine are the
-trust boundary. The next pass should wire the real about, commitments, and
-documents workflows to that spine without reviving deleted kit surfaces or
-claiming the Northstar vertical is complete before all route workflows consume
-the contract.
+trust boundary. The operator entry route is `/deals/northstar-energy/overview`,
+with `/about` reserved for a future investor lens. The next pass should wire the
+real commitments workflow without reviving deleted kit surfaces or claiming the
+Northstar vertical is complete before all route workflows consume the contract.
 
 Relevant docs:
 

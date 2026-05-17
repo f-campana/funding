@@ -51,15 +51,16 @@ Why this is first:
   on them.
 - Deleted kit surfaces should not leak back into docs or public exports.
 
-## Priority 2 — T5D-B Route Wiring
+## Priority 2 — T5D-C Commitments Wiring
 
-Status: next if T5D-A2 validation is clean.
+Status: next after the operator overview route is validated.
 
 Goal:
 
-- wire the real Northstar about, commitments, and documents workflows to the
-  app-owned DTO/tRPC spine
-- map DTO sections into route-owned views and accepted kit baselines
+- wire the real Northstar commitments workflow to the app-owned DTO/tRPC spine
+- keep `/deals/[dealId]/overview` as the operator entry route
+- keep `/deals/[dealId]/about` reserved for a future investor lens
+- map commitment DTO sections into route-owned views and accepted kit baselines
 - preserve package boundaries
 - avoid reviving deleted kit surfaces
 

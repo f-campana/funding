@@ -1,9 +1,9 @@
-import { DealRebuildPlaceholder } from '../deal-rebuild-placeholder'
+import { DealPendingWorkspaceSection } from '../deal-pending-workspace-section'
 
 export default function DealDocumentsPage() {
   return (
-    <DealRebuildPlaceholder
-      description="Document operations are intentionally reduced to a placeholder while the new app-owned data shape is defined."
+    <DealPendingWorkspaceSection
+      description="Document review remains unavailable while the operator entry route stays focused on closing readiness."
       sectionLabel="Documents"
     />
   )

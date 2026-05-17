@@ -13,5 +13,5 @@ export default async function DealPage({ params }: DealPageProps) {
     notFound()
   }
 
-  redirect(`/deals/${dealId}/about`)
+  redirect(`/deals/${dealId}/overview`)
 }

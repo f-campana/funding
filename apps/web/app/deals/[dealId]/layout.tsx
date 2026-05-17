@@ -22,7 +22,12 @@ export default async function DealLayout({ children, params }: DealLayoutProps) 
 
   const t = await getTranslations('DealLayout')
   const tabs = [
-    { glyph: 'about', href: `/deals/${dealId}/about`, label: t('tabs.about'), segment: 'about' },
+    {
+      glyph: 'overview',
+      href: `/deals/${dealId}/overview`,
+      label: t('tabs.overview'),
+      segment: 'overview',
+    },
     {
       glyph: 'commitments',
       href: `/deals/${dealId}/commitments`,

@@ -10,7 +10,7 @@ This spec defines the app-owned operational data spine for the one-vertical-done
 
 The next implementation pass should create a single, serializable DTO that can eventually drive:
 
-- `/deals/northstar-energy/about`
+- `/deals/northstar-energy/overview`
 - `/deals/northstar-energy/commitments`
 - `/deals/northstar-energy/documents`
 - the deal entity header
@@ -937,9 +937,9 @@ The first safe slice is accepted when:
 
 After this spec and first implementation slice:
 
-1. Wire `/deals/[dealId]/about` to the DTO.
+1. Wire `/deals/[dealId]/overview` to the DTO.
 2. Add `@repo/kit` to `apps/web`.
-3. Replace public placeholder copy on `/about`.
+3. Reserve `/deals/[dealId]/about` for the future investor lens.
 4. Map DTO sections to kit readiness, blocker, reconciliation, document, and activity components.
 5. Replace placeholder e2e assertions with product assertions.
 6. Wire `/commitments`.

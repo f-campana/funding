@@ -16,8 +16,6 @@ import {
 import {
   amountDescription,
   amountTone,
-  getCapitalProgressLabel,
-  getCapitalSupportingLabel,
   getUnmatchedReceivedAmount,
   progressPercent,
 } from './deal-operational-capital-helpers'
@@ -41,8 +39,8 @@ const dealOperationalOverviewLabels = {
   blockerOwnerLabel: 'Owner',
   blockerSurfaceLabel: 'Surface',
   blockersTitle: 'Priority blockers',
-  capitalEconomicsTitle: 'Economics',
-  capitalMetricsTitle: 'Reconciliation metrics',
+  capitalEconomicsTitle: 'Net economics',
+  capitalMetricsTitle: 'Exception evidence',
   capitalProgressAriaLabel: 'Capital reconciliation progress',
   capitalTitle: 'Capital reconciliation',
   dimensionsTitle: 'Readiness dimensions',
@@ -71,6 +69,10 @@ const mapDealOperationalOverviewState = (
     matching,
     data.capital.receivedAmount.currency,
   )
+  const reconciliationProgress = progressPercent(
+    data.capital.matchedAmount.amountMinor,
+    data.capital.receivedAmount.amountMinor,
+  )
 
   return {
     activity: [...data.activity]
@@ -80,26 +82,11 @@ const mapDealOperationalOverviewState = (
     blockerSummary: getBlockerSummary(data),
     blockers: selectPriorityBlockers(data).map((blocker) => mapOperationalBlocker(blocker, data)),
     capital: {
-      economics: [
-        {
-          label: 'Net investable amount',
-          tone: 'success',
-          value: formatMoney(data.capital.economics.netInvestableAmount),
-        },
-        {
-          label: 'Entry fees',
-          value: formatMoney(data.capital.economics.entryFees),
-        },
-        {
-          label: 'SPV fee',
-          value: formatMoney(data.capital.economics.spvFee),
-        },
-        {
-          label: 'Carry',
-          value: `${data.capital.economics.carryPercent}%`,
-        },
-      ],
-      headlineLabel: `${formatMoney(data.capital.committedAmount)} committed`,
+      economics: [],
+      headlineLabel:
+        unmatchedReceived.amountMinor > 0
+          ? `${formatMoney(unmatchedReceived)} unmatched received`
+          : 'Received capital matched',
       matchedLabel: `${formatMoney(data.capital.matchedAmount)} matched`,
       metrics: [
         {
@@ -127,16 +114,21 @@ const mapDealOperationalOverviewState = (
           value: formatMoney(unmatchedReceived),
           tone: amountTone(unmatchedReceived, 'danger', 'neutral'),
         },
+        {
+          label: 'Unreceived signed',
+          value: formatMoney(data.capital.unreceivedSigned),
+          tone: amountTone(data.capital.unreceivedSigned, 'attention', 'success'),
+        },
       ],
       progress: {
-        label: getCapitalProgressLabel(data.capital),
-        value: progressPercent(
-          data.capital.committedAmount.amountMinor,
-          data.capital.targetAmount.amountMinor,
-        ),
+        label: `${reconciliationProgress}% of received capital matched`,
+        value: reconciliationProgress,
       },
-      supportingLabel: getCapitalSupportingLabel(data.capital.targetPosition),
-      targetLabel: `${formatMoney(data.capital.targetAmount)} target`,
+      supportingLabel:
+        data.capital.unreceivedSigned.amountMinor > 0
+          ? `${formatMoney(data.capital.unreceivedSigned)} signed not received`
+          : undefined,
+      targetLabel: `${formatMoney(data.capital.receivedAmount)} received`,
     },
     kind: 'ready',
     readiness: {

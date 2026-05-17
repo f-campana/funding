@@ -70,7 +70,7 @@ export function DealOperationalRail({ data }: DealOperationalRailProps) {
 }
 
 const RailMetric = ({ label, value }: { readonly label: string; readonly value: string }) => (
-  <div className="flex items-baseline justify-between gap-3 rounded-md border border-border bg-muted/45 px-3 py-2">
+  <div className="flex items-end justify-between gap-3 rounded-md border border-border bg-muted/45 px-3 py-2">
     <span className="text-xs font-medium text-muted-foreground">{label}</span>
     <span className="font-mono text-sm font-semibold tabular-nums text-foreground">{value}</span>
   </div>

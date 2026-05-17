@@ -1,44 +1,35 @@
-# T5D-A2 Data Spine And Kit Baseline Hardening Status
+# T5D-B4 Overview Route IA Status
 
 ## Objective
 
-Harden the Northstar operational data spine and the accepted `@repo/kit`
-baselines before the next route wiring pass.
+Rename the Northstar operator entry route from About to Overview and align the
+app route IA with the product design spec.
 
-This pass does not wire `/about`, `/commitments`, or `/documents`, does not
-rebuild the Deal Workspace UI, and does not reintroduce deleted kit surfaces.
+This pass keeps `/commitments` and `/documents` unwired, reserves `/about` for a
+future investor lens, does not add a persona toggle, and does not change
+backend, tRPC, domain, or kit APIs.
 
 ## Current Truth
 
-- `@repo/kit` currently exposes only:
-  - `DealCommitmentsTable`
+- `/deals/northstar-energy` redirects to `/deals/northstar-energy/overview`.
+- `/deals/northstar-energy/overview` renders the operator workspace entry route.
+- `/deals/northstar-energy/about` redirects to `/deals/northstar-energy/overview`
+  for compatibility and remains reserved for the future investor lens.
+- Visible operator tabs are Overview, Commitments, and Documents.
+- The overview route still composes accepted kit baselines:
+  - `DealOperationalOverview`
   - `DealProgressPanel`
-  - public props, state, action, label, and input types needed by those
-    components.
-- Legacy kit surfaces from earlier loops were removed and should be treated as
-  historical implementation work, not current API.
-- Future app vertical work should rebuild route-specific surfaces from the
-  accepted table and progress-panel baselines.
-- `apps/web` owns the Northstar operational data spine under
-  `apps/web/server/deals/**` and the tRPC seam under `apps/web/server/trpc/**`
-  plus `apps/web/app/api/trpc/[trpc]/route.ts`.
-- The Northstar vertical is not complete until the real app routes consume the
-  hardened spine for the about, commitments, and documents workflows.
+- Commitments and documents remain pending product routes.
 
-## Hardening Changes
+## Implementation Notes
 
-- Readiness dimensions now derive state from source operational data and
-  unresolved blockers, so missing blockers cannot falsely make a dimension
-  ready.
-- Investor row readiness in the app DTO also accounts for KYC/KYB, signature,
-  and wire source statuses.
-- `DealCommitmentsTable` keeps row click as a pointer convenience, but the row
-  opener is now the focusable action button with an explicit open-detail label
-  and keyboard tests for Enter and Space.
-- Stable table and progress-panel copy moved into accepted label props and
-  fixtures; product row/status fixture copy remains display-ready data.
-- `NormalizedDealProgressSegment` is internal to the progress-panel model and
-  is no longer exported from public kit entrypoints.
+- The overview route uses app-owned adapters from the Northstar operational DTO.
+- The right rail owns committed-vs-target progression, net investable amount,
+  fees, primary actions, operational snapshot, and exception queue.
+- The main overview capital block now emphasizes reconciliation evidence and
+  exceptions instead of repeating the full progression/economics story.
+- Public route copy no longer uses internal rebuild, baseline, scaffold, or
+  placeholder language.
 
 ## Validation
 
@@ -46,23 +37,19 @@ Passed:
 
 - `pnpm --filter @repo/web test`
 - `pnpm --filter @repo/web typecheck`
+- `pnpm --filter @repo/web build`
+- `pnpm --filter @repo/web e2e`
 - `pnpm --filter @repo/kit typecheck`
-- `pnpm --filter @repo/kit lint`
 - `pnpm --filter @repo/kit test:coverage`
 - `pnpm storybook:build`
 - `pnpm lint`
 - `git diff --check`
 
-Storybook build completed with non-blocking Vite chunk-size warnings and the
+Storybook build completed with the existing Vite chunk-size warning and the
 existing Turbo warning about no declared `@repo/kit#build` output files.
-
-Search verification confirms current docs no longer present deleted kit
-surfaces as active API. Remaining old surface references are historical/spec
-archive context. `NormalizedDealProgressSegment` remains only as an internal
-model type.
 
 ## Next Work
 
-T5D-B route wiring is the next pass after this hardening validation is clean.
-That pass should consume the app-owned Northstar DTO/tRPC seam and map it into
-route-owned views without reviving removed kit surfaces.
+T5D-C commitments wiring is unblocked from the route-IA side. It should wire the
+operator commitments workflow without using `/about`, without adding the
+investor lens, and without weakening the current kit-first composition.

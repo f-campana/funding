@@ -1,9 +1,9 @@
-import { DealRebuildPlaceholder } from '../deal-rebuild-placeholder'
+import { DealPendingWorkspaceSection } from '../deal-pending-workspace-section'
 
 export default function DealCommitmentsPage() {
   return (
-    <DealRebuildPlaceholder
-      description="Commitment operations are represented by a temporary shell until the accepted table baseline is integrated in a later pass."
+    <DealPendingWorkspaceSection
+      description="Investor commitment records are intentionally unavailable while the operator entry route stays focused on closing readiness."
       sectionLabel="Commitments"
     />
   )

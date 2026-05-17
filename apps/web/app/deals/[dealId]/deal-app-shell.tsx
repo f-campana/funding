@@ -9,7 +9,7 @@ export type DealAppShellNavItem = {
   readonly href: string
   readonly label: string
   readonly segment: string
-  readonly glyph: 'about' | 'commitments' | 'documents'
+  readonly glyph: 'overview' | 'commitments' | 'documents'
 }
 
 type DealAppShellProps = {
@@ -43,7 +43,7 @@ export function DealAppShell({
             <Link
               aria-label={workspaceLabel}
               className="flex size-10 shrink-0 items-center justify-center rounded-md border border-foreground/10 bg-foreground text-sm font-semibold text-background shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              href={`/deals/${dealId}/about`}
+              href={`/deals/${dealId}/overview`}
             >
               NS
             </Link>
