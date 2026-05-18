@@ -1,10 +1,20 @@
-import { DealPendingWorkspaceSection } from '../deal-pending-workspace-section'
+import { DealDocumentsEvidence } from '@repo/kit'
+import { notFound } from 'next/navigation'
 
-export default function DealDocumentsPage() {
-  return (
-    <DealPendingWorkspaceSection
-      description="Document review remains unavailable while the operator entry route stays focused on closing readiness."
-      sectionLabel="Documents"
-    />
-  )
+import { getDealOperationsData } from '../data'
+import { mapDealDocumentsEvidenceProps } from '../deal-documents-evidence-adapter'
+
+type DealDocumentsPageProps = {
+  params: Promise<{ dealId: string }>
+}
+
+export default async function DealDocumentsPage({ params }: DealDocumentsPageProps) {
+  const { dealId } = await params
+  const data = getDealOperationsData(dealId)
+
+  if (!data) {
+    notFound()
+  }
+
+  return <DealDocumentsEvidence {...mapDealDocumentsEvidenceProps(data)} />
 }

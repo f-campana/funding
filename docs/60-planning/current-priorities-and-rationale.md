@@ -70,16 +70,20 @@ Goal:
 The Northstar vertical should not be called complete until these route workflows
 consume the hardened contract.
 
-## Priority 3 — T5E-D Documents/Evidence Kit Baseline
+## Priority 3 — T5D-D Operator Documents Route
 
-Status: next pass after commitments inspector route review.
+Status: documents route wired to the accepted `DealDocumentsEvidence` kit
+baseline.
 
-Why it waits:
+Current truth:
 
-- the commitments inspector now defines which investor blockers, evidence, and
-  activity need to bridge into documents
-- documents should start as an accepted kit baseline before route wiring
-- the documents route remains pending until that baseline is accepted
+- `/deals/[dealId]/overview` remains the operator entry route
+- `/deals/[dealId]/commitments` remains wired with the Sheet-based commitment
+  inspector
+- `/deals/[dealId]/documents` consumes
+  `DealOperationalCenterDTO.documents` through an app-owned adapter
+- `/deals/[dealId]/about` remains reserved for a future investor lens
+- persona toggle, backend/database work, and document mutations remain deferred
 
 ## Priority 4 — Investor Commitment Flow
 

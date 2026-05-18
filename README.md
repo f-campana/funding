@@ -147,15 +147,13 @@ Current high-authority docs:
 
 ## Next Work
 
-Next implementation pass: T5E-D — documents/evidence kit baseline.
+Next implementation pass: investor `/about` lens planning, or backend/data
+integration when the product scope moves beyond the read-only Northstar fixture.
 
 Why: the accepted kit baselines and app-owned Northstar DTO/tRPC spine are the
-trust boundary. The operator entry route is `/deals/northstar-energy/overview`,
-with `/about` reserved for a future investor lens. The commitments route now
-uses `DealCommitmentsTable` with a route-owned `DealCommitmentInspector` Sheet
-drawer, so the next useful step is the documents/evidence kit baseline without
-starting the documents route, investor lens, persona toggle, or backend/domain
-work.
+trust boundary. The operator routes now cover overview, commitments, and
+documents. `/about` remains reserved for a future investor lens, persona toggle
+work is still deferred, and backend/database work remains future scope.
 
 Relevant docs:
 

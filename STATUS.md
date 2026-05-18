@@ -1,13 +1,14 @@
-# T5D-C3 Commitment Inspector Sheet Drawer Status
+# T5D-D Operator Documents Route Status
 
 ## Objective
 
-Convert the accepted `DealCommitmentInspector` kit baseline from an inline
-operator commitments panel into a route-owned Sheet drawer.
+Wire the operator documents route to the accepted `DealDocumentsEvidence` kit
+baseline using the app-owned Northstar `DealOperationalCenterDTO.documents`
+data.
 
-This pass does not wire `/documents`, does not build the investor `/about`
-lens, does not add a persona toggle, and does not change backend, tRPC, domain,
-auth, database, mutation, or persistence behavior.
+This pass does not build the investor `/about` lens, does not add a persona
+toggle, and does not change backend, tRPC, domain, auth, database, mutation, or
+persistence behavior.
 
 ## Current Truth
 
@@ -18,8 +19,8 @@ auth, database, mutation, or persistence behavior.
   for compatibility and remains reserved for the future investor lens.
 - `/deals/northstar-energy/commitments` renders the operator commitments table
   and opens the route-owned commitment inspector in a Sheet drawer.
-- `/deals/northstar-energy/documents` remains pending until the documents route
-  pass.
+- `/deals/northstar-energy/documents` renders the operator documents and
+  evidence readiness surface with `DealDocumentsEvidence`.
 - Visible operator tabs are Overview, Commitments, and Documents.
 
 ## Implementation Notes
@@ -34,11 +35,15 @@ auth, database, mutation, or persistence behavior.
   route and kept separate.
 - The inspector is no longer persistent inline route content; it renders inside
   `@repo/ui` `SheetContent` when an investor row opener is activated.
+- The documents route uses an app-owned adapter from
+  `DealOperationalCenterDTO.documents` to `DealDocumentsEvidenceProps`.
+- The documents surface is read-only: no fake upload, review, approval, request,
+  mutation, or persistence actions are wired.
 - The app does not import kit fixtures or Storybook fixtures.
 
 ## Validation
 
-Passed:
+Passed for this pass:
 
 - `pnpm --filter @repo/web test`
 - `pnpm --filter @repo/web typecheck`
@@ -53,10 +58,11 @@ Passed:
 - `git diff --check`
 - fixture/copy searches for `apps/web`
 - Browser screenshot QA under
-  `/tmp/t5d-c3-commitment-inspector-sheet-drawer/`
+  `/tmp/t5d-d-wire-operator-documents-route/`
 
 ## Next Work
 
-T5E-D documents/evidence kit baseline is unblocked by the route composition
-work. Keep `/documents`, the investor `/about` lens, persona toggle, and
-backend/domain work out of that kit baseline pass unless a later scope expands.
+The operator vertical is route-complete for the current operator IA: overview,
+commitments, and documents are all wired to accepted kit surfaces.
+The investor `/about` lens, persona toggle, backend/database work, and document
+mutations remain future scope.

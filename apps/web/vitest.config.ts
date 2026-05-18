@@ -5,7 +5,7 @@ export default mergeConfig(
   defineNodePackageConfig(),
   defineConfig({
     test: {
-      include: ['server/**/*.test.ts'],
+      include: ['app/**/*.test.ts', 'server/**/*.test.ts'],
     },
   }),
 )

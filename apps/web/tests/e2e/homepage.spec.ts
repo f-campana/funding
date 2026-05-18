@@ -1,6 +1,8 @@
 import { expect, type Page, test } from '@playwright/test'
 
 const COMMITTED_AMOUNT_PATTERN = /4,850,000/
+const FAKE_DOCUMENT_ACTION_PATTERN =
+  /upload|request document|approve|reject|mark reviewed|resolve blocker|send reminder/i
 const FAKE_INSPECTOR_ACTION_PATTERN = /send reminder|request evidence|approve|match wire/i
 const INTERNAL_ROUTE_COPY_PATTERN =
   /rebuild|baseline|scaffold|placeholder|Storybook|adapter not wired|not wired|fake|demo-only|Deferred|Removed|mission-control|mission control|admin dashboard/i
@@ -20,15 +22,6 @@ async function expectDealShell(page: Page, activeModule: string) {
   )
   await expect(page.locator('[data-slot="deal-entity-header"]')).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name: 'Northstar Energy SPV' })).toBeVisible()
-}
-
-async function expectPendingWorkspaceSection(page: Page, sectionLabel: string) {
-  await expect(
-    page.getByRole('heading', { name: `${sectionLabel} workflow not available yet` }),
-  ).toBeVisible()
-  await expect(
-    page.getByText(`${sectionLabel} records stay outside the active overview workflow.`),
-  ).toBeVisible()
 }
 
 async function expectCommitmentsTable(page: Page) {
@@ -63,6 +56,88 @@ async function expectCommitmentsTable(page: Page) {
   await expect(table).toContainText('Reconciled')
   await expect(table).toContainText('Ready for closing')
   await expect(table).toContainText('Needs attention')
+}
+
+async function expectDocumentsEvidence(page: Page) {
+  await expect(
+    page.getByRole('heading', { name: 'Documents workflow not available yet' }),
+  ).toHaveCount(0)
+  await expect(page.locator('body')).not.toContainText(INTERNAL_ROUTE_COPY_PATTERN)
+
+  const evidence = page.locator('[data-slot="deal-documents-evidence"]')
+  await expect(evidence).toBeVisible()
+  await expect(evidence).toHaveAttribute('data-state', 'ready')
+  await expect(evidence).toHaveAttribute('data-tone', 'danger')
+  await expect(evidence.getByRole('heading', { exact: true, name: 'Documents' })).toBeVisible()
+  await expect(
+    evidence.getByText(
+      'Closing evidence across generated documents, investor evidence, and vehicle setup.',
+    ),
+  ).toBeVisible()
+  await expect(evidence.locator('[data-slot="deal-documents-evidence-headline"]')).toContainText(
+    '9 documents · 4 blocking close · 4 document issues',
+  )
+  await expect(evidence.locator('[data-slot="deal-documents-evidence-summary"]')).toContainText(
+    'Blocking close',
+  )
+  await expect(evidence.locator('[data-slot="deal-documents-evidence-summary"]')).toContainText(
+    'Rejected/expired',
+  )
+
+  const groups = evidence.locator('[data-slot="deal-documents-evidence-group"]')
+  await expect(groups).toHaveCount(3)
+  await expect(evidence.getByRole('heading', { name: 'Generated closing documents' })).toBeVisible()
+  await expect(evidence.getByRole('heading', { name: 'Investor evidence' })).toBeVisible()
+  await expect(evidence.getByRole('heading', { name: 'Vehicle and target setup' })).toBeVisible()
+  await expect(groups.filter({ hasText: 'Generated closing documents' })).toContainText(
+    'Protected close room',
+  )
+  await expect(groups.filter({ hasText: 'Investor evidence' })).toContainText('Internal operations')
+  await expect(groups.filter({ hasText: 'Vehicle and target setup' })).toContainText(
+    'Investor-visible data room',
+  )
+
+  const meridianDocument = evidence.locator(
+    '[data-slot="deal-documents-evidence-document"][data-document-id="doc-meridian-ubo"]',
+  )
+  await expect(meridianDocument).toBeVisible()
+  await expect(meridianDocument).toHaveAttribute('data-status', 'missing')
+  await expect(meridianDocument).toHaveAttribute('data-tone', 'danger')
+  await expect(meridianDocument).toHaveAttribute('data-blocks-closing', 'true')
+  await expect(meridianDocument).toContainText('Missing')
+  await expect(meridianDocument).toContainText('Blocks closing')
+  await expect(meridianDocument).toContainText('Related investor')
+  await expect(meridianDocument).toContainText('Meridian Ventures')
+
+  const subscriptionBulletin = evidence.locator(
+    '[data-slot="deal-documents-evidence-document"][data-document-id="doc-subscription-bulletin"]',
+  )
+  await expect(subscriptionBulletin).toHaveAttribute('data-status', 'under_review')
+  await expect(subscriptionBulletin).toContainText('Under review')
+
+  const albaIdentity = evidence.locator(
+    '[data-slot="deal-documents-evidence-document"][data-document-id="doc-alba-identity"]',
+  )
+  await expect(albaIdentity).toHaveAttribute('data-status', 'approved')
+  await expect(albaIdentity).toContainText('Approved')
+  await expect(albaIdentity).toContainText('Cleared for closing')
+  await expect(albaIdentity).toContainText('Alba Family Office')
+
+  const riverbendProof = evidence.locator(
+    '[data-slot="deal-documents-evidence-document"][data-document-id="doc-riverbend-proof-address"]',
+  )
+  await expect(riverbendProof).toHaveAttribute('data-status', 'expired')
+  await expect(riverbendProof).toContainText('Expired')
+  await expect(riverbendProof).toContainText('Riverbend Holdings')
+
+  const targetLegalPack = evidence.locator(
+    '[data-slot="deal-documents-evidence-document"][data-document-id="doc-target-legal-pack"]',
+  )
+  await expect(targetLegalPack).toHaveAttribute('data-status', 'rejected')
+  await expect(targetLegalPack).toContainText('Rejected')
+  await expect(targetLegalPack).toContainText('Blocks closing')
+
+  await expect(evidence.getByRole('button', { name: FAKE_DOCUMENT_ACTION_PATTERN })).toHaveCount(0)
 }
 
 function commitmentRow(page: Page, investorName: string) {
@@ -382,7 +457,7 @@ test('deal commitments route avoids page overflow and keeps main content before 
   expect((closeButtonBox?.x ?? 0) + (closeButtonBox?.width ?? 0)).toBeLessThanOrEqual(390)
 })
 
-test('deal section navigation keeps documents pending', async ({ page }) => {
+test('deal documents route renders document evidence', async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 1440 })
   await page.goto('/deals/northstar-energy/overview')
 
@@ -391,8 +466,38 @@ test('deal section navigation keeps documents pending', async ({ page }) => {
   await tabs.getByRole('link', { name: 'Documents' }).click()
   await expect(page).toHaveURL('/deals/northstar-energy/documents')
   await expectDealShell(page, 'Documents')
-  await expectPendingWorkspaceSection(page, 'Documents')
   await expectActiveDealTab(page, 'Documents')
+  await expectDocumentsEvidence(page)
+  await expectOperationalRail(page)
+})
+
+test('deal documents route avoids page overflow and keeps main content before rail on mobile', async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 900, width: 390 })
+  await page.goto('/deals/northstar-energy/documents')
+
+  await expectDealShell(page, 'Documents')
+  await expectActiveDealTab(page, 'Documents')
+  await expectDocumentsEvidence(page)
+  await expectOperationalRail(page)
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  )
+  const documentsEvidenceAppearsBeforeRail = await page.evaluate(() => {
+    const evidence = document.querySelector('[data-slot="deal-documents-evidence"]')
+    const rail = document.querySelector('[data-slot="deal-operational-rail"]')
+
+    if (!evidence || !rail) {
+      return false
+    }
+
+    return Boolean(evidence.compareDocumentPosition(rail) & Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
+  expect(hasHorizontalOverflow).toBe(false)
+  expect(documentsEvidenceAppearsBeforeRail).toBe(true)
 })
 
 test('unsupported deal route renders the not-found UI', async ({ page }) => {
