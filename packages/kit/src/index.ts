@@ -73,3 +73,22 @@ export {
   type DealProgressVisibility,
   type DealProgressVisualProgress,
 } from './deal'
+export {
+  DealDocumentsEvidence,
+  type DealDocumentsEvidenceActionEvent,
+  type DealDocumentsEvidenceActionHandler,
+  type DealDocumentsEvidenceErrorState,
+  type DealDocumentsEvidenceGroup,
+  type DealDocumentsEvidenceItem,
+  type DealDocumentsEvidenceLabels,
+  type DealDocumentsEvidenceProps,
+  type DealDocumentsEvidenceReadyState,
+  type DealDocumentsEvidenceRequirement,
+  type DealDocumentsEvidenceRequirementKind,
+  type DealDocumentsEvidenceState,
+  type DealDocumentsEvidenceStatus,
+  type DealDocumentsEvidenceStatusKind,
+  type DealDocumentsEvidenceSummary,
+  type DealDocumentsEvidenceSummaryMetric,
+  type DealDocumentsEvidenceTone,
+} from './document'
