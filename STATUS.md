@@ -1,14 +1,13 @@
-# T5D-D Operator Documents Route Status
+# T5F-A Route-Complete Operator Vertical Status
 
 ## Objective
 
-Wire the operator documents route to the accepted `DealDocumentsEvidence` kit
-baseline using the app-owned Northstar `DealOperationalCenterDTO.documents`
-data.
+Review and lightly harden the route-complete Northstar operator vertical across
+Overview, Commitments, the commitment inspector Sheet, and Documents.
 
 This pass does not build the investor `/about` lens, does not add a persona
-toggle, and does not change backend, tRPC, domain, auth, database, mutation, or
-persistence behavior.
+toggle, and does not change backend, tRPC, domain, Prisma, auth, database,
+mutation, action, upload, reminder, approval, or persistence behavior.
 
 ## Current Truth
 
@@ -25,8 +24,11 @@ persistence behavior.
 
 ## Implementation Notes
 
-- The commitments route uses app-owned adapters from the Northstar operational
-  DTO.
+- The operator routes use app-owned adapters from the Northstar operational DTO.
+- The overview route maps readiness, blockers, capital exceptions, and activity
+  to `DealOperationalOverview`.
+- The rail maps deal progression and operational snapshot data to
+  `DealProgressPanel` plus route-owned summary cards.
 - `DealCommitmentsTable` remains the commitments list and batch-selection
   surface.
 - `DealCommitmentInspector` is composed from selected investor DTO data plus
@@ -37,13 +39,13 @@ persistence behavior.
   `@repo/ui` `SheetContent` when an investor row opener is activated.
 - The documents route uses an app-owned adapter from
   `DealOperationalCenterDTO.documents` to `DealDocumentsEvidenceProps`.
-- The documents surface is read-only: no fake upload, review, approval, request,
+- The documents surface is read-only: no upload, review, approval, request,
   mutation, or persistence actions are wired.
-- The app does not import kit fixtures or Storybook fixtures.
+- The app does not import kit fixtures or component-preview fixtures.
 
 ## Validation
 
-Passed for this pass:
+Current hardening validation target:
 
 - `pnpm --filter @repo/web test`
 - `pnpm --filter @repo/web typecheck`
@@ -56,13 +58,16 @@ Passed for this pass:
 - `pnpm storybook:build`
 - `pnpm lint`
 - `git diff --check`
-- fixture/copy searches for `apps/web`
+- fixture/copy/current-route searches for `apps/web`
 - Browser screenshot QA under
-  `/tmp/t5d-d-wire-operator-documents-route/`
+  `/tmp/t5f-a-review-harden-route-complete-operator-vertical/`
 
 ## Next Work
 
 The operator vertical is route-complete for the current operator IA: overview,
 commitments, and documents are all wired to accepted kit surfaces.
 The investor `/about` lens, persona toggle, backend/database work, and document
-mutations remain future scope.
+mutations remain future scope. The next strategic direction is planning the
+investor `/about` lens, backend/repository/Prisma integration, app-level
+dark-mode support, or broader portfolio polish after this route vertical passes
+review validation.

@@ -80,7 +80,12 @@ export const ReadyContent = ({
 
       {visibleActions.length > 0 ? (
         <div className="grid gap-2" data-slot="deal-progress-actions">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div
+            className={cn(
+              'grid grid-cols-1 gap-2',
+              visibleActions.length > 1 ? 'sm:grid-cols-2' : null,
+            )}
+          >
             {primaryAction ? (
               <ActionButton
                 action={primaryAction}

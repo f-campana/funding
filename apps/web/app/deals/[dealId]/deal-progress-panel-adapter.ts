@@ -9,7 +9,7 @@ import type { DealOperationalCenterDTO, DealSummaryDTO } from '@/server/deals'
 
 import { basisPoints, compositionBasisPoints } from './deal-operational-capital-helpers'
 import { formatMoney } from './deal-operational-formatting'
-import { getReadinessNextActionLabel, readinessTone } from './deal-operational-labels'
+import { readinessTone } from './deal-operational-labels'
 
 type ReadyProgressPanelState = Extract<DealProgressPanelState, { readonly kind: 'ready' }>
 type ActiveReadyProgressPanelState = Exclude<ReadyProgressPanelState, { readonly mode: 'closed' }>
@@ -174,32 +174,15 @@ const mapDealProgressCapital = (
 
 const mapDealProgressActions = (data: DealOperationalCenterDTO): DealProgressAvailableActions => ({
   kind: 'available',
-  primary:
-    data.readiness.state === 'ready'
-      ? {
-          audience: 'admin',
-          availability: 'enabled',
-          kind: 'closeDeal',
-          label: 'Close deal',
-        }
-      : {
-          audience: 'admin',
-          availability: 'disabled',
-          disabledReason: getReadinessNextActionLabel(data.readiness.state),
-          kind: 'closeDeal',
-          label: 'Close deal',
-        },
-  secondary: [
-    {
-      audience: 'admin',
-      availability: 'enabled',
-      kind: 'invite',
-      label:
-        data.deal.access.pendingAccessRequestCount > 0
-          ? `Review ${data.deal.access.pendingAccessRequestCount} access requests`
-          : 'Invite investors',
-    },
-  ],
+  primary: {
+    audience: 'admin',
+    availability: 'enabled',
+    kind: 'invite',
+    label:
+      data.deal.access.pendingAccessRequestCount > 0
+        ? `Review ${data.deal.access.pendingAccessRequestCount} access requests`
+        : 'Invite investors',
+  },
 })
 
 type DealProgressWorkflowMapper = (data: DealOperationalCenterDTO) => DealProgressWorkflow

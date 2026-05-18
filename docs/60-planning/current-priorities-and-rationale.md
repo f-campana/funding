@@ -5,7 +5,7 @@
 **Updated:** 2026-05-18
 
 This document tracks the current implementation sequence. Historical dashboard
-and kit exploration remains useful context, but the current baseline is now
+and kit exploration remains useful context, but the current public surface is now
 narrower.
 
 ## Current State
@@ -17,73 +17,66 @@ The repository has:
   reconciliation helpers in `@repo/domain`
 - shadcn-compatible light/dark tokens and Tailwind v4 mapping
 - generic UI primitives and chart infrastructure in `@repo/ui`
-- accepted `@repo/kit` baselines:
+- accepted `@repo/kit` surfaces:
   - `DealCommitmentsTable`
   - `DealCommitmentInspector`
+  - `DealDocumentsEvidence`
   - `DealOperationalOverview`
   - `DealProgressPanel`
 - an app-owned Northstar operational data spine in `apps/web/server/deals`
 - a narrow tRPC seam in `apps/web/server/trpc` and
   `apps/web/app/api/trpc/[trpc]/route.ts`
-- DTO-backed overview and commitments routes under `/deals/northstar-energy`
+- DTO-backed overview, commitments, and documents routes under
+  `/deals/northstar-energy`
 
 Deleted kit surfaces from earlier passes are historical and are not current
 public API.
 
-## Priority 1 — T5D-A2 Data Spine And Kit Baseline Hardening
+## Priority 1 — T5F-A Route-Complete Operator Vertical Review
 
-Status: in progress in the current pass.
+Status: current pass.
 
 Goal:
 
-- align current docs/status after legacy kit deletion
-- derive readiness dimensions from source operational statuses and unresolved
-  blockers
-- harden `DealCommitmentsTable` row-open keyboard affordance
-- harden the `DealOperationalOverview` public baseline contract
-- complete the accepted kit label/copy contracts
-- remove internal public API leaks from kit exports
-- run the required web, kit, Storybook, lint, and diff validation
+- audit the complete operator flow from Overview to Commitments, the commitment
+  inspector Sheet, and Documents
+- keep route IA, docs, tests, adapters, copy, and product grammar consistent
+- preserve the accepted kit surfaces and app-owned DTO adapter boundary
+- avoid investor `/about`, persona toggle, backend/database work, mutations,
+  uploads, reminders, approvals, and persistence
+- run the required web, kit, storybook, lint, diff, and screenshot validation
 
 Why this is first:
 
-- T5D-B route wiring should not inherit blocker-only readiness assumptions.
-- Accepted kit baselines should be app-label-ready before route adapters depend
-  on them.
-- Deleted kit surfaces should not leak back into docs or public exports.
+- the operator vertical is route-complete for overview, commitments, and
+  documents
+- `/deals/[dealId]/about` remains reserved for the future investor lens
+- the read-only Northstar route needs review-ready evidence before the next
+  strategic expansion
 
-## Priority 2 — T5D-C Commitments Wiring
+## Priority 2 — Investor `/about` Lens Planning
 
-Status: T5D-C2 wires `DealCommitmentInspector` into the commitments route.
+Status: deferred until the operator vertical is review-ready.
 
 Goal:
 
-- wire the real Northstar commitments workflow to the app-owned DTO/tRPC spine
-- compose the accepted `DealCommitmentInspector` kit baseline into the route
-  container for one selected commitment
-- keep `/deals/[dealId]/overview` as the operator entry route
-- keep `/deals/[dealId]/about` reserved for a future investor lens
-- map commitment DTO sections into route-owned views and accepted kit baselines
-- preserve package boundaries
-- avoid reviving deleted kit surfaces
+- plan the investor-facing `/about` lens as a separate product surface
+- decide which existing deal data can be safely reused without importing kit
+  fixtures into `apps/web`
+- keep the operator route grammar separate from investor-facing deal content
 
-The Northstar vertical should not be called complete until these route workflows
-consume the hardened contract.
+## Priority 3 — Backend/Repository/Prisma Planning
 
-## Priority 3 — T5D-D Operator Documents Route
+Status: deferred.
 
-Status: documents route wired to the accepted `DealDocumentsEvidence` kit
-baseline.
+Goal:
 
-Current truth:
-
-- `/deals/[dealId]/overview` remains the operator entry route
-- `/deals/[dealId]/commitments` remains wired with the Sheet-based commitment
-  inspector
-- `/deals/[dealId]/documents` consumes
-  `DealOperationalCenterDTO.documents` through an app-owned adapter
-- `/deals/[dealId]/about` remains reserved for a future investor lens
-- persona toggle, backend/database work, and document mutations remain deferred
+- replace the read-only fixture spine with repository-backed data only after
+  route contracts settle
+- preserve the current adapter boundary from `getDealOperationsData(dealId)` to
+  app-owned surface adapters to accepted kit components
+- keep mutations/actions out of scope until persistence and authorization are
+  designed together
 
 ## Priority 4 — Investor Commitment Flow
 

@@ -50,7 +50,7 @@ const dealOperationalOverviewLabels = {
   noBlockersLabel: 'No priority blockers are open.',
   readinessTitle: 'Closing readiness',
   subtitle: 'Close-readiness view for priority blockers, capital exceptions, and recent movement.',
-  title: 'Operational overview',
+  title: 'Overview',
 } as const satisfies DealOperationalOverviewLabels
 
 export const mapDealOperationalOverviewProps = (

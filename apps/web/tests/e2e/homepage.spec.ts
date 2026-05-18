@@ -224,7 +224,7 @@ async function expectOperationalOverview(page: Page) {
   await expect(overview).toBeVisible()
   await expect(overview).toHaveAttribute('data-state', 'ready')
   await expect(overview).toHaveAttribute('data-readiness-state', 'blocked')
-  await expect(overview.getByRole('heading', { name: 'Operational overview' })).toBeVisible()
+  await expect(overview.getByRole('heading', { name: 'Overview' })).toBeVisible()
   await expect(overview.getByText('Blocked from close')).toBeVisible()
 
   const readiness = overview.locator('[data-slot="deal-operational-readiness"]')

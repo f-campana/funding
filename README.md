@@ -8,7 +8,7 @@ for Funding. References to Funding are based on public research and used
 as product inspiration for an engineering case study.
 
 The repo is built in layers. The foundation packages, generic UI primitive
-layer, narrowed product-shaped kit baselines, and an app-owned Northstar
+layer, narrowed product-shaped kit surfaces, and an app-owned Northstar
 operational data spine are now implemented.
 
 ## For Reviewers
@@ -45,17 +45,17 @@ Implemented:
 - `@repo/tailwind-config` — Tailwind CSS v4 shared styles mapped to the design
   token CSS variables.
 - `@repo/ui` — generic shadcn/Radix-compatible UI primitives, chart
-  infrastructure, shadcn monorepo configuration, Storybook stories, contract
+  infrastructure, shadcn monorepo configuration, component preview stories, contract
   checks, and accessibility tests.
-- `@repo/kit` — accepted product baselines only: `DealOperationalOverview`,
+- `@repo/kit` — accepted product surfaces only: `DealOperationalOverview`,
   `DealProgressPanel`, `DealCommitmentsTable`, `DealCommitmentInspector`, and
   their public props/state/action/label/input types. Legacy exploratory kit
   surfaces were removed.
 - `apps/web` — Next.js App Router shell with `next-intl`, token font/theme
   wiring, translated homepage, an app-owned Northstar operational data spine,
-  a tRPC seam, route boundaries, and DTO-backed overview and commitments
-  routes under `/deals/northstar-energy`.
-- `apps/storybook` — standalone Storybook workspace consuming `ui` and `kit`
+  a tRPC seam, route boundaries, and DTO-backed overview, commitments, and
+  documents routes under `/deals/northstar-energy`.
+- `apps/storybook` — standalone component preview workspace consuming `ui` and `kit`
   stories, with locale and light/dark preview toolbar controls.
 
 ## Architecture
@@ -81,7 +81,7 @@ Package boundaries matter:
 
 - `apps/web`: Next.js App Router application, `next-intl`, default locale
   `fr-FR`.
-- `apps/storybook`: standalone Storybook package.
+- `apps/storybook`: standalone component preview package.
 - `packages/core`: functional algebraic data types and adapters.
 - `packages/domain`: financial/domain primitives and schemas.
 - `packages/design-tokens`: token source, generator, validator, generated CSS,
@@ -120,7 +120,7 @@ pnpm --filter @repo/web build
 pnpm --filter @repo/web e2e
 ```
 
-Full baseline:
+Full validation:
 
 ```bash
 pnpm turbo typecheck lint test
@@ -150,7 +150,7 @@ Current high-authority docs:
 Next implementation pass: investor `/about` lens planning, or backend/data
 integration when the product scope moves beyond the read-only Northstar fixture.
 
-Why: the accepted kit baselines and app-owned Northstar DTO/tRPC spine are the
+Why: the accepted kit surfaces and app-owned Northstar DTO/tRPC spine are the
 trust boundary. The operator routes now cover overview, commitments, and
 documents. `/about` remains reserved for a future investor lens, persona toggle
 work is still deferred, and backend/database work remains future scope.
