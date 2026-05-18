@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest'
 
 describe('@repo/kit package exports', () => {
   it('exports only the accepted baseline component set', () => {
+    expect(Kit.DealCommitmentInspector).toBeTypeOf('function')
     expect(Kit.DealCommitmentsTable).toBeTypeOf('function')
     expect(Kit.DealOperationalOverview).toBeTypeOf('function')
     expect(Kit.DealProgressPanel).toBeTypeOf('function')
     expect(Object.keys(Kit).sort()).toEqual([
+      'DealCommitmentInspector',
       'DealCommitmentsTable',
       'DealOperationalOverview',
       'DealProgressPanel',

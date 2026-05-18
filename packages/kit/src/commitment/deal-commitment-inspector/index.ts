@@ -18,23 +18,3 @@ export {
   type DealCommitmentReadinessRecord,
   type DealCommitmentStatus,
 } from './deal-commitment-inspector'
-export {
-  type CommitmentInvestorAvatarTone,
-  type CommitmentInvestorRow,
-  type CommitmentInvestorStatusTone,
-  type CommitmentReadinessKey,
-  type CommitmentReadinessState,
-  type CommitmentReadinessTone,
-  type CommitmentRowDataIssueTone,
-  type CommitmentTableFilterId,
-  type CommitmentTableGroupValue,
-  type CommitmentTablePaginationState,
-  type CommitmentTableSortDirection,
-  type CommitmentTableSortKey,
-  type CommitmentTableSortState,
-  type CommitmentTableViewValue,
-  DealCommitmentsTable,
-  type DealCommitmentsTableLabels,
-  type DealCommitmentsTableLifecycleState,
-  type DealCommitmentsTableProps,
-} from './deal-commitments-table'
