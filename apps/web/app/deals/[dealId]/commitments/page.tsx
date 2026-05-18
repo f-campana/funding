@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 
 import { getDealOperationsData } from '../data'
+import { mapDealCommitmentInspectorViewModel } from '../deal-commitment-inspector-adapter'
 import { mapDealCommitmentsTableViewModel } from '../deal-commitments-table-adapter'
 import { CommitmentsWorkspace } from './commitments-workspace'
 
@@ -16,5 +17,10 @@ export default async function DealCommitmentsPage({ params }: DealCommitmentsPag
     notFound()
   }
 
-  return <CommitmentsWorkspace table={mapDealCommitmentsTableViewModel(data)} />
+  return (
+    <CommitmentsWorkspace
+      inspector={mapDealCommitmentInspectorViewModel(data)}
+      table={mapDealCommitmentsTableViewModel(data)}
+    />
+  )
 }

@@ -25,7 +25,7 @@ The repository has:
 - an app-owned Northstar operational data spine in `apps/web/server/deals`
 - a narrow tRPC seam in `apps/web/server/trpc` and
   `apps/web/app/api/trpc/[trpc]/route.ts`
-- app route work in progress under `/deals/northstar-energy`
+- DTO-backed overview and commitments routes under `/deals/northstar-energy`
 
 Deleted kit surfaces from earlier passes are historical and are not current
 public API.
@@ -54,7 +54,7 @@ Why this is first:
 
 ## Priority 2 — T5D-C Commitments Wiring
 
-Status: next pass is T5D-C2 route wiring for `DealCommitmentInspector`.
+Status: T5D-C2 wires `DealCommitmentInspector` into the commitments route.
 
 Goal:
 
@@ -70,7 +70,18 @@ Goal:
 The Northstar vertical should not be called complete until these route workflows
 consume the hardened contract.
 
-## Priority 3 — Investor Commitment Flow
+## Priority 3 — T5E-D Documents/Evidence Kit Baseline
+
+Status: next pass after commitments inspector route review.
+
+Why it waits:
+
+- the commitments inspector now defines which investor blockers, evidence, and
+  activity need to bridge into documents
+- documents should start as an accepted kit baseline before route wiring
+- the documents route remains pending until that baseline is accepted
+
+## Priority 4 — Investor Commitment Flow
 
 Status: deferred.
 

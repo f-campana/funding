@@ -53,8 +53,8 @@ Implemented:
   surfaces were removed.
 - `apps/web` — Next.js App Router shell with `next-intl`, token font/theme
   wiring, translated homepage, an app-owned Northstar operational data spine,
-  a tRPC seam, route boundaries, and route work in progress under
-  `/deals/northstar-energy`.
+  a tRPC seam, route boundaries, and DTO-backed overview and commitments
+  routes under `/deals/northstar-energy`.
 - `apps/storybook` — standalone Storybook workspace consuming `ui` and `kit`
   stories, with locale and light/dark preview toolbar controls.
 
@@ -147,16 +147,14 @@ Current high-authority docs:
 
 ## Next Work
 
-Next implementation pass: T5D-C2 — wire `DealCommitmentInspector` into the
-commitments route.
+Next implementation pass: T5E-D — documents/evidence kit baseline.
 
 Why: the accepted kit baselines and app-owned Northstar DTO/tRPC spine are the
 trust boundary. The operator entry route is `/deals/northstar-energy/overview`,
 with `/about` reserved for a future investor lens. The commitments route now
-uses `DealCommitmentsTable`, and `DealCommitmentInspector` is the accepted
-kit-first inspection surface. The next useful step is a route-owned wiring pass
-that composes the inspector from app-owned commitment data without starting the
-documents route or investor lens.
+uses `DealCommitmentsTable` with a route-owned `DealCommitmentInspector` panel,
+so the next useful step is the documents/evidence kit baseline without starting
+the documents route, investor lens, persona toggle, or backend/domain work.
 
 Relevant docs:
 
