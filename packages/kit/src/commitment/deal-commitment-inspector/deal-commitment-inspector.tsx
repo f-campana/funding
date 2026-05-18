@@ -86,7 +86,7 @@ export const DealCommitmentInspector = ({
   return (
     <section
       aria-busy={state.kind === 'loading' ? true : undefined}
-      aria-labelledby={titleId}
+      aria-label={labels.title}
       className={cn(
         'w-full overflow-hidden rounded-lg border border-border/70 bg-card text-card-foreground shadow-card',
         className,

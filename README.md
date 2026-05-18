@@ -47,9 +47,10 @@ Implemented:
 - `@repo/ui` — generic shadcn/Radix-compatible UI primitives, chart
   infrastructure, shadcn monorepo configuration, Storybook stories, contract
   checks, and accessibility tests.
-- `@repo/kit` — accepted product baselines only: `DealCommitmentsTable`,
-  `DealProgressPanel`, and their public props/state/action/label/input types.
-  Legacy exploratory kit surfaces were removed.
+- `@repo/kit` — accepted product baselines only: `DealOperationalOverview`,
+  `DealProgressPanel`, `DealCommitmentsTable`, `DealCommitmentInspector`, and
+  their public props/state/action/label/input types. Legacy exploratory kit
+  surfaces were removed.
 - `apps/web` — Next.js App Router shell with `next-intl`, token font/theme
   wiring, translated homepage, an app-owned Northstar operational data spine,
   a tRPC seam, route boundaries, and route work in progress under
@@ -146,14 +147,16 @@ Current high-authority docs:
 
 ## Next Work
 
-Next implementation pass: T5E-C2 DealCommitmentInspector kit baseline.
+Next implementation pass: T5D-C2 — wire `DealCommitmentInspector` into the
+commitments route.
 
 Why: the accepted kit baselines and app-owned Northstar DTO/tRPC spine are the
 trust boundary. The operator entry route is `/deals/northstar-energy/overview`,
 with `/about` reserved for a future investor lens. The commitments route now
-uses `DealCommitmentsTable`; the next useful step is a kit-first row inspector
-baseline so investor blockers and related documents have an inspectable product
-surface before the documents route is designed.
+uses `DealCommitmentsTable`, and `DealCommitmentInspector` is the accepted
+kit-first inspection surface. The next useful step is a route-owned wiring pass
+that composes the inspector from app-owned commitment data without starting the
+documents route or investor lens.
 
 Relevant docs:
 

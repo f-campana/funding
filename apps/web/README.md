@@ -41,9 +41,12 @@ Implemented:
 - Playwright e2e tests for homepage navigation, the DTO-backed overview route,
   the DTO-backed commitments table, the legacy `/about` redirect, active tabs,
   row-open keyboard behavior, mobile overflow guards, and not-found behavior
+- accepted `DealCommitmentInspector` kit baseline exists for the next
+  commitments route wiring pass
 
 Not implemented yet:
 
+- commitment inspector drawer/panel route container
 - investor `/about` lens
 - documents route workflow
 - persona toggle

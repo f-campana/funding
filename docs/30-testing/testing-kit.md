@@ -9,6 +9,7 @@ and layout-safe rendering for the current exported kit components.
 The current kit baseline contains only:
 
 - `DealCommitmentsTable`
+- `DealCommitmentInspector`
 - `DealOperationalOverview`
 - `DealProgressPanel`
 
@@ -53,6 +54,22 @@ Cover:
 - header selection operates on visible enabled rows
 - search, filter, pagination, empty, loading, and error states
 - long text remains truncated with accessible tooltip behavior
+- representative accessibility checks in light and dark contexts
+
+## DealCommitmentInspector Tests
+
+Cover:
+
+- root accessible region naming from `labels.title`
+- investor identity, commitment summary, next action, readiness, blockers,
+  related evidence, and recent activity render from display-ready props
+- loading, error, empty, no-blocker, no-document, no-activity, blocked, ready,
+  and dark-mode contexts
+- retry emits the stable action event without adding fake mutation events
+- the inspector readiness key alias stays aligned with the shared commitment
+  readiness key contract
+- package boundary checks reject app imports, console calls, and raw palette
+  classes
 - representative accessibility checks in light and dark contexts
 
 ## DealOperationalOverview Tests
@@ -118,6 +135,7 @@ Run:
 ```bash
 pnpm --filter @repo/kit typecheck
 pnpm --filter @repo/kit lint
+pnpm --filter @repo/kit test -- deal-commitment-inspector deal-commitments-table
 pnpm --filter @repo/kit test:coverage
 pnpm storybook:build
 pnpm lint

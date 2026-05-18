@@ -14,6 +14,7 @@ Root export:
 
 ```ts
 import {
+  DealCommitmentInspector,
   DealCommitmentsTable,
   DealOperationalOverview,
   DealProgressPanel,
@@ -31,6 +32,7 @@ not be reintroduced without a dedicated future pass.
 Accepted baselines:
 
 - `DealCommitmentsTable` — commitment operations table baseline.
+- `DealCommitmentInspector` — single investor commitment inspection baseline.
 - `DealOperationalOverview` — close readiness, capital, blockers, and activity
   overview baseline.
 - `DealProgressPanel` — deal progress command panel baseline.

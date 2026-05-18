@@ -1,3 +1,5 @@
+export type { CommitmentReadinessKey } from './commitment-readiness.types'
+export { commitmentReadinessKeys } from './commitment-readiness.types'
 export {
   type DealCommitmentActivityItem,
   type DealCommitmentBlocker,
@@ -22,7 +24,6 @@ export {
   type CommitmentInvestorAvatarTone,
   type CommitmentInvestorRow,
   type CommitmentInvestorStatusTone,
-  type CommitmentReadinessKey,
   type CommitmentReadinessState,
   type CommitmentReadinessTone,
   type CommitmentRowDataIssueTone,

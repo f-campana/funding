@@ -1,4 +1,6 @@
-export type CommitmentReadinessKey = 'kycKyb' | 'signature' | 'wire' | 'reconciliation'
+import type { CommitmentReadinessKey } from '../commitment-readiness.types'
+
+export type { CommitmentReadinessKey } from '../commitment-readiness.types'
 
 export type CommitmentReadinessTone = 'success' | 'danger' | 'attention' | 'info' | 'neutral'
 

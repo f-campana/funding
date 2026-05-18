@@ -1,16 +1,11 @@
+import { commitmentReadinessKeys } from '../commitment-readiness.types'
 import type {
   DealCommitmentBlockerSeverity,
   DealCommitmentInspectorState,
   DealCommitmentInspectorTone,
-  DealCommitmentReadinessKey,
 } from './deal-commitment-inspector.types'
 
-export const commitmentInspectorReadinessKeys = [
-  'kycKyb',
-  'signature',
-  'wire',
-  'reconciliation',
-] as const satisfies readonly DealCommitmentReadinessKey[]
+export const commitmentInspectorReadinessKeys = commitmentReadinessKeys
 
 export const inspectorToneBadgeClasses = {
   attention: 'border-status-attention-border bg-status-attention-muted text-status-attention',

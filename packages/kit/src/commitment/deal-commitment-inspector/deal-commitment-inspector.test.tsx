@@ -6,11 +6,14 @@ import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from '../../test/axe'
+import type { CommitmentReadinessKey } from '../commitment-readiness.types'
+import { commitmentReadinessKeys } from '../commitment-readiness.types'
 import type {
   DealCommitmentInspectorActionEvent,
   DealCommitmentInspectorProps,
   DealCommitmentInspectorState,
   DealCommitmentInspectorTone,
+  DealCommitmentReadinessKey,
   DealCommitmentReadinessRecord,
 } from './deal-commitment-inspector'
 import { DealCommitmentInspector } from './deal-commitment-inspector'
@@ -41,6 +44,8 @@ const expectInspectorState = (_state: DealCommitmentInspectorState) => undefined
 const expectInspectorProps = (_props: DealCommitmentInspectorProps) => undefined
 const expectTone = (_tone: DealCommitmentInspectorTone) => undefined
 const expectActionEvent = (_event: DealCommitmentInspectorActionEvent) => undefined
+const expectSharedReadinessKey = (_key: CommitmentReadinessKey) => undefined
+const expectInspectorReadinessKey = (_key: DealCommitmentReadinessKey) => undefined
 const forbiddenRouteImportPattern = /from\s+['"][^'"]*(?:trpc|tRPC|router|backend)[^'"]*['"]/i
 const consoleStatementPattern = /console\.(?:log|warn|error)/
 const rawTailwindPalettePattern =
@@ -68,6 +73,11 @@ expectActionEvent({ kind: 'retry' })
 
 // @ts-expect-error The inspector baseline does not expose fake mutation events.
 expectActionEvent({ kind: 'requestEvidence' })
+
+const sharedReadinessKey: CommitmentReadinessKey = 'wire'
+const inspectorReadinessKey: DealCommitmentReadinessKey = sharedReadinessKey
+expectSharedReadinessKey(inspectorReadinessKey)
+expectInspectorReadinessKey(inspectorReadinessKey)
 
 // @ts-expect-error Readiness requires all four investor-readiness rows.
 const _incompleteReadiness: DealCommitmentReadinessRecord = {
@@ -106,6 +116,18 @@ const readInspectorSource = async () => {
 }
 
 describe('DealCommitmentInspector', () => {
+  it('uses the provided title as the root accessible name', () => {
+    renderInspector()
+
+    expect(
+      screen.getByRole('region', { name: dealCommitmentInspectorLabels.title }),
+    ).toBeInTheDocument()
+  })
+
+  it('uses the shared commitment readiness key order', () => {
+    expect(commitmentReadinessKeys).toEqual(['kycKyb', 'signature', 'wire', 'reconciliation'])
+  })
+
   it('renders investor identity, commitment summary, status, and next action', () => {
     renderInspector()
 

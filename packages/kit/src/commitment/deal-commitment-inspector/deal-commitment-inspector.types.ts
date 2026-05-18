@@ -1,3 +1,5 @@
+import type { CommitmentReadinessKey } from '../commitment-readiness.types'
+
 export type DealCommitmentInspectorTone =
   | 'success'
   | 'attention'
@@ -6,7 +8,7 @@ export type DealCommitmentInspectorTone =
   | 'pending'
   | 'neutral'
 
-export type DealCommitmentReadinessKey = 'kycKyb' | 'signature' | 'wire' | 'reconciliation'
+export type DealCommitmentReadinessKey = CommitmentReadinessKey
 
 export type DealCommitmentBlockerSeverity = 'critical' | 'warning' | 'info'
 

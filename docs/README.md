@@ -56,7 +56,8 @@ docs/
   Recharts/shadcn-compatible generic chart infrastructure for `@repo/ui`.
 - [Kit spec](./20-specs/kit-spec.md) — current narrowed `@repo/kit` API,
   package boundary, and accepted `DealCommitmentsTable`,
-  `DealOperationalOverview`, and `DealProgressPanel` baselines.
+  `DealCommitmentInspector`, `DealOperationalOverview`, and
+  `DealProgressPanel` baselines.
 - [Closing readiness dashboard V1 spec](./20-specs/closing-readiness-dashboard-v1-spec.md) —
   historical kit-level readiness implementation spec. Its deleted component
   surfaces are no longer current kit API.

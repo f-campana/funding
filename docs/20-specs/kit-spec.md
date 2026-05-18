@@ -18,6 +18,7 @@ the app without importing app routing, tRPC, auth, or provider concerns.
 The package currently exposes only:
 
 - `DealCommitmentsTable`
+- `DealCommitmentInspector`
 - `DealOperationalOverview`
 - `DealProgressPanel`
 - public props, state, action, label, and input types needed by those
@@ -85,6 +86,27 @@ Behavior:
 - accepts labels for columns, filters, empty states, generated row labels, and
   pagination copy
 - does not fetch investor details or own route state
+
+## `DealCommitmentInspector`
+
+Public surface:
+
+- `DealCommitmentInspector`
+- `DealCommitmentInspectorProps`
+- `DealCommitmentInspectorLabels`
+- investor summary, readiness, blocker, evidence, activity, lifecycle, and
+  action event types needed by route adapters
+
+Behavior:
+
+- renders one investor commitment inspection content surface
+- accepts display-ready investor identity, commitment summary, readiness,
+  blocker, evidence, activity, and status labels
+- uses `labels.title` as the root accessible region name
+- exposes loading, error, empty, and ready lifecycle states without fetching data
+  or owning app route state
+- does not render the drawer/panel container and does not own persistence,
+  document routing, or investor `/about` navigation
 
 ## `DealOperationalOverview`
 

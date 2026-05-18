@@ -1,5 +1,6 @@
 import { match } from 'ts-pattern'
 
+import { commitmentReadinessKeys } from '../commitment-readiness.types'
 import type {
   CommitmentInvestorRow,
   CommitmentReadinessState,
@@ -17,7 +18,7 @@ import type {
   ReadyControls,
 } from './deal-commitments-table.types'
 
-export const readinessKeys = ['kycKyb', 'signature', 'wire', 'reconciliation'] as const
+export const readinessKeys = commitmentReadinessKeys
 
 export const visibleReadinessKeys = ['kycKyb', 'signature', 'wire'] as const
 

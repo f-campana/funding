@@ -213,6 +213,7 @@ Product-shaped composed components built on top of `ui`.
 Owns:
 
 - the accepted `DealCommitmentsTable` baseline
+- the accepted `DealCommitmentInspector` baseline
 - the accepted `DealOperationalOverview` baseline
 - the accepted `DealProgressPanel` baseline
 - public props, state, action, label, and input types for those baselines

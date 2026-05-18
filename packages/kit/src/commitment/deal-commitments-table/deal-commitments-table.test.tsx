@@ -4,8 +4,10 @@ import type { ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { axe } from '../../test/axe'
+import { commitmentReadinessKeys } from '../commitment-readiness.types'
 import {
   type CommitmentInvestorRow,
+  type CommitmentReadinessKey,
   type CommitmentTableFilterId,
   DealCommitmentsTable,
   type DealCommitmentsTableLifecycleState,
@@ -57,6 +59,7 @@ const renderCommitmentsTable = (props: Partial<ComponentProps<typeof DealCommitm
 
 const expectLifecycleState = (_state: DealCommitmentsTableLifecycleState) => undefined
 const expectTableProps = (_props: ComponentProps<typeof DealCommitmentsTable>) => undefined
+const expectCommitmentReadinessKey = (_key: CommitmentReadinessKey) => undefined
 const openDetailsLabelPattern = /Open commitment detail for/u
 const selectTailwindLabelPattern = /Select Tailwind/u
 const sortByLabelPattern = /Sort by/u
@@ -109,6 +112,8 @@ expectLifecycleState({
   // @ts-expect-error Ready state uses selectedRowIds for batch selection.
   selectedRowId: 'pine-point-capital',
 })
+
+expectCommitmentReadinessKey('kycKyb')
 
 const _incompleteReadinessRow: CommitmentInvestorRow = {
   ...lockedCommitmentRows[0],
@@ -182,6 +187,10 @@ const expectRadixTooltipText = (element: HTMLElement, fullText: string) => {
 }
 
 describe('DealCommitmentsTable', () => {
+  it('uses the shared commitment readiness key order', () => {
+    expect(commitmentReadinessKeys).toEqual(['kycKyb', 'signature', 'wire', 'reconciliation'])
+  })
+
   it('renders title, subtitle, interactive toolbar controls, and accurate footer labels', () => {
     renderCommitmentsTable()
 

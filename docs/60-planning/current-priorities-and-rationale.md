@@ -2,7 +2,7 @@
 
 **Status:** Active tracking  
 **Created:** 2026-05-09  
-**Updated:** 2026-05-17
+**Updated:** 2026-05-18
 
 This document tracks the current implementation sequence. Historical dashboard
 and kit exploration remains useful context, but the current baseline is now
@@ -19,6 +19,7 @@ The repository has:
 - generic UI primitives and chart infrastructure in `@repo/ui`
 - accepted `@repo/kit` baselines:
   - `DealCommitmentsTable`
+  - `DealCommitmentInspector`
   - `DealOperationalOverview`
   - `DealProgressPanel`
 - an app-owned Northstar operational data spine in `apps/web/server/deals`
@@ -53,11 +54,13 @@ Why this is first:
 
 ## Priority 2 — T5D-C Commitments Wiring
 
-Status: next after the operator overview route is validated.
+Status: next pass is T5D-C2 route wiring for `DealCommitmentInspector`.
 
 Goal:
 
 - wire the real Northstar commitments workflow to the app-owned DTO/tRPC spine
+- compose the accepted `DealCommitmentInspector` kit baseline into the route
+  container for one selected commitment
 - keep `/deals/[dealId]/overview` as the operator entry route
 - keep `/deals/[dealId]/about` reserved for a future investor lens
 - map commitment DTO sections into route-owned views and accepted kit baselines
