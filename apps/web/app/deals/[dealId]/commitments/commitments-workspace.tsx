@@ -6,7 +6,15 @@ import {
   type DealCommitmentsTableLabels,
   type DealCommitmentsTableLifecycleState,
 } from '@repo/kit'
-import { Button } from '@repo/ui'
+import {
+  Button,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@repo/ui'
 import { useMemo, useState } from 'react'
 
 import type { DealCommitmentInspectorViewModel } from '../deal-commitment-inspector-adapter'
@@ -70,10 +78,8 @@ export function CommitmentsWorkspace({ inspector, table }: CommitmentsWorkspaceP
   const [selectedRowIds, setSelectedRowIds] = useState<readonly string[]>(() =>
     table.state.kind === 'ready' ? (table.state.selectedRowIds ?? []) : [],
   )
-  const inspectorOpen = drawerOpenRowId !== undefined
-  const inspectorProps = drawerOpenRowId
-    ? (inspector.propsByInvestorId[drawerOpenRowId] ?? inspector.emptyProps)
-    : inspector.emptyProps
+  const inspectorProps = drawerOpenRowId ? inspector.propsByInvestorId[drawerOpenRowId] : undefined
+  const inspectorOpen = inspectorProps !== undefined
   const controlledTableState = useMemo(
     () => getControlledTableState(table.state, activeRowId, drawerOpenRowId, selectedRowIds),
     [activeRowId, drawerOpenRowId, selectedRowIds, table.state],
@@ -84,15 +90,19 @@ export function CommitmentsWorkspace({ inspector, table }: CommitmentsWorkspaceP
     setDrawerOpenRowId(rowId)
   }
 
-  const closeInspector = () => {
-    setActiveRowId(undefined)
+  const handleInspectorOpenChange = (open: boolean) => {
+    if (open) {
+      return
+    }
+
     setDrawerOpenRowId(undefined)
+    setActiveRowId(undefined)
   }
 
   return (
     <section
       aria-label="Commitments workspace"
-      className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]"
+      className="min-w-0"
       data-slot="deal-commitments-workspace"
     >
       <DealCommitmentsTable
@@ -104,28 +114,38 @@ export function CommitmentsWorkspace({ inspector, table }: CommitmentsWorkspaceP
         state={controlledTableState}
       />
 
-      <aside
-        aria-label="Commitment inspector panel"
-        className="grid min-w-0 content-start gap-2 xl:sticky xl:top-5"
-        data-open={inspectorOpen ? 'true' : 'false'}
-        data-slot="deal-commitment-inspector-panel"
-      >
-        {inspectorOpen ? (
-          <div className="flex justify-end">
-            <Button
-              aria-label="Close commitment inspector"
-              className="h-8 px-3 text-xs"
-              onClick={closeInspector}
-              type="button"
-              variant="outline"
-            >
-              Close
-            </Button>
+      <Sheet onOpenChange={handleInspectorOpenChange} open={inspectorOpen}>
+        <SheetContent
+          className="w-full max-w-[min(100vw,38rem)] gap-0 p-0 sm:max-w-xl"
+          showCloseButton={false}
+          side="right"
+        >
+          <div className="sticky top-0 z-10 border-b border-border bg-background px-5 py-4">
+            <SheetHeader className="pr-20">
+              <SheetTitle>Commitment details</SheetTitle>
+              <SheetDescription>
+                Inspect investor readiness, blockers, evidence, and activity.
+              </SheetDescription>
+            </SheetHeader>
+            <SheetClose asChild>
+              <Button
+                aria-label="Close commitment inspector"
+                className="absolute top-4 right-4 h-8 px-3 text-xs"
+                type="button"
+                variant="outline"
+              >
+                Close
+              </Button>
+            </SheetClose>
           </div>
-        ) : null}
 
-        <DealCommitmentInspector {...inspectorProps} className="max-w-none" />
-      </aside>
+          <div className="min-w-0 p-4 sm:p-5">
+            {inspectorProps ? (
+              <DealCommitmentInspector {...inspectorProps} className="max-w-none" />
+            ) : null}
+          </div>
+        </SheetContent>
+      </Sheet>
     </section>
   )
 }

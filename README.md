@@ -152,9 +152,10 @@ Next implementation pass: T5E-D — documents/evidence kit baseline.
 Why: the accepted kit baselines and app-owned Northstar DTO/tRPC spine are the
 trust boundary. The operator entry route is `/deals/northstar-energy/overview`,
 with `/about` reserved for a future investor lens. The commitments route now
-uses `DealCommitmentsTable` with a route-owned `DealCommitmentInspector` panel,
-so the next useful step is the documents/evidence kit baseline without starting
-the documents route, investor lens, persona toggle, or backend/domain work.
+uses `DealCommitmentsTable` with a route-owned `DealCommitmentInspector` Sheet
+drawer, so the next useful step is the documents/evidence kit baseline without
+starting the documents route, investor lens, persona toggle, or backend/domain
+work.
 
 Relevant docs:
 

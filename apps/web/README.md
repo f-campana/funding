@@ -19,7 +19,7 @@ implemented workspace layers into a real route:
   reserved for a future investor lens.
 - `/deals/northstar-energy/commitments` — DTO-backed operator commitments
   workflow using `DealCommitmentsTable` and a route-owned
-  `DealCommitmentInspector` panel.
+  `DealCommitmentInspector` Sheet drawer.
 - `/deals/northstar-energy/documents` — pending until the documents route pass.
 - `/deals/unknown` — unsupported deal route, expected to render the app
   not-found UI.
@@ -40,7 +40,7 @@ Implemented:
 - tRPC seam under `server/trpc` and `app/api/trpc/[trpc]/route.ts`
 - route data loader at `app/deals/[dealId]`
 - Playwright e2e tests for homepage navigation, the DTO-backed overview route,
-  the DTO-backed commitments table and inspector panel, the legacy `/about`
+  the DTO-backed commitments table and inspector Sheet, the legacy `/about`
   redirect, active tabs, row-open keyboard behavior, selection separation,
   mobile overflow guards, and not-found behavior
 

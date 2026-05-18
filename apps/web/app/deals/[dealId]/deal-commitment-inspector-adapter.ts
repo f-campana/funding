@@ -57,9 +57,9 @@ const commitmentInspectorLabels = {
 } as const satisfies DealCommitmentInspectorLabels
 
 const emptyCommitmentInspectorState = {
-  description: 'Open an investor to inspect blockers and evidence.',
+  description: 'Select an investor row to review commitment details.',
   kind: 'empty',
-  title: 'No commitment selected',
+  title: 'Commitment unavailable',
 } as const satisfies DealCommitmentInspectorState
 
 const emptyCommitmentInspectorProps = {

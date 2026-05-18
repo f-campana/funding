@@ -1,8 +1,9 @@
 import { expect, type Page, test } from '@playwright/test'
 
 const COMMITTED_AMOUNT_PATTERN = /4,850,000/
+const FAKE_INSPECTOR_ACTION_PATTERN = /send reminder|request evidence|approve|match wire/i
 const INTERNAL_ROUTE_COPY_PATTERN =
-  /rebuild|baseline|scaffold|placeholder|Storybook-first|adapter not wired|not wired|Deferred|Removed|mission-control|mission control|admin dashboard/i
+  /rebuild|baseline|scaffold|placeholder|Storybook|adapter not wired|not wired|fake|demo-only|Deferred|Removed|mission-control|mission control|admin dashboard/i
 
 async function expectActiveDealTab(page: Page, name: string) {
   await expect(
@@ -69,20 +70,15 @@ function commitmentRow(page: Page, investorName: string) {
 }
 
 function commitmentInspectorPanel(page: Page) {
-  return page.locator('[data-slot="deal-commitment-inspector-panel"]')
+  return page.getByRole('dialog', { name: 'Commitment details' })
 }
 
-async function expectCommitmentInspectorEmpty(page: Page) {
-  const panel = commitmentInspectorPanel(page)
-
-  await expect(panel).toBeVisible()
-  await expect(panel).toHaveAttribute('data-open', 'false')
-  await expect(panel.locator('[data-slot="deal-commitment-inspector"]')).toHaveAttribute(
-    'data-state',
-    'empty',
-  )
-  await expect(panel.getByText('Open an investor to inspect blockers and evidence.')).toBeVisible()
-  await expect(panel.getByRole('button', { name: 'Close commitment inspector' })).toHaveCount(0)
+async function expectCommitmentInspectorClosed(page: Page) {
+  await expect(commitmentInspectorPanel(page)).toHaveCount(0)
+  await expect(page.locator('[data-slot="deal-commitment-inspector-panel"]')).toHaveCount(0)
+  await expect(page.locator('[data-slot="deal-commitment-inspector"]')).toHaveCount(0)
+  await expect(page.getByText('No commitment selected')).toHaveCount(0)
+  await expect(page.getByText('Open an investor to inspect blockers and evidence.')).toHaveCount(0)
 }
 
 async function openMeridianInspectorWithKeyboard(page: Page) {
@@ -93,7 +89,11 @@ async function openMeridianInspectorWithKeyboard(page: Page) {
   await page.keyboard.press('Enter')
   await expect(meridianRow).toHaveAttribute('data-active', 'true')
   await expect(meridianRow).toHaveAttribute('data-drawer-open', 'true')
-  await expect(commitmentInspectorPanel(page)).toHaveAttribute('data-open', 'true')
+  await expect(commitmentInspectorPanel(page)).toBeVisible()
+  await expect(commitmentInspectorPanel(page).getByText('Inspect investor readiness')).toBeVisible()
+  await expect(
+    commitmentInspectorPanel(page).getByRole('button', { name: 'Close commitment inspector' }),
+  ).toBeVisible()
 }
 
 async function expectMeridianCommitmentInspector(page: Page) {
@@ -120,6 +120,9 @@ async function expectMeridianCommitmentInspector(page: Page) {
   )
   await expect(inspector.locator('[data-slot="deal-commitment-activity"]')).toContainText(
     'Meridian Ventures needs KYB evidence before signature completion.',
+  )
+  await expect(inspector.getByRole('button', { name: FAKE_INSPECTOR_ACTION_PATTERN })).toHaveCount(
+    0,
   )
 }
 
@@ -283,7 +286,7 @@ test('deal commitments route renders the commitments table', async ({ page }) =>
   await expectDealShell(page, 'Commitments')
   await expectActiveDealTab(page, 'Commitments')
   await expectCommitmentsTable(page)
-  await expectCommitmentInspectorEmpty(page)
+  await expectCommitmentInspectorClosed(page)
   await expectOperationalRail(page)
 })
 
@@ -293,18 +296,22 @@ test('deal commitments table supports search and workflow filters', async ({ pag
   await openMeridianInspectorWithKeyboard(page)
   await expectMeridianCommitmentInspector(page)
 
+  await commitmentInspectorPanel(page)
+    .getByRole('button', { name: 'Close commitment inspector' })
+    .click()
+  await expectCommitmentInspectorClosed(page)
+
   await page.getByLabel('Search investors').fill('Meridian')
   await expect(commitmentRow(page, 'Meridian Ventures')).toBeVisible()
   await expect(commitmentRow(page, 'Alba Family Office')).toHaveCount(0)
   await expect(page.getByText('1 investor')).toBeVisible()
-  await expectMeridianCommitmentInspector(page)
 
   await page.getByLabel('Search investors').fill('')
   await page.getByRole('button', { name: 'Wire pending' }).click()
   await expect(commitmentRow(page, 'Meridian Ventures')).toBeVisible()
   await expect(commitmentRow(page, 'Riverbend Holdings')).toBeVisible()
   await expect(commitmentRow(page, 'Alba Family Office')).toHaveCount(0)
-  await expectMeridianCommitmentInspector(page)
+  await expectCommitmentInspectorClosed(page)
 })
 
 test('deal commitments row opener is keyboard reachable and selection stays separate', async ({
@@ -312,14 +319,14 @@ test('deal commitments row opener is keyboard reachable and selection stays sepa
 }) => {
   await page.goto('/deals/northstar-energy/commitments')
 
-  await expectCommitmentInspectorEmpty(page)
+  await expectCommitmentInspectorClosed(page)
 
   const helixRow = commitmentRow(page, 'Helix Capital')
   await expect(helixRow).toBeVisible()
   await page.getByRole('checkbox', { name: 'Select Helix Capital commitment' }).click()
   await expect(helixRow).toHaveAttribute('data-batch-selected', 'true')
   await expect(helixRow).toHaveAttribute('data-drawer-open', 'false')
-  await expectCommitmentInspectorEmpty(page)
+  await expectCommitmentInspectorClosed(page)
 
   const meridianRow = commitmentRow(page, 'Meridian Ventures')
   await expect(meridianRow).toHaveAttribute('data-drawer-open', 'false')
@@ -333,8 +340,9 @@ test('deal commitments row opener is keyboard reachable and selection stays sepa
   await commitmentInspectorPanel(page)
     .getByRole('button', { name: 'Close commitment inspector' })
     .click()
-  await expectCommitmentInspectorEmpty(page)
+  await expectCommitmentInspectorClosed(page)
   await expect(meridianRow).toHaveAttribute('data-drawer-open', 'false')
+  await expect(helixRow).toHaveAttribute('data-batch-selected', 'true')
 })
 
 test('deal commitments route avoids page overflow and keeps main content before rail on mobile', async ({
@@ -346,9 +354,9 @@ test('deal commitments route avoids page overflow and keeps main content before 
   await expectDealShell(page, 'Commitments')
   await expectActiveDealTab(page, 'Commitments')
   await expectCommitmentsTable(page)
+  await expectOperationalRail(page)
   await openMeridianInspectorWithKeyboard(page)
   await expectMeridianCommitmentInspector(page)
-  await expectOperationalRail(page)
 
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -363,20 +371,15 @@ test('deal commitments route avoids page overflow and keeps main content before 
 
     return Boolean(table.compareDocumentPosition(rail) & Node.DOCUMENT_POSITION_FOLLOWING)
   })
-  const inspectorAppearsBeforeRail = await page.evaluate(() => {
-    const inspector = document.querySelector('[data-slot="deal-commitment-inspector-panel"]')
-    const rail = document.querySelector('[data-slot="deal-operational-rail"]')
-
-    if (!inspector || !rail) {
-      return false
-    }
-
-    return Boolean(inspector.compareDocumentPosition(rail) & Node.DOCUMENT_POSITION_FOLLOWING)
-  })
+  const closeButtonBox = await commitmentInspectorPanel(page)
+    .getByRole('button', { name: 'Close commitment inspector' })
+    .boundingBox()
 
   expect(hasHorizontalOverflow).toBe(false)
   expect(commitmentsTableAppearsBeforeRail).toBe(true)
-  expect(inspectorAppearsBeforeRail).toBe(true)
+  expect(closeButtonBox).not.toBeNull()
+  expect(closeButtonBox?.x).toBeGreaterThanOrEqual(0)
+  expect((closeButtonBox?.x ?? 0) + (closeButtonBox?.width ?? 0)).toBeLessThanOrEqual(390)
 })
 
 test('deal section navigation keeps documents pending', async ({ page }) => {
