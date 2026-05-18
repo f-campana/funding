@@ -75,6 +75,27 @@ export {
 export { Input, type InputProps } from './components/input'
 export { Progress, type ProgressProps } from './components/progress'
 export { Separator, type SeparatorProps } from './components/separator'
+export {
+  Sheet,
+  SheetClose,
+  type SheetCloseProps,
+  SheetContent,
+  type SheetContentProps,
+  SheetDescription,
+  type SheetDescriptionProps,
+  SheetFooter,
+  type SheetFooterProps,
+  SheetHeader,
+  type SheetHeaderProps,
+  SheetOverlay,
+  type SheetOverlayProps,
+  SheetPortal,
+  type SheetPortalProps,
+  SheetTitle,
+  type SheetTitleProps,
+  SheetTrigger,
+  type SheetTriggerProps,
+} from './components/sheet'
 export { Skeleton, type SkeletonProps } from './components/skeleton'
 export {
   Table,
