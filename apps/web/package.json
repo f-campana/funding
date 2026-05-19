@@ -31,6 +31,7 @@
     "bundle:report": "next build && node scripts/report-route-bundles.mjs",
     "dev": "next dev",
     "e2e": "playwright test",
+    "lint": "cd ../.. && biome check --config-path biome.json apps/web",
     "start": "next start -H 127.0.0.1 -p 3000",
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit -p tsconfig.json"

@@ -24,6 +24,7 @@
     "typescript": "^6.0.3"
   },
   "scripts": {
+    "lint": "cd ../.. && biome check --config-path biome.json apps/storybook",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
     "typecheck": "tsc --noEmit -p tsconfig.json"

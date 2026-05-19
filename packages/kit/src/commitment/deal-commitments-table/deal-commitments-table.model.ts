@@ -28,6 +28,8 @@ export const defaultPageSize = 8
 
 export const pageSizeOptions = [8, 12, 25] as const
 
+const idleRowState = { kind: 'idle' } as const satisfies CommitmentTableRowState
+
 export const filterOptions = [
   { id: 'needsAttention' },
   { id: 'pendingKycKyb' },
@@ -88,7 +90,7 @@ export const getReadyControls = ({
     hoveredRowId: state.hoveredRowId,
     page: getControlValue(controlled.page, state.pagination?.page, local.page),
     pageSize: getControlValue(controlled.pageSize, state.pagination?.pageSize, local.pageSize),
-    rowState: getControlValue(controlled.rowState, state.rowState, local.rowState),
+    rowState: getRowStateControlValue(controlled.rowState, state.rowState, local.rowState),
     searchValue: getControlValue(controlled.searchValue, state.searchValue, local.searchValue),
     selectedRowIds: getControlValue(
       controlled.selectedRowIds,
@@ -105,6 +107,12 @@ const getControlValue = <Value>(
   controlledValue: Value | undefined,
   localValue: Value,
 ) => (controlled ? (controlledValue ?? localValue) : localValue)
+
+const getRowStateControlValue = (
+  controlled: boolean,
+  controlledValue: CommitmentTableRowState | undefined,
+  localValue: CommitmentTableRowState,
+) => (controlled ? (controlledValue ?? idleRowState) : localValue)
 
 export const getCommitmentTableModel = (
   rows: readonly CommitmentInvestorRow[],

@@ -67,26 +67,27 @@ const readyTableState = (
   ...state,
 })
 
+const getCommitmentsTableProps = (
+  props: Partial<ComponentProps<typeof DealCommitmentsTable>> = {},
+): ComponentProps<typeof DealCommitmentsTable> =>
+  ({
+    footer: dealCommitmentsTableLabels.footer,
+    labels: dealCommitmentsTableLabels.labels,
+    state: readyTableState(),
+    subtitle: dealCommitmentsTableLabels.subtitle,
+    title: dealCommitmentsTableLabels.title,
+    toolbar:
+      props.onExportSelected && props.onExportVisible
+        ? {
+            ...dealCommitmentsTableLabels.toolbar,
+            ...dealCommitmentsTableExportToolbarLabels,
+          }
+        : dealCommitmentsTableLabels.toolbar,
+    ...props,
+  }) as ComponentProps<typeof DealCommitmentsTable>
+
 const renderCommitmentsTable = (props: Partial<ComponentProps<typeof DealCommitmentsTable>> = {}) =>
-  render(
-    <DealCommitmentsTable
-      {...({
-        footer: dealCommitmentsTableLabels.footer,
-        labels: dealCommitmentsTableLabels.labels,
-        state: readyTableState(),
-        subtitle: dealCommitmentsTableLabels.subtitle,
-        title: dealCommitmentsTableLabels.title,
-        toolbar:
-          props.onExportSelected && props.onExportVisible
-            ? {
-                ...dealCommitmentsTableLabels.toolbar,
-                ...dealCommitmentsTableExportToolbarLabels,
-              }
-            : dealCommitmentsTableLabels.toolbar,
-        ...props,
-      } as ComponentProps<typeof DealCommitmentsTable>)}
-    />,
-  )
+  render(<DealCommitmentsTable {...getCommitmentsTableProps(props)} />)
 
 const expectLifecycleState = (_state: DealCommitmentsTableLifecycleState) => undefined
 const expectTableProps = (_props: ComponentProps<typeof DealCommitmentsTable>) => undefined
@@ -737,6 +738,45 @@ describe('DealCommitmentsTable', () => {
       screen.getByRole('button', { name: 'Open commitment detail for Pine Point Capital' }),
     ).toBeInTheDocument()
     expect(container.querySelectorAll('[data-slot="commitment-drawer-connector"]')).toHaveLength(1)
+  })
+
+  it('treats an explicitly cleared controlled rowState as idle instead of reviving local state', async () => {
+    const user = userEvent.setup()
+    const onRowStateChange = vi.fn()
+    const { container, rerender } = renderCommitmentsTable({
+      onRowStateChange,
+      state: readyTableState({
+        rowState: { drawerOpen: true, kind: 'active', rowId: 'pine-point-capital' },
+      }),
+    })
+
+    expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-active', 'true')
+    expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-drawer-open', 'true')
+    expect(container.querySelectorAll('[data-slot="commitment-drawer-connector"]')).toHaveLength(1)
+
+    rerender(
+      <DealCommitmentsTable
+        {...getCommitmentsTableProps({
+          onRowStateChange,
+          state: readyTableState({ rowState: undefined }),
+        })}
+      />,
+    )
+
+    expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-active', 'false')
+    expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-drawer-open', 'false')
+    expect(
+      container.querySelector('[data-slot="commitment-drawer-connector"]'),
+    ).not.toBeInTheDocument()
+
+    await user.click(getInvestorRow('Pine Point Capital'))
+
+    expect(onRowStateChange).toHaveBeenLastCalledWith({
+      drawerOpen: true,
+      kind: 'active',
+      rowId: 'pine-point-capital',
+    })
+    expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-drawer-open', 'false')
   })
 
   it('suppresses disabled row selection, active affordances, drawer connector, and handlers', async () => {

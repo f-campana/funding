@@ -60,6 +60,7 @@ export const DealCommitmentsTableContent = (props: DealCommitmentsTableContentPr
   const readyActiveFilterIds = state.kind === 'ready' ? state.activeFilterIds : undefined
   const readyPage = state.kind === 'ready' ? state.pagination?.page : undefined
   const readyPageSize = state.kind === 'ready' ? state.pagination?.pageSize : undefined
+  const readyRowState = state.kind === 'ready' ? state.rowState : undefined
   const readySearchValue = state.kind === 'ready' ? state.searchValue : undefined
   const readySelectedRowIds = state.kind === 'ready' ? state.selectedRowIds : undefined
 
@@ -80,6 +81,12 @@ export const DealCommitmentsTableContent = (props: DealCommitmentsTableContentPr
       setLocalPageSize(readyPageSize)
     }
   }, [onPageSizeChange, readyPageSize])
+
+  useEffect(() => {
+    if (onRowStateChange === undefined && readyRowState !== undefined) {
+      setLocalRowState(readyRowState)
+    }
+  }, [onRowStateChange, readyRowState])
 
   useEffect(() => {
     if (onSearchValueChange === undefined && readySearchValue !== undefined) {

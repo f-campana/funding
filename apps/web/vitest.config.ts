@@ -12,7 +12,11 @@ export default mergeConfig(
       },
     },
     test: {
-      include: ['app/**/*.test.ts', 'observability/**/*.test.ts', 'server/**/*.test.ts'],
+      include: [
+        'app/**/*.test.{ts,tsx}',
+        'observability/**/*.test.{ts,tsx}',
+        'server/**/*.test.{ts,tsx}',
+      ],
     },
   }),
 )

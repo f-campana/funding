@@ -118,6 +118,9 @@ docs/
 - [React composition audit](./60-planning/react-composition-audit.md) —
   composition-over-configuration findings for the current React surfaces and a
   proposed agent guardrail to prevent future API drift.
+- [Hooks synchronization focused remediation](./60-planning/hooks-synchronization-focused-remediation.md) —
+  focused remediation record for hook snapshot, dependency, controlled-state, and
+  Web Vitals callback findings from the 2026-05-19 hooks audit.
 - [Backend migration readiness](./60-planning/backend-migration-readiness.md) —
   repo-specific migration guidance for introducing repositories, Prisma, auth,
   permissions, route-specific DTOs, and mutations after the read-only Northstar
@@ -125,6 +128,10 @@ docs/
 - [Private markets domain roadmap](./60-planning/private-markets-domain-roadmap.md) —
   practical implementation sequence for SPV, compliance, payment, commitment,
   club, and fund domain expansion.
+- [JavaScript runtime semantics audit](./60-planning/javascript-runtime-semantics-audit.md) —
+  repo-wide audit against the Roundtable JavaScript cheat sheet, covering
+  TypeScript erasure, runtime boundaries, object identity, async behavior,
+  React hydration, package exports, and tooling gaps.
 
 ## Ralph Loop History
 

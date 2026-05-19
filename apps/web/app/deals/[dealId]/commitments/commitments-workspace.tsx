@@ -30,7 +30,6 @@ import {
   DealCommitmentsTableHeader,
   DealCommitmentsTableInvestorCount,
   type DealCommitmentsTableLabels,
-  type DealCommitmentsTableLifecycleState,
   DealCommitmentsTableNextPageButton,
   DealCommitmentsTablePageSizeSelect,
   DealCommitmentsTablePreviousPageButton,
@@ -56,12 +55,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@repo/ui/components/sheet'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { createRouteInteractionTelemetryEvent } from '@/observability/telemetry-events'
 import { emitTelemetryEvent } from '@/observability/telemetry-transport'
 import type { DealCommitmentInspectorViewModel } from '../deal-commitment-inspector-adapter'
 import type { DealCommitmentsTableViewModel } from '../deal-commitments-table-adapter'
+import {
+  getControlledTableSelectionState,
+  getSyncedCommitmentsSelection,
+} from './commitments-workspace-selection'
 
 type CommitmentsWorkspaceProps = {
   readonly inspector: DealCommitmentInspectorViewModel
@@ -124,6 +127,16 @@ export function CommitmentsWorkspace({ inspector, table }: CommitmentsWorkspaceP
   const [selectedRowIds, setSelectedRowIds] = useState<readonly string[]>(() =>
     table.state.kind === 'ready' ? (table.state.selectedRowIds ?? []) : [],
   )
+
+  useEffect(() => {
+    setSelectedRowIds((currentSelectedRowIds) =>
+      getSyncedCommitmentsSelection({
+        currentSelectedRowIds,
+        state: table.state,
+      }),
+    )
+  }, [table.state])
+
   const controlledTableState = useMemo(
     () => getControlledTableSelectionState(table.state, selectedRowIds),
     [selectedRowIds, table.state],
@@ -313,19 +326,5 @@ const renderCommitmentInspectorContent = ({
           </DealCommitmentInspectorActivity>
         </>
       )
-  }
-}
-
-const getControlledTableSelectionState = (
-  state: DealCommitmentsTableLifecycleState,
-  selectedRowIds: readonly string[],
-): DealCommitmentsTableLifecycleState => {
-  if (state.kind !== 'ready') {
-    return state
-  }
-
-  return {
-    ...state,
-    selectedRowIds,
   }
 }
