@@ -7,6 +7,26 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./deal-operational-overview": {
+      "types": "./src/deal/deal-operational-overview/index.ts",
+      "import": "./src/deal/deal-operational-overview/index.ts"
+    },
+    "./deal-progress-panel": {
+      "types": "./src/deal/deal-progress-panel/index.ts",
+      "import": "./src/deal/deal-progress-panel/index.ts"
+    },
+    "./deal-commitments-table": {
+      "types": "./src/commitment/deal-commitments-table/index.ts",
+      "import": "./src/commitment/deal-commitments-table/index.ts"
+    },
+    "./deal-commitment-inspector": {
+      "types": "./src/commitment/deal-commitment-inspector/index.ts",
+      "import": "./src/commitment/deal-commitment-inspector/index.ts"
+    },
+    "./deal-documents-evidence": {
+      "types": "./src/document/deal-documents-evidence/index.ts",
+      "import": "./src/document/deal-documents-evidence/index.ts"
     }
   },
   "dependencies": {

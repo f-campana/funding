@@ -1,20 +1,20 @@
 'use client'
 
+import { DealCommitmentInspector } from '@repo/kit/deal-commitment-inspector'
 import {
-  DealCommitmentInspector,
   DealCommitmentsTable,
   type DealCommitmentsTableLabels,
   type DealCommitmentsTableLifecycleState,
-} from '@repo/kit'
+} from '@repo/kit/deal-commitments-table'
+import { Button } from '@repo/ui/components/button'
 import {
-  Button,
   Sheet,
   SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@repo/ui'
+} from '@repo/ui/components/sheet'
 import { useMemo, useState } from 'react'
 
 import type { DealCommitmentInspectorViewModel } from '../deal-commitment-inspector-adapter'

@@ -2,7 +2,7 @@ import type {
   DealOperationalOverviewLabels,
   DealOperationalOverviewProps,
   DealOperationalOverviewState,
-} from '@repo/kit'
+} from '@repo/kit/deal-operational-overview'
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
 

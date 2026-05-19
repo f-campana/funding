@@ -1,4 +1,7 @@
-import type { DealDocumentsEvidenceProps, DealDocumentsEvidenceReadyState } from '@repo/kit'
+import type {
+  DealDocumentsEvidenceProps,
+  DealDocumentsEvidenceReadyState,
+} from '@repo/kit/deal-documents-evidence'
 import { describe, expect, it } from 'vitest'
 import { getDealOperationalCenter } from '../../../server/deals'
 import { mapDealDocumentsEvidenceProps } from './deal-documents-evidence-adapter'

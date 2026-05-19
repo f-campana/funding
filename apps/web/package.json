@@ -28,6 +28,7 @@
   },
   "scripts": {
     "build": "next build",
+    "bundle:report": "next build && node scripts/report-route-bundles.mjs",
     "dev": "next dev",
     "e2e": "playwright test",
     "start": "next start -H 127.0.0.1 -p 3000",

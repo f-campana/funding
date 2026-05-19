@@ -1,4 +1,4 @@
-import type { DealOperationalMetricTone } from '@repo/kit'
+import type { DealOperationalMetricTone } from '@repo/kit/deal-operational-overview'
 
 import type {
   CapitalMatchingDTO,

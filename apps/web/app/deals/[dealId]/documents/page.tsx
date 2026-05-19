@@ -1,4 +1,4 @@
-import { DealDocumentsEvidence } from '@repo/kit'
+import { DealDocumentsEvidence } from '@repo/kit/deal-documents-evidence'
 import { notFound } from 'next/navigation'
 
 import { getDealOperationsData } from '../data'

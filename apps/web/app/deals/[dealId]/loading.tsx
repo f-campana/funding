@@ -1,6 +1,6 @@
 'use client'
 
-import { Skeleton } from '@repo/ui'
+import { Skeleton } from '@repo/ui/components/skeleton'
 import { useTranslations } from 'next-intl'
 
 export default function DealLoading() {

@@ -1,6 +1,6 @@
 'use client'
 
-import { DealProgressPanel, type DealProgressPanelProps } from '@repo/kit'
+import { DealProgressPanel, type DealProgressPanelProps } from '@repo/kit/deal-progress-panel'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 

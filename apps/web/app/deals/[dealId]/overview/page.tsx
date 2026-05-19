@@ -1,4 +1,4 @@
-import { DealOperationalOverview } from '@repo/kit'
+import { DealOperationalOverview } from '@repo/kit/deal-operational-overview'
 import { notFound } from 'next/navigation'
 
 import { getDealOperationsData } from '../data'

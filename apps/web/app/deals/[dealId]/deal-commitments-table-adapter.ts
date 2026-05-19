@@ -2,7 +2,7 @@ import type {
   CommitmentInvestorRow,
   CommitmentReadinessState,
   DealCommitmentsTableLifecycleState,
-} from '@repo/kit'
+} from '@repo/kit/deal-commitments-table'
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
 import { formatDateTimeLabel, formatMoney, pluralize } from './deal-operational-formatting'

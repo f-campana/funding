@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@repo/ui'
+import { cn } from '@repo/ui/lib/utils'
 import Link from 'next/link'
 import { useSelectedLayoutSegment } from 'next/navigation'
 

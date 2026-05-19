@@ -14,21 +14,6 @@ export {
   CardTitle,
   type CardTitleProps,
 } from './components/card'
-export {
-  type ChartConfig,
-  ChartContainer,
-  type ChartContainerProps,
-  ChartLegend,
-  ChartLegendContent,
-  type ChartLegendContentProps,
-  type ChartLegendProps,
-  ChartStyle,
-  type ChartStyleProps,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartTooltipContentProps,
-  type ChartTooltipProps,
-} from './components/chart'
 export { Checkbox, type CheckboxProps } from './components/checkbox'
 export {
   DropdownMenu,

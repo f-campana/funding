@@ -1,4 +1,4 @@
-import type { DealOperationalBlocker } from '@repo/kit'
+import type { DealOperationalBlocker } from '@repo/kit/deal-operational-overview'
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
 

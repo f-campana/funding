@@ -1,8 +1,8 @@
 import type {
   DealOperationalActivityTone,
   DealOperationalReadinessState,
-  DealProgressStatus,
-} from '@repo/kit'
+} from '@repo/kit/deal-operational-overview'
+import type { DealProgressStatus } from '@repo/kit/deal-progress-panel'
 
 import type { ClosingReadinessDTO, DealOperationalCenterDTO } from '@/server/deals'
 

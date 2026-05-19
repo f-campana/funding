@@ -9,7 +9,7 @@ import type {
   DealCommitmentInvestorSummary,
   DealCommitmentReadinessItem,
   DealCommitmentReadinessRecord,
-} from '@repo/kit'
+} from '@repo/kit/deal-commitment-inspector'
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
 

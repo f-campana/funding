@@ -3,7 +3,7 @@ import type {
   DealProgressPanelProps,
   DealProgressPanelState,
   DealProgressStatus,
-} from '@repo/kit'
+} from '@repo/kit/deal-progress-panel'
 
 import type { DealOperationalCenterDTO, DealSummaryDTO } from '@/server/deals'
 

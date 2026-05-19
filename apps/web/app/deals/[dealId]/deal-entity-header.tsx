@@ -1,4 +1,4 @@
-import { Badge } from '@repo/ui'
+import { Badge } from '@repo/ui/components/badge'
 import type { ReactNode } from 'react'
 
 import type { DealOperationsRouteData } from './data'

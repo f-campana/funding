@@ -6,7 +6,7 @@ import type {
   DealDocumentsEvidenceReadyState,
   DealDocumentsEvidenceSummaryMetric,
   DealDocumentsEvidenceTone,
-} from '@repo/kit'
+} from '@repo/kit/deal-documents-evidence'
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
 
