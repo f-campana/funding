@@ -53,14 +53,15 @@ Implemented and verified:
 - `@repo/ui` — generic shadcn/Radix-compatible primitives, chart
   infrastructure, shadcn monorepo configuration, Storybook stories, contract
   checks, and accessibility tests.
-- `@repo/kit` — accepted product baselines: `DealCommitmentsTable`,
-  `DealOperationalOverview`, `DealProgressPanel`, and their public
-  props/state/action/label/input types.
+- `@repo/kit` — accepted product baselines: `DealOperationalOverview`,
+  `DealProgressPanel`, `DealCommitmentsTable`, `DealCommitmentInspector`, and
+  `DealDocumentsEvidence`, plus their public props/state/action/label/input
+  types.
   Older exploratory kit surfaces were removed.
 - `apps/web` — Next.js App Router app shell with `next-intl`, token font/theme
-  wiring, translated homepage, an app-owned Northstar operational data spine,
-  a tRPC seam, route boundaries, and route work in progress under
-  `/deals/northstar-energy`.
+  wiring, translated homepage, an app-owned Northstar operational service/DTO
+  spine used directly by server routes, a fixture-backed tRPC API adapter seam,
+  and route-complete operator workflows under `/deals/northstar-energy`.
 - `apps/storybook` — standalone component workspace consuming `ui` and `kit`
   stories, with locale and light/dark preview toolbar controls.
 
@@ -123,13 +124,14 @@ The package READMEs list package-specific verification commands.
 
 ## Next Step
 
-The next implementation pass should wire the real Northstar route workflows to
-the app-owned DTO/tRPC spine.
+The next implementation pass should harden bundle and RSC boundaries for the
+route-complete Northstar operator vertical.
 
-Why: the kit API is intentionally narrowed to accepted baselines, and the
-Northstar data contract now lives in `apps/web`. The vertical should not be
-called complete until the about, commitments, and documents workflows consume
-that contract without reviving removed kit surfaces.
+Why: the Northstar route data boundary is now explicit. Server-side App Router
+routes call app services directly through the app-owned service/DTO spine.
+tRPC remains a transport adapter for client/API access and future mutations
+over those same services. The current tRPC deal read is fixture-backed demo
+access, not production-private-data-safe API behavior.
 
 Relevant docs:
 

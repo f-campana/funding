@@ -6,6 +6,7 @@ import {
 import { createTrpcRouter, publicProcedure } from '../init'
 
 export const dealRouter = createTrpcRouter({
+  // Fixture-backed demo seam. Production private deal data must require real auth.
   getOperationalCenter: publicProcedure
     .input(GetOperationalCenterInputSchema)
     .query(({ input }): GetDealOperationalCenterOutputDTO => {

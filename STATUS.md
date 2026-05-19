@@ -1,13 +1,13 @@
-# T5F-A Route-Complete Operator Vertical Status
+# T5F-B0 Route Data Boundary Status
 
 ## Objective
 
-Review and lightly harden the route-complete Northstar operator vertical across
-Overview, Commitments, the commitment inspector Sheet, and Documents.
+Clarify the App Router data-loading boundary before the bundle/RSC performance
+pass.
 
 This pass does not build the investor `/about` lens, does not add a persona
-toggle, and does not change backend, tRPC, domain, Prisma, auth, database,
-mutation, action, upload, reminder, approval, or persistence behavior.
+toggle, and does not start backend, Prisma, auth, database, mutation, action,
+upload, reminder, approval, or persistence behavior.
 
 ## Current Truth
 
@@ -21,10 +21,22 @@ mutation, action, upload, reminder, approval, or persistence behavior.
 - `/deals/northstar-energy/documents` renders the operator documents and
   evidence readiness surface with `DealDocumentsEvidence`.
 - Visible operator tabs are Overview, Commitments, and Documents.
+- App Router server routes load deal data through `getDealOperationsData()`,
+  which calls the app service `getDealOperationalCenter()` directly.
+- tRPC is not the route-loader boundary. It is a typed transport adapter for
+  client/API access and future mutations over the same app services.
+- The current `deal.getOperationalCenter` tRPC read is fixture-backed
+  demo/internal access through `publicProcedure`. It is not
+  production-private-data safe until real auth, protected procedures, and
+  output validation exist.
 
 ## Implementation Notes
 
 - The operator routes use app-owned adapters from the Northstar operational DTO.
+- Route loaders and server deal modules are marked with `server-only`
+  guardrails where they must stay out of client component graphs.
+- RSC routes should not be refactored to call `createServerTrpcCaller()` for
+  architectural symmetry.
 - The overview route maps readiness, blockers, capital exceptions, and activity
   to `DealOperationalOverview`.
 - The rail maps deal progression and operational snapshot data to

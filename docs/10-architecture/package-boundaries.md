@@ -253,7 +253,9 @@ Owns:
 - `next-intl` setup
 - `next/font` font loading
 - providers
-- tRPC client/server wiring
+- server-side App Router route loaders that call app services directly
+- tRPC adapter wiring for client/API and future mutation boundaries over those
+  same app services
 - route-level error boundaries
 - app-level Playwright tests
 - realistic demo pages
@@ -261,6 +263,12 @@ Owns:
 May import all workspace packages.
 
 Must keep server/data concerns out of `packages/ui` and `packages/kit`.
+
+Current deal data rule: React Server Components and route loaders use app
+services directly. Do not refactor those routes through tRPC server callers for
+symmetry. The current deal tRPC read procedure is fixture-backed demo/internal
+access and must not be treated as production-private-data safe until real auth,
+protected procedures, and output validation exist.
 
 ### `apps/storybook`
 

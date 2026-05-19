@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { type DealOperationalCenterDTO, getDealOperationalCenter } from '@/server/deals'
 
 export type DealOperationsRouteData = DealOperationalCenterDTO

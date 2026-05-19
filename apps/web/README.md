@@ -28,6 +28,18 @@ implemented workspace layers into a real route:
   `/deals/unknown/commitments`, and `/deals/unknown/documents` — unsupported
   nested deal routes, expected to render the app not-found UI.
 
+## Data Boundary
+
+Server-side App Router routes call app services directly. The deal routes load
+through `app/deals/[dealId]/data.ts`, which calls
+`server/deals/getDealOperationalCenter()` and then route adapters map the DTO
+into kit props.
+
+tRPC is a transport/API adapter over the same service layer. The current
+`deal.getOperationalCenter` procedure is fixture-backed demo/internal access,
+not production-private-data-safe API behavior. Real private deal data must add
+auth, protected procedures, and output validation before expanding tRPC access.
+
 ## Integration Scope
 
 Implemented:
@@ -37,9 +49,10 @@ Implemented:
   `--font-geist-sans`, `--font-geist-mono`, and `--font-fraunces`
 - default `data-theme="light"` on the document root
 - route-level loading/error/not-found UI
-- app-owned Northstar operational data spine under `server/deals`
-- tRPC seam under `server/trpc` and `app/api/trpc/[trpc]/route.ts`
-- route data loader at `app/deals/[dealId]`
+- app-owned Northstar operational service/DTO spine under `server/deals`
+- route data loader at `app/deals/[dealId]` that calls the service directly
+- fixture-backed tRPC adapter seam under `server/trpc` and
+  `app/api/trpc/[trpc]/route.ts`
 - Playwright e2e tests for homepage navigation, the DTO-backed overview,
   commitments, and documents routes, the commitment inspector Sheet, the
   legacy `/about` redirect, active tabs, row-open keyboard behavior, selection
@@ -53,6 +66,7 @@ Not implemented yet:
 - React Hook Form
 - GraphQL
 - auth/session logic
+- protected tRPC procedures for production-private deal data
 - database or live data fetching
 - server actions or route handlers
 

@@ -1,6 +1,7 @@
 # tRPC Core Readiness Slice Spec
 
-**Status:** Proposed  
+**Status:** Superseded as route-loader guidance; retained as a historical tRPC
+adapter proposal.
 **Scope:** one `apps/web` vertical slice that introduces a typed tRPC boundary
 for closing readiness/capital reconciliation while reusing existing
 `@repo/domain`, `@repo/core`, and `@repo/kit` work.
@@ -37,11 +38,14 @@ to represent server-authoritative operational truth: commitment progress,
 document readiness, compliance blockers, payment/reconciliation exceptions, and
 close readiness.
 
-The existing `apps/web` route currently reads static fixture data directly. That
-is useful for composition, but it does not demonstrate how a production surface
-would move data through a typed app boundary.
+The current `apps/web` routes read app services directly from React Server
+Components. That service-first route boundary is now intentional.
 
-The slice should upgrade one workflow from:
+tRPC should remain available as an adapter over those same services for
+client/API consumers and future mutations. Do not use this older proposal to
+refactor RSC routes through tRPC server callers for symmetry.
+
+Future client/API work should upgrade one workflow from:
 
 ```text
 route imports fixture data directly
@@ -55,7 +59,7 @@ tRPC procedure
   -> validates input
   -> calls domain/core-backed application service
   -> maps domain Result into a serializable app DTO
-  -> route/client renders DTO exhaustively with ts-pattern
+  -> client/API consumer renders or handles DTO exhaustively
 ```
 
 ## 3. Product Scenario
@@ -328,8 +332,8 @@ type DealReadinessServiceResult = Result<ClosingReadinessDto, DealReadinessServi
 Implementation constraint:
 
 - `deal-readiness-service.ts` may import `@repo/core` and `@repo/domain`.
-- React components must not call this service directly unless they are server
-  components and the call goes through the tRPC server caller intentionally.
+- Client Components must not call this service directly.
+- React Server Components may call app services directly through route loaders.
 
 ## 11. Rendering Strategy
 
@@ -356,11 +360,12 @@ Do not use `ts-pattern` merely to replace obvious booleans.
 
 ## 12. RSC And Client Components
 
-Preferred first implementation:
+Current RSC implementation:
 
-- Server Component route calls the tRPC server caller.
-- The route receives `ClosingReadinessProcedureOutput`.
-- The route uses `ts-pattern` to decide between not-found, error, and success.
+- Server Component routes call app services directly through route loaders.
+- tRPC adapts the same app services for API/client and future mutation
+  boundaries.
+- RSC routes should not be refactored to tRPC server callers for symmetry.
 - Existing interactive client components remain local and receive already
   resolved data.
 
@@ -432,7 +437,7 @@ Update app e2e coverage:
   cover it through a deterministic test route or injected fixture flag
 
 Do not add broad network mocking unless the implementation chooses a client-side
-tRPC query. Server-caller RSC integration should be covered through normal route
+tRPC query. Service-first RSC integration should be covered through normal route
 navigation.
 
 ## 15. Verification

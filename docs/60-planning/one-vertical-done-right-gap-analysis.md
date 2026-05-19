@@ -297,30 +297,37 @@ Acceptance signal:
 
 ### 4. API Boundary Gap
 
+Status note, 2026-05-19: this older gap is superseded for route loading. The
+implemented App Router routes call app services directly, and tRPC is an
+adapter for client/API/future mutation boundaries over those same services.
+
 Current state:
 
-- `docs/20-specs/trpc-core-readiness-slice-spec.md` specifies a tRPC readiness slice.
-- The spec is not reflected in the app route yet.
-- There is no implemented `deal.getClosingReadiness` procedure in the running app.
+- `docs/20-specs/trpc-core-readiness-slice-spec.md` is retained as historical
+  tRPC adapter context, not current RSC route-loader guidance.
+- The running app exposes `deal.getOperationalCenter` as a fixture-backed
+  demo/internal tRPC read.
+- The App Router routes load through `getDealOperationsData()` and
+  `getDealOperationalCenter()` directly.
 
 Why it matters:
 
 - For a frontend developer application, a typed data boundary is a valuable signal.
 - The vertical does not need real persistence, but it should show how UI consumes app data without hard-coding everything in React components.
-- tRPC can be server-called from the App Router while still remaining fixture-backed.
+- tRPC can adapt the same app services for client/API consumers without being
+  the RSC route-loader boundary.
 
 Needed work:
 
-- Implement the narrow tRPC readiness boundary described in the existing spec.
-- Add `deal.getClosingReadiness` with input `{ dealId: string }`.
-- Return a serializable `DealClosingReadinessDTO`.
-- Keep errors typed enough to distinguish not found, invalid fixture, and unsupported deal.
-- Use the procedure from the `/about` route, directly or through a server caller.
+- Keep the service-first route boundary documented.
+- Keep `deal.getOperationalCenter` marked as fixture-backed demo/internal
+  access until real auth, protected procedures, and output validation exist.
 - Do not add broad CRUD or fake mutations yet.
 
 Acceptance signal:
 
-- The `/about` route is backed by a typed app service/procedure, not local component constants.
+- App routes are backed by typed app services and do not import kit fixtures or
+  local component constants as data sources.
 
 ### 5. DTO and Serialization Gap
 

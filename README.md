@@ -52,9 +52,10 @@ Implemented:
   their public props/state/action/label/input types. Legacy exploratory kit
   surfaces were removed.
 - `apps/web` — Next.js App Router shell with `next-intl`, token font/theme
-  wiring, translated homepage, an app-owned Northstar operational data spine,
-  a tRPC seam, route boundaries, and DTO-backed overview, commitments, and
-  documents routes under `/deals/northstar-energy`.
+  wiring, translated homepage, an app-owned Northstar operational service/DTO
+  spine used directly by server routes, a fixture-backed tRPC API adapter seam,
+  route boundaries, and DTO-backed overview, commitments, and documents routes
+  under `/deals/northstar-energy`.
 - `apps/storybook` — standalone component preview workspace consuming `ui` and `kit`
   stories, with locale and light/dark preview toolbar controls.
 
@@ -147,13 +148,17 @@ Current high-authority docs:
 
 ## Next Work
 
-Next implementation pass: investor `/about` lens planning, or backend/data
-integration when the product scope moves beyond the read-only Northstar fixture.
+Next implementation pass: bundle/RSC boundary hardening for the route-complete
+operator vertical.
 
-Why: the accepted kit surfaces and app-owned Northstar DTO/tRPC spine are the
-trust boundary. The operator routes now cover overview, commitments, and
-documents. `/about` remains reserved for a future investor lens, persona toggle
-work is still deferred, and backend/database work remains future scope.
+Why: the accepted kit surfaces and app-owned Northstar service/DTO spine are
+now the route boundary. App Router server routes call app services directly.
+tRPC remains a transport adapter for client/API and future mutation boundaries
+over those same services. The current deal tRPC read is fixture-backed demo
+access and is not production-private-data safe until real auth, protected
+procedures, and output validation exist. `/about` remains reserved for a future
+investor lens, persona toggle work is still deferred, and backend/database work
+remains future scope.
 
 Relevant docs:
 

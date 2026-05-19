@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { Result } from '@repo/core'
 import {
   type Brand,

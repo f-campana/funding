@@ -2,7 +2,7 @@
 
 **Status:** Active tracking  
 **Created:** 2026-05-09  
-**Updated:** 2026-05-18
+**Updated:** 2026-05-19
 
 This document tracks the current implementation sequence. Historical dashboard
 and kit exploration remains useful context, but the current public surface is now
@@ -23,8 +23,10 @@ The repository has:
   - `DealDocumentsEvidence`
   - `DealOperationalOverview`
   - `DealProgressPanel`
-- an app-owned Northstar operational data spine in `apps/web/server/deals`
-- a narrow tRPC seam in `apps/web/server/trpc` and
+- an app-owned Northstar operational service/DTO spine in
+  `apps/web/server/deals`
+- server-side App Router route loaders that call the app service directly
+- a narrow fixture-backed tRPC adapter seam in `apps/web/server/trpc` and
   `apps/web/app/api/trpc/[trpc]/route.ts`
 - DTO-backed overview, commitments, and documents routes under
   `/deals/northstar-energy`
@@ -32,29 +34,42 @@ The repository has:
 Deleted kit surfaces from earlier passes are historical and are not current
 public API.
 
-## Priority 1 — T5F-A Route-Complete Operator Vertical Review
+## Priority 1 — T5F-B0 Route Data Boundary Clarification
 
 Status: current pass.
 
 Goal:
 
-- audit the complete operator flow from Overview to Commitments, the commitment
-  inspector Sheet, and Documents
-- keep route IA, docs, tests, adapters, copy, and product grammar consistent
-- preserve the accepted kit surfaces and app-owned DTO adapter boundary
-- avoid investor `/about`, persona toggle, backend/database work, mutations,
+- document that React Server Components and route loaders call app services
+  directly
+- document that tRPC is a transport/API adapter for client-facing queries and
+  future mutations over those same services
+- mark the current tRPC deal read as fixture-backed demo/internal access, not
+  production-private-data safe
+- add `server-only` guardrails to route loaders and server deal entrypoints
+- avoid investor `/about`, fake auth, backend/database work, mutations,
   uploads, reminders, approvals, and persistence
-- run the required web, kit, storybook, lint, diff, and screenshot validation
 
 Why this is first:
 
-- the operator vertical is route-complete for overview, commitments, and
-  documents
-- `/deals/[dealId]/about` remains reserved for the future investor lens
-- the read-only Northstar route needs review-ready evidence before the next
-  strategic expansion
+- the bundle/RSC pass needs a settled data-loading boundary first
+- the operator vertical should not gain internal tRPC server-caller indirection
+  only for architectural symmetry
+- production-private deal data must not be implied by the current public
+  fixture-backed tRPC read
 
-## Priority 2 — Investor `/about` Lens Planning
+## Priority 2 — Bundle/RSC Boundary Hardening
+
+Status: next after the route data boundary is validated.
+
+Goal:
+
+- reduce route client bundles without changing operator behavior
+- keep read-only route data on the server side
+- preserve the direct service-call route boundary
+- avoid starting backend, auth, mutations, persistence, or investor `/about`
+
+## Priority 3 — Investor `/about` Lens Planning
 
 Status: deferred until the operator vertical is review-ready.
 
@@ -65,7 +80,7 @@ Goal:
   fixtures into `apps/web`
 - keep the operator route grammar separate from investor-facing deal content
 
-## Priority 3 — Backend/Repository/Prisma Planning
+## Priority 4 — Backend/Repository/Prisma Planning
 
 Status: deferred.
 
@@ -73,12 +88,15 @@ Goal:
 
 - replace the read-only fixture spine with repository-backed data only after
   route contracts settle
-- preserve the current adapter boundary from `getDealOperationsData(dealId)` to
-  app-owned surface adapters to accepted kit components
+- preserve the current server-route boundary from
+  `getDealOperationsData(dealId)` to app services, route adapters, and accepted
+  kit components
+- keep tRPC as an adapter over app services, not a forced route-loader
+  indirection
 - keep mutations/actions out of scope until persistence and authorization are
   designed together
 
-## Priority 4 — Investor Commitment Flow
+## Priority 5 — Investor Commitment Flow
 
 Status: deferred.
 

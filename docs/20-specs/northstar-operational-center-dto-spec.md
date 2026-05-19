@@ -4,6 +4,11 @@ Status: Accepted for implementation
 Created: 2026-05-17
 Scope: first safe data-spine slice for the Northstar Energy Deal Operations vertical
 
+Current route boundary note, 2026-05-19: the implemented App Router routes call
+the app service directly through `getDealOperationsData()`. tRPC remains an
+adapter for client/API and future mutation boundaries over the same service
+layer; do not refactor RSC routes to tRPC server callers for symmetry.
+
 ## 1. Purpose
 
 This spec defines the app-owned operational data spine for the one-vertical-done-right pass.
@@ -192,7 +197,8 @@ Why:
 
 - The DTO is broader than closing readiness.
 - A narrow tRPC seam demonstrates typed frontend/backend architecture without pretending there is a real backend.
-- The route can use a server caller first. Client-side query state can be deferred.
+- The route can call the app service directly. Client-side query state can be
+  deferred until there is a real client/API consumer.
 
 ### `apps/web/app/api/trpc/[trpc]`
 
@@ -217,7 +223,7 @@ Belongs here in later passes:
 
 - server route pages
 - route-specific client components for filters and inspectors
-- calls into the app service or tRPC server caller
+- calls into the app service directly from server routes
 - mapping DTO sections to kit component props when necessary
 
 Decision:
@@ -888,8 +894,8 @@ Create `apps/web/server/trpc/routers/deal-router.test.ts`.
 
 Assert:
 
-- server caller returns `Ok` for `northstar-energy`.
-- server caller returns `UnsupportedDeal` for another id.
+- tRPC caller returns `Ok` for `northstar-energy`.
+- tRPC caller returns `UnsupportedDeal` for another id.
 - invalid empty `dealId` rejects through input validation.
 
 ### Typecheck

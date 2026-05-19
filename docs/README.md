@@ -72,8 +72,8 @@ docs/
   route IA, persona model, Roundtable-inspired visual grammar, and kit-to-app
   composition rules.
 - [tRPC core readiness slice spec](./20-specs/trpc-core-readiness-slice-spec.md) —
-  proposed single vertical slice for proving `tRPC`, `@repo/core`, domain
-  reconciliation, and `ts-pattern` inside `apps/web`.
+  superseded route-loader proposal retained as context for future tRPC
+  client/API adapter work.
 
 ## Testing Guidance
 
