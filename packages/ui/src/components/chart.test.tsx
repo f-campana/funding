@@ -16,8 +16,15 @@ import {
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
+  ChartLegendContentRoot,
+  ChartLegendIndicator,
+  ChartLegendItem,
+  ChartLegendLabel,
   ChartTooltip,
   ChartTooltipContent,
+  ChartTooltipContentRoot,
+  ChartTooltipItems,
+  ChartTooltipLabel,
 } from './chart'
 
 const CHART_ID_PATTERN = /^chart-/
@@ -235,6 +242,23 @@ describe('ChartTooltipContent', () => {
     expect(screen.getByText('80')).toBeInTheDocument()
   })
 
+  it('supports composing tooltip content from public subparts', () => {
+    const { container } = renderWithChart(
+      <ChartTooltipContentRoot>
+        <ChartTooltipLabel>Custom tooltip</ChartTooltipLabel>
+        <ChartTooltipItems>
+          <span>Custom item</span>
+        </ChartTooltipItems>
+      </ChartTooltipContentRoot>,
+    )
+
+    expect(container.querySelector('[data-slot="chart-tooltip-content"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="chart-tooltip-label"]')).toHaveTextContent(
+      'Custom tooltip',
+    )
+    expect(screen.getByText('Custom item')).toBeInTheDocument()
+  })
+
   it('supports hidden label and hidden indicator options', () => {
     const { container } = renderWithChart(
       <ChartTooltipContent
@@ -303,6 +327,21 @@ describe('ChartLegendContent', () => {
     expect(screen.getByText('Desktop')).toBeInTheDocument()
     expect(screen.getByText('Mobile')).toBeInTheDocument()
     expect(container.querySelector('[data-slot="chart-legend-content"]')).toBeInTheDocument()
+  })
+
+  it('supports composing legend content from public subparts', () => {
+    const { container } = renderWithChart(
+      <ChartLegendContentRoot>
+        <ChartLegendItem>
+          <ChartLegendIndicator />
+          <ChartLegendLabel>Custom legend</ChartLegendLabel>
+        </ChartLegendItem>
+      </ChartLegendContentRoot>,
+    )
+
+    expect(container.querySelector('[data-slot="chart-legend-content"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="chart-legend-item"]')).toBeInTheDocument()
+    expect(screen.getByText('Custom legend')).toBeInTheDocument()
   })
 
   it('honors nameKey when provided', () => {

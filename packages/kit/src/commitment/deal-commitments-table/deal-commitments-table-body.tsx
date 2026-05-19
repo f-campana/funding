@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { match } from 'ts-pattern'
 
 import {
@@ -10,6 +11,7 @@ import type {
   CommitmentTableModel,
   DealCommitmentsTableLabels,
   DealCommitmentsTableLifecycleState,
+  DealCommitmentsTableRowActionRenderProps,
 } from './deal-commitments-table.types'
 import {
   CommitmentGroupRow,
@@ -23,6 +25,7 @@ export const CommitmentsTableBody = ({
   model,
   onRowOpen,
   onRowSelect,
+  renderRowAction,
   selectedRowIds,
   state,
 }: {
@@ -30,6 +33,9 @@ export const CommitmentsTableBody = ({
   readonly model: CommitmentTableModel | undefined
   readonly onRowOpen: (row: CommitmentInvestorRowData) => void
   readonly onRowSelect: (row: CommitmentInvestorRowData) => void
+  readonly renderRowAction?:
+    | ((props: DealCommitmentsTableRowActionRenderProps) => ReactNode)
+    | undefined
   readonly selectedRowIds: readonly string[]
   readonly state: DealCommitmentsTableLifecycleState
 }) =>
@@ -48,7 +54,10 @@ export const CommitmentsTableBody = ({
       <CommitmentTableStateRow description={description} kind="error" retry={retry} title={title} />
     ))
     .with({ kind: 'ready' }, () => (
-      <>{model && getReadyBodyRows(labels, model, selectedRowIds, onRowOpen, onRowSelect)}</>
+      <>
+        {model &&
+          getReadyBodyRows(labels, model, selectedRowIds, onRowOpen, onRowSelect, renderRowAction)}
+      </>
     ))
     .exhaustive()
 
@@ -58,6 +67,7 @@ const getReadyBodyRows = (
   selectedRowIds: readonly string[],
   onRowOpen: (row: CommitmentInvestorRowData) => void,
   onRowSelect: (row: CommitmentInvestorRowData) => void,
+  renderRowAction: ((props: DealCommitmentsTableRowActionRenderProps) => ReactNode) | undefined,
 ) => {
   if (!model.hasSourceRows) {
     return (
@@ -94,6 +104,7 @@ const getReadyBodyRows = (
         key={item.row.id}
         onRowOpen={onRowOpen}
         onRowSelect={onRowSelect}
+        renderRowAction={renderRowAction}
         row={item.row}
         rowIndex={item.rowIndex}
         visualState={getCommitmentRowVisualState({

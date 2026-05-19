@@ -1,10 +1,12 @@
 import { Checkbox, cn, TableCell, TableRow } from '@repo/ui'
+import type { ReactNode } from 'react'
 
 import { visibleReadinessKeys } from './deal-commitments-table.model'
 import type {
   CommitmentInvestorRow as CommitmentInvestorRowData,
   CommitmentRowVisualState,
   DealCommitmentsTableLabels,
+  DealCommitmentsTableRowActionRenderProps,
 } from './deal-commitments-table.types'
 import {
   CommitmentActionCell,
@@ -16,6 +18,7 @@ import {
 } from './deal-commitments-table-row-cells'
 
 export { CommitmentGroupRow } from './deal-commitments-table-group-row'
+export { CommitmentRowActionButton } from './deal-commitments-table-row-cells'
 export { CommitmentRowSkeleton } from './deal-commitments-table-row-skeleton'
 export { TruncatedText } from './deal-commitments-table-truncated-text'
 
@@ -24,6 +27,7 @@ export const CommitmentInvestorRow = ({
   labels,
   onRowOpen,
   onRowSelect,
+  renderRowAction,
   row,
   rowIndex,
   visualState,
@@ -35,6 +39,9 @@ export const CommitmentInvestorRow = ({
   readonly visualState: CommitmentRowVisualState
   readonly onRowOpen: (row: CommitmentInvestorRowData) => void
   readonly onRowSelect: (row: CommitmentInvestorRowData) => void
+  readonly renderRowAction?:
+    | ((props: DealCommitmentsTableRowActionRenderProps) => ReactNode)
+    | undefined
 }) => {
   const flags = getCommitmentRowFlags(visualState)
   const alternate = rowIndex % 2 === 1
@@ -96,6 +103,7 @@ export const CommitmentInvestorRow = ({
         drawerOpen={flags.drawerOpen}
         labels={labels}
         onRowOpen={onRowOpen}
+        renderAction={renderRowAction}
         row={row}
       />
     </TableRow>

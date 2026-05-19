@@ -22,6 +22,7 @@ import type {
   CommitmentReadinessTone,
   CommitmentRowDataIssueTone,
   DealCommitmentsTableLabels,
+  DealCommitmentsTableRowActionRenderProps,
 } from './deal-commitments-table.types'
 import { TruncatedText } from './deal-commitments-table-truncated-text'
 
@@ -255,6 +256,7 @@ export const CommitmentActionCell = ({
   drawerOpen,
   labels,
   onRowOpen,
+  renderAction,
   row,
 }: {
   readonly row: CommitmentInvestorRowData
@@ -263,8 +265,19 @@ export const CommitmentActionCell = ({
   readonly disabled: boolean
   readonly labels: DealCommitmentsTableLabels
   readonly onRowOpen: (row: CommitmentInvestorRowData) => void
+  readonly renderAction?:
+    | ((props: DealCommitmentsTableRowActionRenderProps) => ReactNode)
+    | undefined
 }) => {
   const buttonLabel = labels.row.openDetailsLabel(row)
+  const actionProps = {
+    active,
+    disabled,
+    drawerOpen,
+    label: buttonLabel,
+    onOpen: () => onRowOpen(row),
+    row,
+  } satisfies DealCommitmentsTableRowActionRenderProps
 
   return (
     <TableCell className="relative px-3 py-2 text-right">
@@ -275,23 +288,33 @@ export const CommitmentActionCell = ({
           data-slot="commitment-drawer-connector"
         />
       ) : null}
-      <Button
-        aria-label={buttonLabel}
-        className={cn(
-          'size-8 rounded-lg text-muted-foreground',
-          active ? 'text-status-info' : null,
-          drawerOpen ? 'bg-status-info-muted text-status-info hover:bg-status-info-muted' : null,
-        )}
-        disabled={disabled}
-        onClick={(event) => {
-          event.stopPropagation()
-          onRowOpen(row)
-        }}
-        size="icon"
-        variant="ghost"
-      >
-        <ChevronRight aria-hidden="true" className="size-4" />
-      </Button>
+      {renderAction ? renderAction(actionProps) : <CommitmentRowActionButton {...actionProps} />}
     </TableCell>
   )
 }
+
+export const CommitmentRowActionButton = ({
+  active,
+  disabled,
+  drawerOpen,
+  label,
+  onOpen,
+}: DealCommitmentsTableRowActionRenderProps) => (
+  <Button
+    aria-label={label}
+    className={cn(
+      'size-8 rounded-lg text-muted-foreground',
+      active ? 'text-status-info' : null,
+      drawerOpen ? 'bg-status-info-muted text-status-info hover:bg-status-info-muted' : null,
+    )}
+    disabled={disabled}
+    onClick={(event) => {
+      event.stopPropagation()
+      onOpen()
+    }}
+    size="icon"
+    variant="ghost"
+  >
+    <ChevronRight aria-hidden="true" className="size-4" />
+  </Button>
+)

@@ -4,13 +4,29 @@ import { cn } from '@repo/ui'
 import { type ReactNode, useId } from 'react'
 import { match } from 'ts-pattern'
 
-import { EmptyContent, ErrorContent, LoadingContent } from './deal-operational-overview.lifecycle'
+import { ActivitySection as DealOperationalOverviewActivity } from './deal-operational-overview.activity-section'
+import { BlockersSection as DealOperationalOverviewBlockers } from './deal-operational-overview.blockers-section'
+import { CapitalSection as DealOperationalOverviewCapital } from './deal-operational-overview.capital-section'
+import {
+  EmptyContent as DealOperationalOverviewEmpty,
+  ErrorContent as DealOperationalOverviewError,
+  LoadingContent as DealOperationalOverviewLoading,
+} from './deal-operational-overview.lifecycle'
 import {
   getOperationalBlockerTotal,
   getOperationalReadinessState,
 } from './deal-operational-overview.model'
-import { ReadyContent } from './deal-operational-overview.ready-content'
-import type { DealOperationalOverviewProps } from './deal-operational-overview.types'
+import { ReadinessSection as DealOperationalOverviewReadiness } from './deal-operational-overview.readiness-section'
+import {
+  DealOperationalOverviewHeader,
+  DealOperationalOverviewPrimaryGrid,
+  DealOperationalOverviewReadyContent,
+  DealOperationalOverviewSecondaryGrid,
+} from './deal-operational-overview.ready-content'
+import type {
+  DealOperationalOverviewProps,
+  DealOperationalOverviewRootProps,
+} from './deal-operational-overview.types'
 
 export type {
   DealOperationalActivityItem,
@@ -23,11 +39,18 @@ export type {
   DealOperationalMetricTone,
   DealOperationalOverviewActionEvent,
   DealOperationalOverviewActionHandler,
+  DealOperationalOverviewEmptyProps,
+  DealOperationalOverviewErrorProps,
   DealOperationalOverviewErrorState,
+  DealOperationalOverviewGridProps,
+  DealOperationalOverviewHeaderProps,
   DealOperationalOverviewLabels,
+  DealOperationalOverviewLoadingProps,
   DealOperationalOverviewProps,
+  DealOperationalOverviewReadyContentProps,
   DealOperationalOverviewReadyState,
   DealOperationalOverviewRetryAction,
+  DealOperationalOverviewRootProps,
   DealOperationalOverviewState,
   DealOperationalProgress,
   DealOperationalReadinessDimension,
@@ -35,47 +58,92 @@ export type {
   DealOperationalReadinessSummary,
 } from './deal-operational-overview.types'
 
-export const DealOperationalOverview = ({
+export {
+  DealOperationalOverviewActivity,
+  DealOperationalOverviewBlockers,
+  DealOperationalOverviewCapital,
+  DealOperationalOverviewEmpty,
+  DealOperationalOverviewError,
+  DealOperationalOverviewHeader,
+  DealOperationalOverviewLoading,
+  DealOperationalOverviewPrimaryGrid,
+  DealOperationalOverviewReadiness,
+  DealOperationalOverviewReadyContent,
+  DealOperationalOverviewSecondaryGrid,
+}
+
+export const DealOperationalOverviewRoot = ({
+  busy,
+  children,
+  className,
+  state,
+  ...sectionProps
+}: DealOperationalOverviewRootProps) => (
+  <section
+    {...sectionProps}
+    aria-busy={busy ?? (state?.kind === 'loading' ? true : undefined)}
+    className={cn(
+      'w-full overflow-hidden rounded-lg border border-border/70 bg-card text-card-foreground shadow-card',
+      className,
+    )}
+    data-readiness-state={state ? getOperationalReadinessState(state) : undefined}
+    data-slot="deal-operational-overview"
+    data-state={state?.kind}
+    data-total-blocker-count={
+      state?.kind === 'ready'
+        ? getOperationalBlockerTotal(state.readiness.blockerCounts)
+        : undefined
+    }
+    data-visible-blocker-count={state?.kind === 'ready' ? state.blockers.length : undefined}
+  >
+    {children}
+  </section>
+)
+
+const DealOperationalOverviewView = ({
   className,
   labels,
   onAction,
   state,
 }: DealOperationalOverviewProps) => {
   const titleId = useId()
-  const readinessState = getOperationalReadinessState(state)
   const content = match(state)
     .returnType<ReactNode>()
     .with({ kind: 'loading' }, (loadingState) => (
-      <LoadingContent label={loadingState.label ?? labels.loadingLabel} titleId={titleId} />
+      <DealOperationalOverviewLoading
+        label={loadingState.label ?? labels.loadingLabel}
+        titleId={titleId}
+      />
     ))
     .with({ kind: 'error' }, (errorState) => (
-      <ErrorContent onAction={onAction} state={errorState} titleId={titleId} />
+      <DealOperationalOverviewError onAction={onAction} state={errorState} titleId={titleId} />
     ))
-    .with({ kind: 'empty' }, (emptyState) => <EmptyContent state={emptyState} titleId={titleId} />)
+    .with({ kind: 'empty' }, (emptyState) => (
+      <DealOperationalOverviewEmpty state={emptyState} titleId={titleId} />
+    ))
     .with({ kind: 'ready' }, (readyState) => (
-      <ReadyContent labels={labels} state={readyState} titleId={titleId} />
+      <DealOperationalOverviewReadyContent labels={labels} state={readyState} titleId={titleId} />
     ))
     .exhaustive()
 
   return (
-    <section
-      aria-busy={state.kind === 'loading' ? true : undefined}
-      aria-labelledby={titleId}
-      className={cn(
-        'w-full overflow-hidden rounded-lg border border-border/70 bg-card text-card-foreground shadow-card',
-        className,
-      )}
-      data-readiness-state={readinessState}
-      data-slot="deal-operational-overview"
-      data-state={state.kind}
-      data-total-blocker-count={
-        state.kind === 'ready'
-          ? getOperationalBlockerTotal(state.readiness.blockerCounts)
-          : undefined
-      }
-      data-visible-blocker-count={state.kind === 'ready' ? state.blockers.length : undefined}
-    >
+    <DealOperationalOverviewRoot aria-labelledby={titleId} className={className} state={state}>
       {content}
-    </section>
+    </DealOperationalOverviewRoot>
   )
 }
+
+export const DealOperationalOverview = Object.assign(DealOperationalOverviewView, {
+  Activity: DealOperationalOverviewActivity,
+  Blockers: DealOperationalOverviewBlockers,
+  Capital: DealOperationalOverviewCapital,
+  Empty: DealOperationalOverviewEmpty,
+  Error: DealOperationalOverviewError,
+  Header: DealOperationalOverviewHeader,
+  Loading: DealOperationalOverviewLoading,
+  PrimaryGrid: DealOperationalOverviewPrimaryGrid,
+  Readiness: DealOperationalOverviewReadiness,
+  Ready: DealOperationalOverviewReadyContent,
+  Root: DealOperationalOverviewRoot,
+  SecondaryGrid: DealOperationalOverviewSecondaryGrid,
+})

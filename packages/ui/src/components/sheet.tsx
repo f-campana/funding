@@ -46,6 +46,37 @@ export const SheetClose = ({ className, ...props }: SheetCloseProps) => (
   />
 )
 
+export type SheetCloseButtonProps = ComponentProps<typeof Button>
+
+export const SheetCloseButton = ({ children, className, ...props }: SheetCloseButtonProps) => (
+  <SheetPrimitive.Close asChild data-slot="sheet-close">
+    <Button
+      aria-label="Close"
+      className={cn('absolute top-4 right-4', className)}
+      size="icon"
+      variant="ghost"
+      {...props}
+    >
+      {children ?? (
+        <svg
+          aria-hidden="true"
+          className="size-4"
+          fill="none"
+          focusable="false"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      )}
+    </Button>
+  </SheetPrimitive.Close>
+)
+
 export type SheetPortalProps = ComponentProps<typeof SheetPrimitive.Portal>
 
 export const SheetPortal = (props: SheetPortalProps) => (
@@ -67,14 +98,12 @@ export const SheetOverlay = ({ className, ...props }: SheetOverlayProps) => (
 
 export type SheetContentProps = ComponentProps<typeof SheetPrimitive.Content> & {
   side?: SheetSide
-  showCloseButton?: boolean
 }
 
 export const SheetContent = ({
   children,
   className,
   side = 'right',
-  showCloseButton = true,
   ...props
 }: SheetContentProps) => (
   <SheetPortal>
@@ -90,26 +119,6 @@ export const SheetContent = ({
       {...props}
     >
       {children}
-      {showCloseButton ? (
-        <SheetPrimitive.Close asChild data-slot="sheet-close">
-          <Button aria-label="Close" className="absolute top-4 right-4" size="icon" variant="ghost">
-            <svg
-              aria-hidden="true"
-              className="size-4"
-              fill="none"
-              focusable="false"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-          </Button>
-        </SheetPrimitive.Close>
-      ) : null}
     </SheetPrimitive.Content>
   </SheetPortal>
 )

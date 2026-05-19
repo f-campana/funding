@@ -1,3 +1,5 @@
+import type { ComponentPropsWithoutRef, ReactNode } from 'react'
+
 import type {
   DocumentEvidenceStatus,
   DocumentEvidenceStatusKind,
@@ -158,6 +160,99 @@ export type DealCommitmentInspectorLabels = {
 export type DealCommitmentInspectorActionHandler = (
   event: DealCommitmentInspectorActionEvent,
 ) => void
+
+export type DealCommitmentInspectorRootProps = ComponentPropsWithoutRef<'section'> & {
+  readonly busy?: boolean | undefined
+  readonly state?: DealCommitmentInspectorState | undefined
+}
+
+export type DealCommitmentInspectorReadyContentProps = {
+  readonly labels: DealCommitmentInspectorLabels
+  readonly state: DealCommitmentInspectorReadyState
+  readonly titleId: string
+}
+
+export type DealCommitmentInspectorHeaderProps = {
+  readonly investor: DealCommitmentInvestorSummary
+  readonly titleId: string
+}
+
+export type DealCommitmentInspectorNextActionProps = {
+  readonly labels?: DealCommitmentInspectorLabels | undefined
+  readonly nextAction?: ReactNode | undefined
+  readonly title?: ReactNode | undefined
+}
+
+export type DealCommitmentInspectorReadinessProps = {
+  readonly children?: ReactNode
+  readonly labels?: DealCommitmentInspectorLabels | undefined
+  readonly readiness?: DealCommitmentInspectorReadyState['readiness'] | undefined
+  readonly title?: ReactNode | undefined
+}
+
+export type DealCommitmentInspectorReadinessItemProps = {
+  readonly item: DealCommitmentReadinessItem
+}
+
+export type DealCommitmentInspectorBlockersProps = {
+  readonly blockers?: readonly DealCommitmentBlocker[] | undefined
+  readonly children?: ReactNode
+  readonly emptyLabel?: ReactNode | undefined
+  readonly labels?: DealCommitmentInspectorLabels | undefined
+  readonly title?: ReactNode | undefined
+}
+
+export type DealCommitmentInspectorBlockerProps = {
+  readonly blocker: DealCommitmentBlocker
+  readonly labels: DealCommitmentInspectorLabels
+}
+
+export type DealCommitmentInspectorDocumentsProps = {
+  readonly children?: ReactNode
+  readonly documents?: readonly DealCommitmentEvidenceItem[] | undefined
+  readonly emptyLabel?: ReactNode | undefined
+  readonly labels?: DealCommitmentInspectorLabels | undefined
+  readonly title?: ReactNode | undefined
+}
+
+export type DealCommitmentInspectorDocumentProps = {
+  readonly document: DealCommitmentEvidenceItem
+  readonly labels: DealCommitmentInspectorLabels
+}
+
+export type DealCommitmentInspectorActivityProps = {
+  readonly activity?: readonly DealCommitmentActivityItem[] | undefined
+  readonly children?: ReactNode
+  readonly emptyLabel?: ReactNode | undefined
+  readonly labels?: DealCommitmentInspectorLabels | undefined
+  readonly title?: ReactNode | undefined
+}
+
+export type DealCommitmentInspectorActivityItemProps = {
+  readonly item: DealCommitmentActivityItem
+}
+
+export type DealCommitmentInspectorLoadingProps = {
+  readonly label: ReactNode
+  readonly titleId: string
+}
+
+export type DealCommitmentInspectorErrorProps = {
+  readonly onAction?: DealCommitmentInspectorActionHandler | undefined
+  readonly state: DealCommitmentInspectorErrorState
+  readonly titleId: string
+}
+
+export type DealCommitmentInspectorEmptyProps = {
+  readonly state: Extract<DealCommitmentInspectorState, { readonly kind: 'empty' }>
+  readonly titleId: string
+}
+
+export type DealCommitmentInspectorFactProps = {
+  readonly icon: ReactNode
+  readonly label: ReactNode
+  readonly value: ReactNode
+}
 
 type DealCommitmentInspectorPropsBase = {
   readonly labels: DealCommitmentInspectorLabels

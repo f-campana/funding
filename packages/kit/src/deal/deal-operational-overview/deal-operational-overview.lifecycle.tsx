@@ -2,18 +2,12 @@ import { Button, Skeleton } from '@repo/ui'
 import { CircleAlert } from 'lucide-react'
 
 import type {
-  DealOperationalOverviewActionHandler,
-  DealOperationalOverviewErrorState,
-  DealOperationalOverviewState,
+  DealOperationalOverviewEmptyProps,
+  DealOperationalOverviewErrorProps,
+  DealOperationalOverviewLoadingProps,
 } from './deal-operational-overview.types'
 
-export const LoadingContent = ({
-  label,
-  titleId,
-}: {
-  readonly label: string
-  readonly titleId: string
-}) => (
+export const LoadingContent = ({ label, titleId }: DealOperationalOverviewLoadingProps) => (
   <div className="grid gap-0" data-slot="deal-operational-loading">
     <div className="grid gap-2 border-b border-border/70 p-5">
       <h2 className="text-base font-semibold text-card-foreground" id={titleId}>
@@ -41,15 +35,7 @@ export const LoadingContent = ({
   </div>
 )
 
-export const ErrorContent = ({
-  onAction,
-  state,
-  titleId,
-}: {
-  readonly onAction: DealOperationalOverviewActionHandler | undefined
-  readonly state: DealOperationalOverviewErrorState
-  readonly titleId: string
-}) => (
+export const ErrorContent = ({ onAction, state, titleId }: DealOperationalOverviewErrorProps) => (
   <div className="grid gap-4 p-5" data-slot="deal-operational-error">
     <div className="flex items-start gap-3">
       <CircleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-status-danger" />
@@ -74,13 +60,7 @@ export const ErrorContent = ({
   </div>
 )
 
-export const EmptyContent = ({
-  state,
-  titleId,
-}: {
-  readonly state: Extract<DealOperationalOverviewState, { readonly kind: 'empty' }>
-  readonly titleId: string
-}) => (
+export const EmptyContent = ({ state, titleId }: DealOperationalOverviewEmptyProps) => (
   <div className="grid gap-2 p-5" data-slot="deal-operational-empty">
     <h2 className="text-base font-semibold text-card-foreground" id={titleId}>
       {state.title}

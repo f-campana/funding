@@ -123,6 +123,55 @@ describe('DealOperationalOverview', () => {
     )
   })
 
+  it('supports composing the overview surface from compound parts', () => {
+    const titleId = 'composed-operational-overview-title'
+    const { container } = render(
+      <DealOperationalOverview.Root
+        aria-labelledby={titleId}
+        state={blockedOperationalOverviewState}
+      >
+        <DealOperationalOverview.Header
+          readiness={blockedOperationalOverviewState.readiness}
+          subtitle={dealOperationalOverviewLabels.subtitle}
+          title="Composed operational overview"
+          titleId={titleId}
+        />
+        <DealOperationalOverview.PrimaryGrid>
+          <DealOperationalOverview.Readiness
+            labels={dealOperationalOverviewLabels}
+            readiness={blockedOperationalOverviewState.readiness}
+          />
+          <DealOperationalOverview.Capital
+            capital={blockedOperationalOverviewState.capital}
+            labels={dealOperationalOverviewLabels}
+          />
+        </DealOperationalOverview.PrimaryGrid>
+        <DealOperationalOverview.SecondaryGrid>
+          <DealOperationalOverview.Blockers
+            blockers={blockedOperationalOverviewState.blockers}
+            labels={dealOperationalOverviewLabels}
+            summary={blockedOperationalOverviewState.blockerSummary}
+          />
+          <DealOperationalOverview.Activity
+            activity={blockedOperationalOverviewState.activity}
+            labels={dealOperationalOverviewLabels}
+          />
+        </DealOperationalOverview.SecondaryGrid>
+      </DealOperationalOverview.Root>,
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Composed operational overview' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Closing readiness' })).toBeInTheDocument()
+    expect(screen.getByText('€4,850,000 committed')).toBeInTheDocument()
+    expect(screen.getByText('Priority blockers')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="deal-operational-overview"]')).toHaveAttribute(
+      'data-readiness-state',
+      'blocked',
+    )
+  })
+
   it('renders loading as a busy skeleton state without ready content', () => {
     const { container } = renderOverview(loadingOperationalOverviewState)
 

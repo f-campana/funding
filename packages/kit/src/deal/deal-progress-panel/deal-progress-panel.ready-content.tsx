@@ -13,24 +13,55 @@ import {
 import { commandStatusToneClasses } from './deal-progress-panel.styles'
 import type {
   DealProgressAction,
-  DealProgressActionHandler,
-  DealProgressPanelProps,
+  DealProgressPanelActionsProps,
+  DealProgressPanelHeaderProps,
+  DealProgressPanelReadyContentProps,
   DealProgressReadyState,
 } from './deal-progress-panel.types'
 
-export const ReadyContent = ({
+export const DealProgressPanelReadyContent = ({
   labels,
   locale,
   onAction,
   state,
   titleId,
-}: {
-  readonly labels: DealProgressPanelProps['labels']
-  readonly locale?: DealProgressPanelProps['locale']
-  readonly onAction: DealProgressActionHandler | undefined
-  readonly state: DealProgressReadyState
-  readonly titleId: string
-}) => {
+}: DealProgressPanelReadyContentProps) => (
+  <>
+    <DealProgressPanelHeader labels={labels} state={state} titleId={titleId} />
+    <CapitalProgress capital={state.capital} labels={labels} locale={locale} />
+    {state.dataQuality.kind !== 'fresh' ? (
+      <DataQualityNotice dataQuality={state.dataQuality} />
+    ) : null}
+    <DealProgressPanelActions onAction={onAction} state={state} />
+  </>
+)
+
+export const DealProgressPanelHeader = ({
+  labels,
+  state,
+  titleId,
+}: DealProgressPanelHeaderProps) => (
+  <div className="flex items-start justify-between gap-3" data-slot="deal-progress-header">
+    <div className="grid gap-2">
+      <h2 className="text-sm font-semibold text-command-foreground" id={titleId}>
+        {labels.title}
+      </h2>
+      {state.visibility ? <VisibilityNote visibility={state.visibility} /> : null}
+    </div>
+    <Badge
+      className={cn(
+        'max-w-[12rem] justify-start truncate',
+        commandStatusToneClasses[state.status.tone],
+      )}
+      data-slot="deal-progress-status"
+      variant="outline"
+    >
+      {state.status.label}
+    </Badge>
+  </div>
+)
+
+export const DealProgressPanelActions = ({ onAction, state }: DealProgressPanelActionsProps) => {
   const primaryAction = getPrimaryAction(state)
   const secondaryActions = getSecondaryActions(state)
   const visibleActions = [primaryAction, ...secondaryActions].filter(
@@ -51,76 +82,47 @@ export const ReadyContent = ({
     return disabledReasonEntries.find((entry) => entry.reason === reason)?.id
   }
 
-  return (
-    <>
-      <div className="flex items-start justify-between gap-3" data-slot="deal-progress-header">
-        <div className="grid gap-2">
-          <h2 className="text-sm font-semibold text-command-foreground" id={titleId}>
-            {labels.title}
-          </h2>
-          {state.visibility ? <VisibilityNote visibility={state.visibility} /> : null}
-        </div>
-        <Badge
-          className={cn(
-            'max-w-[12rem] justify-start truncate',
-            commandStatusToneClasses[state.status.tone],
-          )}
-          data-slot="deal-progress-status"
-          variant="outline"
-        >
-          {state.status.label}
-        </Badge>
+  return visibleActions.length > 0 ? (
+    <div className="grid gap-2" data-slot="deal-progress-actions">
+      <div
+        className={cn(
+          'grid grid-cols-1 gap-2',
+          visibleActions.length > 1 ? 'sm:grid-cols-2' : null,
+        )}
+      >
+        {primaryAction ? (
+          <ActionButton
+            action={primaryAction}
+            describedById={getDisabledReasonId(primaryAction)}
+            onAction={onAction}
+            primary={true}
+          />
+        ) : null}
+        {secondaryActions.map((action) => (
+          <ActionButton
+            action={action}
+            describedById={getDisabledReasonId(action)}
+            key={action.kind}
+            onAction={onAction}
+          />
+        ))}
       </div>
-
-      <CapitalProgress capital={state.capital} labels={labels} locale={locale} />
-
-      {state.dataQuality.kind !== 'fresh' ? (
-        <DataQualityNotice dataQuality={state.dataQuality} />
-      ) : null}
-
-      {visibleActions.length > 0 ? (
-        <div className="grid gap-2" data-slot="deal-progress-actions">
-          <div
-            className={cn(
-              'grid grid-cols-1 gap-2',
-              visibleActions.length > 1 ? 'sm:grid-cols-2' : null,
-            )}
-          >
-            {primaryAction ? (
-              <ActionButton
-                action={primaryAction}
-                describedById={getDisabledReasonId(primaryAction)}
-                onAction={onAction}
-                primary={true}
-              />
-            ) : null}
-            {secondaryActions.map((action) => (
-              <ActionButton
-                action={action}
-                describedById={getDisabledReasonId(action)}
-                key={action.kind}
-                onAction={onAction}
-              />
-            ))}
-          </div>
-          {disabledReasonEntries.length > 0 ? (
-            <div className="grid gap-2" data-slot="deal-progress-disabled-reasons">
-              {disabledReasonEntries.map(({ id, reason }) => (
-                <p
-                  className="rounded-md border border-command-border bg-command-muted px-3 py-2 text-xs leading-5 text-command-foreground/75"
-                  data-slot="deal-progress-disabled-reason"
-                  id={id}
-                  key={id}
-                >
-                  {reason}
-                </p>
-              ))}
-            </div>
-          ) : null}
+      {disabledReasonEntries.length > 0 ? (
+        <div className="grid gap-2" data-slot="deal-progress-disabled-reasons">
+          {disabledReasonEntries.map(({ id, reason }) => (
+            <p
+              className="rounded-md border border-command-border bg-command-muted px-3 py-2 text-xs leading-5 text-command-foreground/75"
+              data-slot="deal-progress-disabled-reason"
+              id={id}
+              key={id}
+            >
+              {reason}
+            </p>
+          ))}
         </div>
       ) : null}
-    </>
-  )
+    </div>
+  ) : null
 }
 
 const VisibilityNote = ({

@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { axe } from '../../test/axe'
 import { DealDocumentsEvidence } from './deal-documents-evidence'
 import {
+  getDocumentEvidenceItemTone,
   getDocumentsEvidenceTone,
   getDocumentsEvidenceTotals,
   isDocumentEvidenceIssueStatus,
@@ -131,7 +132,7 @@ describe('DealDocumentsEvidence', () => {
     expect(screen.getAllByText('Investor evidence').length).toBeGreaterThan(0)
     expect(
       container.querySelector(
-        '[data-slot="deal-documents-evidence-document"][data-status="missing"][data-tone="attention"]',
+        '[data-slot="deal-documents-evidence-document"][data-status="missing"][data-tone="danger"]',
       ),
     ).toBeInTheDocument()
     expect(
@@ -225,6 +226,55 @@ describe('DealDocumentsEvidence', () => {
     expect(screen.queryByText('Request document')).not.toBeInTheDocument()
   })
 
+  it('supports composing the evidence surface from compound parts', () => {
+    const group = defaultDocumentsEvidenceState.groups[0]
+
+    if (!group) {
+      throw new Error('Expected default documents evidence fixture to include a group')
+    }
+
+    const document = group.documents[0]
+
+    if (!document) {
+      throw new Error('Expected default documents evidence fixture to include a document')
+    }
+
+    const titleId = 'composed-documents-title'
+    const { container } = render(
+      <DealDocumentsEvidence.Root aria-labelledby={titleId} state={defaultDocumentsEvidenceState}>
+        <DealDocumentsEvidence.Header
+          headline={defaultDocumentsEvidenceState.summary.headlineLabel}
+          state={defaultDocumentsEvidenceState}
+          subtitle={dealDocumentsEvidenceLabels.subtitle}
+          title="Composed documents"
+          titleId={titleId}
+        />
+        <DealDocumentsEvidence.Summary title="Composed summary">
+          <DealDocumentsEvidence.Metric metric={defaultDocumentsEvidenceState.summary.metrics[0]} />
+        </DealDocumentsEvidence.Summary>
+        <DealDocumentsEvidence.Groups
+          emptyLabel={dealDocumentsEvidenceLabels.noGroupsLabel}
+          title="Composed groups"
+        >
+          <DealDocumentsEvidence.Group group={group} labels={dealDocumentsEvidenceLabels}>
+            <DealDocumentsEvidence.Document
+              document={document}
+              labels={dealDocumentsEvidenceLabels}
+            />
+          </DealDocumentsEvidence.Group>
+        </DealDocumentsEvidence.Groups>
+      </DealDocumentsEvidence.Root>,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Composed documents' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Composed summary' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Composed groups' })).toBeInTheDocument()
+    expect(screen.getByText(document.label)).toBeInTheDocument()
+    expect(
+      container.querySelectorAll('[data-slot="deal-documents-evidence-document"]'),
+    ).toHaveLength(1)
+  })
+
   it('keeps model totals and semantic tone helpers aligned with document status data', () => {
     expect(getDocumentsEvidenceTotals(defaultDocumentsEvidenceState.groups)).toEqual({
       blocking: 4,
@@ -234,6 +284,18 @@ describe('DealDocumentsEvidence', () => {
     expect(getDocumentsEvidenceTone(defaultDocumentsEvidenceState)).toBe('danger')
     expect(getDocumentsEvidenceTone(readyDocumentsEvidenceState)).toBe('success')
     expect(getDocumentsEvidenceTone(noDocumentsEvidenceState)).toBe('neutral')
+    expect(
+      getDocumentEvidenceItemTone({
+        blocksClosing: true,
+        status: { kind: 'missing', label: 'Missing' },
+      }),
+    ).toBe('danger')
+    expect(
+      getDocumentEvidenceItemTone({
+        blocksClosing: false,
+        status: { kind: 'missing', label: 'Missing' },
+      }),
+    ).toBe('attention')
     expect(isDocumentEvidenceIssueStatus('under_review')).toBe(true)
     expect(isDocumentEvidenceIssueStatus('uploaded')).toBe(false)
   })

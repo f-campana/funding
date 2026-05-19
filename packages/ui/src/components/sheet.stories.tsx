@@ -3,6 +3,7 @@ import { Button } from './button'
 import {
   Sheet,
   SheetClose,
+  SheetCloseButton,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -28,6 +29,7 @@ const SheetExample = ({ side = 'right' }: { side?: 'top' | 'right' | 'bottom' | 
         <SheetTitle>Panel details</SheetTitle>
         <SheetDescription>Review the current context and choose the next action.</SheetDescription>
       </SheetHeader>
+      <SheetCloseButton />
       <dl className="grid gap-3 text-sm">
         <div className="flex items-center justify-between gap-4">
           <dt className="text-muted-foreground">Status</dt>

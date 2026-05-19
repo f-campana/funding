@@ -1,19 +1,14 @@
 import { Button, cn } from '@repo/ui'
 
 import { isActionDisabled } from './deal-progress-panel.model'
-import type { DealProgressAction, DealProgressActionHandler } from './deal-progress-panel.types'
+import type { DealProgressPanelActionProps } from './deal-progress-panel.types'
 
 export const ActionButton = ({
   action,
   describedById,
   onAction,
   primary = false,
-}: {
-  readonly action: DealProgressAction
-  readonly describedById: string | undefined
-  readonly onAction: DealProgressActionHandler | undefined
-  readonly primary?: boolean
-}) => {
+}: DealProgressPanelActionProps) => {
   const disabled = isActionDisabled(action)
 
   return (

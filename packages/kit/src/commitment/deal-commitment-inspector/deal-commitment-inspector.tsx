@@ -17,7 +17,7 @@ import {
   Signature,
   UserRound,
 } from 'lucide-react'
-import { type ReactNode, useId } from 'react'
+import { Children, type ReactNode, useId } from 'react'
 import { match } from 'ts-pattern'
 
 import {
@@ -30,18 +30,24 @@ import {
   inspectorToneDotClasses,
 } from './deal-commitment-inspector.model'
 import type {
-  DealCommitmentActivityItem,
-  DealCommitmentBlocker,
-  DealCommitmentEvidenceItem,
-  DealCommitmentInspectorActionHandler,
-  DealCommitmentInspectorErrorState,
-  DealCommitmentInspectorLabels,
+  DealCommitmentInspectorActivityItemProps,
+  DealCommitmentInspectorActivityProps,
+  DealCommitmentInspectorBlockerProps,
+  DealCommitmentInspectorBlockersProps,
+  DealCommitmentInspectorDocumentProps,
+  DealCommitmentInspectorDocumentsProps,
+  DealCommitmentInspectorEmptyProps,
+  DealCommitmentInspectorErrorProps,
+  DealCommitmentInspectorFactProps,
+  DealCommitmentInspectorHeaderProps,
+  DealCommitmentInspectorLoadingProps,
+  DealCommitmentInspectorNextActionProps,
   DealCommitmentInspectorProps,
-  DealCommitmentInspectorReadyState,
-  DealCommitmentInspectorState,
+  DealCommitmentInspectorReadinessItemProps,
+  DealCommitmentInspectorReadinessProps,
+  DealCommitmentInspectorReadyContentProps,
+  DealCommitmentInspectorRootProps,
   DealCommitmentInspectorTone,
-  DealCommitmentInvestorSummary,
-  DealCommitmentReadinessItem,
   DealCommitmentReadinessKey,
 } from './deal-commitment-inspector.types'
 
@@ -54,10 +60,26 @@ export type {
   DealCommitmentEvidenceStatusKind,
   DealCommitmentInspectorActionEvent,
   DealCommitmentInspectorActionHandler,
+  DealCommitmentInspectorActivityItemProps,
+  DealCommitmentInspectorActivityProps,
+  DealCommitmentInspectorBlockerProps,
+  DealCommitmentInspectorBlockersProps,
+  DealCommitmentInspectorDocumentProps,
+  DealCommitmentInspectorDocumentsProps,
+  DealCommitmentInspectorEmptyProps,
+  DealCommitmentInspectorErrorProps,
   DealCommitmentInspectorErrorState,
+  DealCommitmentInspectorFactProps,
+  DealCommitmentInspectorHeaderProps,
   DealCommitmentInspectorLabels,
+  DealCommitmentInspectorLoadingProps,
+  DealCommitmentInspectorNextActionProps,
   DealCommitmentInspectorProps,
+  DealCommitmentInspectorReadinessItemProps,
+  DealCommitmentInspectorReadinessProps,
+  DealCommitmentInspectorReadyContentProps,
   DealCommitmentInspectorReadyState,
+  DealCommitmentInspectorRootProps,
   DealCommitmentInspectorState,
   DealCommitmentInspectorTone,
   DealCommitmentInvestorSummary,
@@ -67,7 +89,29 @@ export type {
   DealCommitmentStatus,
 } from './deal-commitment-inspector.types'
 
-export const DealCommitmentInspector = ({
+export const DealCommitmentInspectorRoot = ({
+  busy,
+  children,
+  className,
+  state,
+  ...sectionProps
+}: DealCommitmentInspectorRootProps) => (
+  <section
+    {...sectionProps}
+    aria-busy={busy ?? (state?.kind === 'loading' ? true : undefined)}
+    className={cn(
+      'w-full overflow-hidden rounded-lg border border-border/70 bg-card text-card-foreground shadow-card',
+      className,
+    )}
+    data-inspector-tone={state ? getCommitmentInspectorTone(state) : undefined}
+    data-slot="deal-commitment-inspector"
+    data-state={state?.kind}
+  >
+    {children}
+  </section>
+)
+
+const DealCommitmentInspectorView = ({
   className,
   labels,
   onAction,
@@ -77,60 +121,48 @@ export const DealCommitmentInspector = ({
   const content = match(state)
     .returnType<ReactNode>()
     .with({ kind: 'loading' }, (loadingState) => (
-      <LoadingContent label={loadingState.label ?? labels.loadingLabel} titleId={titleId} />
+      <DealCommitmentInspectorLoading
+        label={loadingState.label ?? labels.loadingLabel}
+        titleId={titleId}
+      />
     ))
     .with({ kind: 'error' }, (errorState) => (
-      <ErrorContent onAction={onAction} state={errorState} titleId={titleId} />
+      <DealCommitmentInspectorError onAction={onAction} state={errorState} titleId={titleId} />
     ))
-    .with({ kind: 'empty' }, (emptyState) => <EmptyContent state={emptyState} titleId={titleId} />)
+    .with({ kind: 'empty' }, (emptyState) => (
+      <DealCommitmentInspectorEmpty state={emptyState} titleId={titleId} />
+    ))
     .with({ kind: 'ready' }, (readyState) => (
-      <ReadyContent labels={labels} state={readyState} titleId={titleId} />
+      <DealCommitmentInspectorReadyContent labels={labels} state={readyState} titleId={titleId} />
     ))
     .exhaustive()
 
   return (
-    <section
-      aria-busy={state.kind === 'loading' ? true : undefined}
-      aria-label={labels.title}
-      className={cn(
-        'w-full overflow-hidden rounded-lg border border-border/70 bg-card text-card-foreground shadow-card',
-        className,
-      )}
-      data-inspector-tone={getCommitmentInspectorTone(state)}
-      data-slot="deal-commitment-inspector"
-      data-state={state.kind}
-    >
+    <DealCommitmentInspectorRoot aria-label={labels.title} className={className} state={state}>
       {content}
-    </section>
+    </DealCommitmentInspectorRoot>
   )
 }
 
-const ReadyContent = ({
+export const DealCommitmentInspectorReadyContent = ({
   labels,
   state,
   titleId,
-}: {
-  readonly labels: DealCommitmentInspectorLabels
-  readonly state: DealCommitmentInspectorReadyState
-  readonly titleId: string
-}) => (
+}: DealCommitmentInspectorReadyContentProps) => (
   <>
-    <InspectorHeader investor={state.investor} titleId={titleId} />
-    <NextActionSection labels={labels} nextAction={state.nextAction} />
-    <ReadinessSection labels={labels} readiness={state.readiness} />
-    <BlockersSection blockers={state.blockers} labels={labels} />
-    <DocumentsSection documents={state.documents} labels={labels} />
-    <ActivitySection activity={state.activity} labels={labels} />
+    <DealCommitmentInspectorHeader investor={state.investor} titleId={titleId} />
+    <DealCommitmentInspectorNextAction labels={labels} nextAction={state.nextAction} />
+    <DealCommitmentInspectorReadiness labels={labels} readiness={state.readiness} />
+    <DealCommitmentInspectorBlockers blockers={state.blockers} labels={labels} />
+    <DealCommitmentInspectorDocuments documents={state.documents} labels={labels} />
+    <DealCommitmentInspectorActivity activity={state.activity} labels={labels} />
   </>
 )
 
-const InspectorHeader = ({
+export const DealCommitmentInspectorHeader = ({
   investor,
   titleId,
-}: {
-  readonly investor: DealCommitmentInvestorSummary
-  readonly titleId: string
-}) => (
+}: DealCommitmentInspectorHeaderProps) => (
   <header
     className="grid gap-3 border-b border-border/70 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start"
     data-slot="deal-commitment-inspector-header"
@@ -158,13 +190,11 @@ const InspectorHeader = ({
   </header>
 )
 
-const NextActionSection = ({
+export const DealCommitmentInspectorNextAction = ({
   labels,
   nextAction,
-}: {
-  readonly labels: DealCommitmentInspectorLabels
-  readonly nextAction: string | undefined
-}) => {
+  title,
+}: DealCommitmentInspectorNextActionProps) => {
   const sectionId = useId()
 
   return (
@@ -174,23 +204,29 @@ const NextActionSection = ({
       data-slot="deal-commitment-next-action"
     >
       <SectionTitle icon={<ListChecks aria-hidden="true" className="size-4" />} id={sectionId}>
-        {labels.nextActionLabel}
+        {title ?? labels?.nextActionLabel}
       </SectionTitle>
       <p className="text-sm leading-6 text-muted-foreground">
-        {nextAction ?? labels.noNextActionLabel}
+        {nextAction ?? labels?.noNextActionLabel}
       </p>
     </section>
   )
 }
 
-const ReadinessSection = ({
+export const DealCommitmentInspectorReadiness = ({
+  children,
   labels,
   readiness,
-}: {
-  readonly labels: DealCommitmentInspectorLabels
-  readonly readiness: DealCommitmentInspectorReadyState['readiness']
-}) => {
+  title,
+}: DealCommitmentInspectorReadinessProps) => {
   const sectionId = useId()
+  const readinessContent =
+    children ??
+    (readiness
+      ? commitmentInspectorReadinessKeys.map((key) => (
+          <DealCommitmentInspectorReadinessItem item={readiness[key]} key={key} />
+        ))
+      : null)
 
   return (
     <section
@@ -199,18 +235,16 @@ const ReadinessSection = ({
       data-slot="deal-commitment-readiness"
     >
       <SectionTitle icon={<ShieldCheck aria-hidden="true" className="size-4" />} id={sectionId}>
-        {labels.readinessTitle}
+        {title ?? labels?.readinessTitle}
       </SectionTitle>
-      <dl className="grid gap-2 sm:grid-cols-2">
-        {commitmentInspectorReadinessKeys.map((key) => (
-          <ReadinessRow item={readiness[key]} key={key} />
-        ))}
-      </dl>
+      <dl className="grid gap-2 sm:grid-cols-2">{readinessContent}</dl>
     </section>
   )
 }
 
-const ReadinessRow = ({ item }: { readonly item: DealCommitmentReadinessItem }) => {
+export const DealCommitmentInspectorReadinessItem = ({
+  item,
+}: DealCommitmentInspectorReadinessItemProps) => {
   const tone = getCommitmentInspectorReadinessTone(item)
 
   return (
@@ -248,14 +282,21 @@ const ReadinessRow = ({ item }: { readonly item: DealCommitmentReadinessItem }) 
   )
 }
 
-const BlockersSection = ({
+export const DealCommitmentInspectorBlockers = ({
   blockers,
+  children,
+  emptyLabel,
   labels,
-}: {
-  readonly blockers: readonly DealCommitmentBlocker[]
-  readonly labels: DealCommitmentInspectorLabels
-}) => {
+  title,
+}: DealCommitmentInspectorBlockersProps) => {
   const sectionId = useId()
+  const blockerContent =
+    children ??
+    (blockers && labels
+      ? blockers.map((blocker) => (
+          <DealCommitmentInspectorBlocker blocker={blocker} key={blocker.id} labels={labels} />
+        ))
+      : null)
 
   return (
     <section
@@ -264,30 +305,23 @@ const BlockersSection = ({
       data-slot="deal-commitment-blockers"
     >
       <SectionTitle icon={<CircleAlert aria-hidden="true" className="size-4" />} id={sectionId}>
-        {labels.blockersTitle}
+        {title ?? labels?.blockersTitle}
       </SectionTitle>
-      {blockers.length > 0 ? (
-        <ol className="grid gap-2">
-          {blockers.map((blocker) => (
-            <BlockerItem blocker={blocker} key={blocker.id} labels={labels} />
-          ))}
-        </ol>
+      {Children.count(blockerContent) > 0 ? (
+        <ol className="grid gap-2">{blockerContent}</ol>
       ) : (
         <EmptySectionText dataSlot="deal-commitment-no-blockers">
-          {labels.noBlockersLabel}
+          {emptyLabel ?? labels?.noBlockersLabel}
         </EmptySectionText>
       )}
     </section>
   )
 }
 
-const BlockerItem = ({
+export const DealCommitmentInspectorBlocker = ({
   blocker,
   labels,
-}: {
-  readonly blocker: DealCommitmentBlocker
-  readonly labels: DealCommitmentInspectorLabels
-}) => (
+}: DealCommitmentInspectorBlockerProps) => (
   <li>
     <article
       className="grid gap-3 rounded-md border border-border/70 bg-background/60 p-3"
@@ -314,32 +348,32 @@ const BlockerItem = ({
         </Badge>
       </div>
       <dl className="grid gap-2 text-xs sm:grid-cols-2">
-        <Fact
+        <DealCommitmentInspectorFact
           icon={<UserRound aria-hidden="true" className="size-3.5" />}
           label={labels.blockerOwnerLabel}
           value={blocker.owner}
         />
-        <Fact
+        <DealCommitmentInspectorFact
           icon={<Route aria-hidden="true" className="size-3.5" />}
           label={labels.blockerSurfaceLabel}
           value={blocker.surfaceLabel}
         />
         {blocker.relatedInvestorLabel ? (
-          <Fact
+          <DealCommitmentInspectorFact
             icon={<Landmark aria-hidden="true" className="size-3.5" />}
             label={labels.blockerInvestorsLabel}
             value={blocker.relatedInvestorLabel}
           />
         ) : null}
         {blocker.relatedDocumentLabel ? (
-          <Fact
+          <DealCommitmentInspectorFact
             icon={<FileCheck2 aria-hidden="true" className="size-3.5" />}
             label={labels.blockerDocumentsLabel}
             value={blocker.relatedDocumentLabel}
           />
         ) : null}
         {blocker.dueLabel ? (
-          <Fact
+          <DealCommitmentInspectorFact
             icon={<Clock3 aria-hidden="true" className="size-3.5" />}
             label={labels.blockerDueLabel}
             value={blocker.dueLabel}
@@ -350,14 +384,21 @@ const BlockerItem = ({
   </li>
 )
 
-const DocumentsSection = ({
+export const DealCommitmentInspectorDocuments = ({
+  children,
   documents,
+  emptyLabel,
   labels,
-}: {
-  readonly documents: readonly DealCommitmentEvidenceItem[]
-  readonly labels: DealCommitmentInspectorLabels
-}) => {
+  title,
+}: DealCommitmentInspectorDocumentsProps) => {
   const sectionId = useId()
+  const documentContent =
+    children ??
+    (documents && labels
+      ? documents.map((document) => (
+          <DealCommitmentInspectorDocument document={document} key={document.id} labels={labels} />
+        ))
+      : null)
 
   return (
     <section
@@ -366,30 +407,23 @@ const DocumentsSection = ({
       data-slot="deal-commitment-documents"
     >
       <SectionTitle icon={<FileText aria-hidden="true" className="size-4" />} id={sectionId}>
-        {labels.documentsTitle}
+        {title ?? labels?.documentsTitle}
       </SectionTitle>
-      {documents.length > 0 ? (
-        <ol className="grid gap-2">
-          {documents.map((document) => (
-            <DocumentItem document={document} key={document.id} labels={labels} />
-          ))}
-        </ol>
+      {Children.count(documentContent) > 0 ? (
+        <ol className="grid gap-2">{documentContent}</ol>
       ) : (
         <EmptySectionText dataSlot="deal-commitment-no-documents">
-          {labels.noDocumentsLabel}
+          {emptyLabel ?? labels?.noDocumentsLabel}
         </EmptySectionText>
       )}
     </section>
   )
 }
 
-const DocumentItem = ({
+export const DealCommitmentInspectorDocument = ({
   document,
   labels,
-}: {
-  readonly document: DealCommitmentEvidenceItem
-  readonly labels: DealCommitmentInspectorLabels
-}) => {
+}: DealCommitmentInspectorDocumentProps) => {
   const statusTone = getDocumentEvidenceStatusTone(document.status.kind)
 
   return (
@@ -408,32 +442,32 @@ const DocumentItem = ({
           <ToneBadge tone={statusTone}>{document.status.label}</ToneBadge>
         </div>
         <dl className="grid gap-2 text-xs sm:grid-cols-2">
-          <Fact
+          <DealCommitmentInspectorFact
             icon={<UserRound aria-hidden="true" className="size-3.5" />}
             label={labels.documentOwnerLabel}
             value={document.owner}
           />
-          <Fact
+          <DealCommitmentInspectorFact
             icon={<Scale aria-hidden="true" className="size-3.5" />}
             label={labels.documentRequirementLabel}
             value={document.requirementLabel}
           />
           {document.blockingLabel ? (
-            <Fact
+            <DealCommitmentInspectorFact
               icon={<CircleAlert aria-hidden="true" className="size-3.5" />}
               label={labels.documentBlockingLabel}
               value={document.blockingLabel}
             />
           ) : null}
           {document.dueLabel ? (
-            <Fact
+            <DealCommitmentInspectorFact
               icon={<Clock3 aria-hidden="true" className="size-3.5" />}
               label={labels.documentDueLabel}
               value={document.dueLabel}
             />
           ) : null}
           {document.lastActivityLabel ? (
-            <Fact
+            <DealCommitmentInspectorFact
               icon={<Activity aria-hidden="true" className="size-3.5" />}
               label={labels.documentLastActivityLabel}
               value={
@@ -446,7 +480,7 @@ const DocumentItem = ({
             />
           ) : null}
           {document.visibilityLabel ? (
-            <Fact
+            <DealCommitmentInspectorFact
               icon={<Landmark aria-hidden="true" className="size-3.5" />}
               label={labels.documentVisibilityLabel}
               value={document.visibilityLabel}
@@ -458,14 +492,17 @@ const DocumentItem = ({
   )
 }
 
-const ActivitySection = ({
+export const DealCommitmentInspectorActivity = ({
   activity,
+  children,
+  emptyLabel,
   labels,
-}: {
-  readonly activity: readonly DealCommitmentActivityItem[]
-  readonly labels: DealCommitmentInspectorLabels
-}) => {
+  title,
+}: DealCommitmentInspectorActivityProps) => {
   const sectionId = useId()
+  const activityContent =
+    children ??
+    activity?.map((item) => <DealCommitmentInspectorActivityItem item={item} key={item.id} />)
 
   return (
     <section
@@ -474,24 +511,22 @@ const ActivitySection = ({
       data-slot="deal-commitment-activity"
     >
       <SectionTitle icon={<Activity aria-hidden="true" className="size-4" />} id={sectionId}>
-        {labels.activityTitle}
+        {title ?? labels?.activityTitle}
       </SectionTitle>
-      {activity.length > 0 ? (
-        <ol className="grid gap-3">
-          {activity.map((item) => (
-            <ActivityItem item={item} key={item.id} />
-          ))}
-        </ol>
+      {Children.count(activityContent) > 0 ? (
+        <ol className="grid gap-3">{activityContent}</ol>
       ) : (
         <EmptySectionText dataSlot="deal-commitment-no-activity">
-          {labels.noActivityLabel}
+          {emptyLabel ?? labels?.noActivityLabel}
         </EmptySectionText>
       )}
     </section>
   )
 }
 
-const ActivityItem = ({ item }: { readonly item: DealCommitmentActivityItem }) => (
+export const DealCommitmentInspectorActivityItem = ({
+  item,
+}: DealCommitmentInspectorActivityItemProps) => (
   <li
     className="grid grid-cols-[auto_minmax(0,1fr)] gap-3"
     data-activity-id={item.id}
@@ -517,13 +552,10 @@ const ActivityItem = ({ item }: { readonly item: DealCommitmentActivityItem }) =
   </li>
 )
 
-const LoadingContent = ({
+export const DealCommitmentInspectorLoading = ({
   label,
   titleId,
-}: {
-  readonly label: string
-  readonly titleId: string
-}) => (
+}: DealCommitmentInspectorLoadingProps) => (
   <div className="grid gap-0" data-slot="deal-commitment-inspector-loading">
     <div className="grid gap-2 border-b border-border/70 p-4">
       <h2 className="text-base font-semibold text-card-foreground" id={titleId}>
@@ -545,15 +577,11 @@ const LoadingContent = ({
   </div>
 )
 
-const ErrorContent = ({
+export const DealCommitmentInspectorError = ({
   onAction,
   state,
   titleId,
-}: {
-  readonly onAction: DealCommitmentInspectorActionHandler | undefined
-  readonly state: DealCommitmentInspectorErrorState
-  readonly titleId: string
-}) => (
+}: DealCommitmentInspectorErrorProps) => (
   <div className="grid gap-4 p-4" data-slot="deal-commitment-inspector-error">
     <div className="flex items-start gap-3">
       <CircleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-status-danger" />
@@ -574,13 +602,10 @@ const ErrorContent = ({
   </div>
 )
 
-const EmptyContent = ({
+export const DealCommitmentInspectorEmpty = ({
   state,
   titleId,
-}: {
-  readonly state: Extract<DealCommitmentInspectorState, { readonly kind: 'empty' }>
-  readonly titleId: string
-}) => (
+}: DealCommitmentInspectorEmptyProps) => (
   <div className="grid gap-2 p-4" data-slot="deal-commitment-inspector-empty">
     <h2 className="text-base font-semibold text-card-foreground" id={titleId}>
       {state.title}
@@ -643,15 +668,11 @@ const ToneBadge = ({
   </Badge>
 )
 
-const Fact = ({
+export const DealCommitmentInspectorFact = ({
   icon,
   label,
   value,
-}: {
-  readonly icon: ReactNode
-  readonly label: string
-  readonly value: ReactNode
-}) => (
+}: DealCommitmentInspectorFactProps) => (
   <div className="grid min-w-0 gap-0.5 rounded-md bg-muted/50 px-2 py-1.5">
     <dt className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
       <span className="shrink-0">{icon}</span>
@@ -673,3 +694,22 @@ const ReadinessIcon = ({ readinessKey }: { readonly readinessKey: DealCommitment
 
   return <Icon aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
 }
+
+export const DealCommitmentInspector = Object.assign(DealCommitmentInspectorView, {
+  Activity: DealCommitmentInspectorActivity,
+  ActivityItem: DealCommitmentInspectorActivityItem,
+  Blocker: DealCommitmentInspectorBlocker,
+  Blockers: DealCommitmentInspectorBlockers,
+  Document: DealCommitmentInspectorDocument,
+  Documents: DealCommitmentInspectorDocuments,
+  Empty: DealCommitmentInspectorEmpty,
+  Error: DealCommitmentInspectorError,
+  Fact: DealCommitmentInspectorFact,
+  Header: DealCommitmentInspectorHeader,
+  Loading: DealCommitmentInspectorLoading,
+  NextAction: DealCommitmentInspectorNextAction,
+  Readiness: DealCommitmentInspectorReadiness,
+  ReadinessItem: DealCommitmentInspectorReadinessItem,
+  Ready: DealCommitmentInspectorReadyContent,
+  Root: DealCommitmentInspectorRoot,
+})

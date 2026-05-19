@@ -1,3 +1,5 @@
+import type { ComponentPropsWithoutRef, ReactNode } from 'react'
+
 export type DealOperationalReadinessState = 'ready' | 'attention' | 'blocked' | 'not_started'
 
 export type DealOperationalBlockerSeverity = 'critical' | 'warning' | 'info'
@@ -151,6 +153,45 @@ export type DealOperationalOverviewLabels = {
   readonly noBlockersLabel: string
   readonly noActivityLabel: string
   readonly loadingLabel: string
+}
+
+export type DealOperationalOverviewRootProps = ComponentPropsWithoutRef<'section'> & {
+  readonly busy?: boolean | undefined
+  readonly state?: DealOperationalOverviewState | undefined
+}
+
+export type DealOperationalOverviewReadyContentProps = {
+  readonly labels: DealOperationalOverviewLabels
+  readonly state: DealOperationalOverviewReadyState
+  readonly titleId: string
+}
+
+export type DealOperationalOverviewHeaderProps = {
+  readonly labels?: DealOperationalOverviewLabels | undefined
+  readonly readiness: DealOperationalReadinessSummary
+  readonly subtitle?: ReactNode | undefined
+  readonly title?: ReactNode | undefined
+  readonly titleId: string
+}
+
+export type DealOperationalOverviewGridProps = {
+  readonly children: ReactNode
+}
+
+export type DealOperationalOverviewLoadingProps = {
+  readonly label: ReactNode
+  readonly titleId: string
+}
+
+export type DealOperationalOverviewErrorProps = {
+  readonly onAction?: DealOperationalOverviewActionHandler | undefined
+  readonly state: DealOperationalOverviewErrorState
+  readonly titleId: string
+}
+
+export type DealOperationalOverviewEmptyProps = {
+  readonly state: Extract<DealOperationalOverviewState, { readonly kind: 'empty' }>
+  readonly titleId: string
 }
 
 type DealOperationalOverviewPropsBase = {

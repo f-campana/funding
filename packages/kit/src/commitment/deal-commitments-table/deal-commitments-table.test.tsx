@@ -10,7 +10,38 @@ import {
   type CommitmentReadinessKey,
   type CommitmentTableFilterId,
   DealCommitmentsTable,
+  DealCommitmentsTableBody,
+  DealCommitmentsTableColumnGroup,
+  DealCommitmentsTableContent,
+  DealCommitmentsTableDetail,
+  DealCommitmentsTableExportButton,
+  DealCommitmentsTableFilters,
+  DealCommitmentsTableFooter,
+  DealCommitmentsTableFooterControls,
+  DealCommitmentsTableFooterMetrics,
+  DealCommitmentsTableFooterRoot,
+  DealCommitmentsTableGrid,
+  DealCommitmentsTableGridRoot,
+  DealCommitmentsTableHeader,
+  DealCommitmentsTableInvestorCount,
   type DealCommitmentsTableLifecycleState,
+  DealCommitmentsTableModel,
+  DealCommitmentsTableNextPageButton,
+  DealCommitmentsTablePageSizeSelect,
+  DealCommitmentsTablePreviousPageButton,
+  DealCommitmentsTableRange,
+  DealCommitmentsTableRoot,
+  DealCommitmentsTableRowActionButton,
+  DealCommitmentsTableSearch,
+  DealCommitmentsTableSelectedCount,
+  DealCommitmentsTableTable,
+  DealCommitmentsTableToolbar,
+  DealCommitmentsTableToolbarActions,
+  DealCommitmentsTableToolbarControls,
+  DealCommitmentsTableToolbarHeading,
+  DealCommitmentsTableToolbarPrimaryRow,
+  DealCommitmentsTableToolbarRoot,
+  DealCommitmentsTableTotalCommitted,
 } from './deal-commitments-table'
 import {
   dataIssueCommitmentRows,
@@ -221,6 +252,133 @@ describe('DealCommitmentsTable', () => {
     expect(screen.getByText('Overall committed $187,600,000')).toBeInTheDocument()
     expect(screen.getByText('Rows per page 8')).toBeInTheDocument()
     expect(screen.getByText('1–8 of 12')).toBeInTheDocument()
+  })
+
+  it('supports composing the table shell from root and content parts', () => {
+    const { container } = render(
+      <DealCommitmentsTableRoot className="min-w-0" state={readyTableState()}>
+        <DealCommitmentsTableContent
+          footer={dealCommitmentsTableLabels.footer}
+          labels={dealCommitmentsTableLabels.labels}
+          state={readyTableState()}
+          subtitle={dealCommitmentsTableLabels.subtitle}
+          title={dealCommitmentsTableLabels.title}
+          toolbar={dealCommitmentsTableLabels.toolbar}
+          renderRowAction={(action) => <DealCommitmentsTableRowActionButton {...action} />}
+        >
+          <DealCommitmentsTableToolbarRoot>
+            <DealCommitmentsTableToolbarHeading />
+            <DealCommitmentsTableToolbarControls>
+              <DealCommitmentsTableToolbarPrimaryRow>
+                <DealCommitmentsTableSearch />
+                <DealCommitmentsTableToolbarActions>
+                  <DealCommitmentsTableSelectedCount />
+                  <DealCommitmentsTableExportButton />
+                </DealCommitmentsTableToolbarActions>
+              </DealCommitmentsTableToolbarPrimaryRow>
+              <DealCommitmentsTableFilters />
+            </DealCommitmentsTableToolbarControls>
+          </DealCommitmentsTableToolbarRoot>
+          <DealCommitmentsTableGridRoot>
+            <DealCommitmentsTableTable>
+              <DealCommitmentsTableColumnGroup />
+              <DealCommitmentsTableHeader />
+              <DealCommitmentsTableBody />
+            </DealCommitmentsTableTable>
+          </DealCommitmentsTableGridRoot>
+          <DealCommitmentsTableFooterRoot>
+            <DealCommitmentsTableFooterMetrics>
+              <DealCommitmentsTableInvestorCount />
+              <DealCommitmentsTableTotalCommitted />
+            </DealCommitmentsTableFooterMetrics>
+            <DealCommitmentsTableFooterControls>
+              <DealCommitmentsTablePageSizeSelect />
+              <DealCommitmentsTableRange />
+              <DealCommitmentsTablePreviousPageButton />
+              <DealCommitmentsTableNextPageButton />
+            </DealCommitmentsTableFooterControls>
+          </DealCommitmentsTableFooterRoot>
+          <DealCommitmentsTableDetail>
+            {({ open, row, rowId }) => (
+              <div data-open={open} data-row-id={rowId} data-slot="commitments-table-detail">
+                {row?.investorName}
+              </div>
+            )}
+          </DealCommitmentsTableDetail>
+          <DealCommitmentsTableModel>
+            {({ model }) => (
+              <div data-slot="commitments-table-model">{model?.visibleRows.length ?? 0}</div>
+            )}
+          </DealCommitmentsTableModel>
+        </DealCommitmentsTableContent>
+      </DealCommitmentsTableRoot>,
+    )
+
+    expect(container.querySelector('[data-slot="deal-commitments-table"]')).toHaveClass('min-w-0')
+    expect(screen.getByRole('heading', { name: 'Commitments' })).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: 'Commitments' })).toBeInTheDocument()
+    expect(screen.getByText('Tailwind Partners')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="commitments-table-detail"]')).toHaveAttribute(
+      'data-open',
+      'false',
+    )
+    expect(container.querySelector('[data-slot="commitments-table-model"]')).toHaveTextContent('8')
+  })
+
+  it('supports composing row detail content inside the table context', async () => {
+    const user = userEvent.setup()
+
+    const { container } = render(
+      <DealCommitmentsTableRoot state={readyTableState()}>
+        <DealCommitmentsTableContent
+          footer={dealCommitmentsTableLabels.footer}
+          labels={dealCommitmentsTableLabels.labels}
+          state={readyTableState()}
+          subtitle={dealCommitmentsTableLabels.subtitle}
+          title={dealCommitmentsTableLabels.title}
+          toolbar={dealCommitmentsTableLabels.toolbar}
+        >
+          <DealCommitmentsTableToolbar />
+          <DealCommitmentsTableGrid />
+          <DealCommitmentsTableDetail>
+            {({ onOpenChange, open, row, rowId }) => (
+              <aside data-open={open} data-row-id={rowId} data-slot="commitments-table-detail">
+                {row ? <span>{row.investorName}</span> : null}
+                <button onClick={() => onOpenChange(false)} type="button">
+                  Close detail
+                </button>
+              </aside>
+            )}
+          </DealCommitmentsTableDetail>
+          <DealCommitmentsTableFooter />
+        </DealCommitmentsTableContent>
+      </DealCommitmentsTableRoot>,
+    )
+
+    await user.click(
+      screen.getByRole('button', { name: 'Open commitment detail for Tailwind Partners' }),
+    )
+
+    expect(container.querySelector('[data-slot="commitments-table-detail"]')).toHaveAttribute(
+      'data-open',
+      'true',
+    )
+    expect(container.querySelector('[data-slot="commitments-table-detail"]')).toHaveAttribute(
+      'data-row-id',
+      'tailwind-partners',
+    )
+    expect(
+      within(
+        container.querySelector('[data-slot="commitments-table-detail"]') as HTMLElement,
+      ).getByText('Tailwind Partners'),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Close detail' }))
+
+    expect(container.querySelector('[data-slot="commitments-table-detail"]')).toHaveAttribute(
+      'data-open',
+      'false',
+    )
   })
 
   it('contains horizontal overflow inside the table scroller for constrained workspaces', () => {

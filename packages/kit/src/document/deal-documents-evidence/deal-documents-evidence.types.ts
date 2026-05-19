@@ -1,3 +1,5 @@
+import type { ComponentPropsWithoutRef, ReactNode } from 'react'
+
 import type {
   DocumentEvidenceStatus,
   DocumentEvidenceStatusKind,
@@ -113,6 +115,79 @@ export type DealDocumentsEvidenceLabels = {
   readonly documentDueLabel: string
   readonly documentLastActivityLabel: string
   readonly documentVisibilityLabel: string
+}
+
+export type DealDocumentsEvidenceRootProps = ComponentPropsWithoutRef<'section'> & {
+  readonly busy?: boolean | undefined
+  readonly state?: DealDocumentsEvidenceState | undefined
+}
+
+export type DealDocumentsEvidenceReadyContentProps = {
+  readonly labels: DealDocumentsEvidenceLabels
+  readonly state: DealDocumentsEvidenceReadyState
+  readonly titleId: string
+}
+
+export type DealDocumentsEvidenceHeaderProps = {
+  readonly headline?: ReactNode | undefined
+  readonly labels?: DealDocumentsEvidenceLabels | undefined
+  readonly state?: DealDocumentsEvidenceReadyState | undefined
+  readonly subtitle?: ReactNode | undefined
+  readonly title?: ReactNode | undefined
+  readonly titleId: string
+  readonly tone?: DealDocumentsEvidenceTone | undefined
+}
+
+export type DealDocumentsEvidenceSummaryProps = {
+  readonly children?: ReactNode
+  readonly labels?: DealDocumentsEvidenceLabels | undefined
+  readonly metrics?: readonly DealDocumentsEvidenceSummaryMetric[] | undefined
+  readonly title?: ReactNode | undefined
+}
+
+export type DealDocumentsEvidenceMetricProps = {
+  readonly metric: DealDocumentsEvidenceSummaryMetric
+}
+
+export type DealDocumentsEvidenceGroupsProps = {
+  readonly children?: ReactNode
+  readonly emptyLabel?: ReactNode | undefined
+  readonly groups?: readonly DealDocumentsEvidenceGroup[] | undefined
+  readonly labels?: DealDocumentsEvidenceLabels | undefined
+  readonly title?: ReactNode | undefined
+}
+
+export type DealDocumentsEvidenceGroupProps = {
+  readonly children?: ReactNode
+  readonly group: DealDocumentsEvidenceGroup
+  readonly labels: DealDocumentsEvidenceLabels
+}
+
+export type DealDocumentsEvidenceDocumentProps = {
+  readonly document: DealDocumentsEvidenceItem
+  readonly labels: DealDocumentsEvidenceLabels
+}
+
+export type DealDocumentsEvidenceLoadingProps = {
+  readonly label: ReactNode
+  readonly titleId: string
+}
+
+export type DealDocumentsEvidenceErrorProps = {
+  readonly onAction?: DealDocumentsEvidenceActionHandler | undefined
+  readonly state: DealDocumentsEvidenceErrorState
+  readonly titleId: string
+}
+
+export type DealDocumentsEvidenceEmptyProps = {
+  readonly state: Extract<DealDocumentsEvidenceState, { readonly kind: 'empty' }>
+  readonly titleId: string
+}
+
+export type DealDocumentsEvidenceFactProps = {
+  readonly icon: ReactNode
+  readonly label: ReactNode
+  readonly value: ReactNode
 }
 
 type DealDocumentsEvidencePropsBase = {

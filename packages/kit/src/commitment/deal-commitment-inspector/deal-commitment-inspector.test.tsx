@@ -165,6 +165,71 @@ describe('DealCommitmentInspector', () => {
     ).toBeInTheDocument()
   })
 
+  it('supports composing the inspector surface from compound parts', () => {
+    const [blocker] = blockedCommitmentInspectorState.blockers
+    const [document] = blockedCommitmentInspectorState.documents
+    const [activity] = blockedCommitmentInspectorState.activity
+
+    if (!blocker || !document || !activity) {
+      throw new Error('Expected inspector fixture to include blocker, document, and activity')
+    }
+
+    const titleId = 'composed-commitment-inspector-title'
+    const { container } = render(
+      <DealCommitmentInspector.Root
+        aria-label={dealCommitmentInspectorLabels.title}
+        state={blockedCommitmentInspectorState}
+      >
+        <DealCommitmentInspector.Header
+          investor={blockedCommitmentInspectorState.investor}
+          titleId={titleId}
+        />
+        <DealCommitmentInspector.NextAction
+          labels={dealCommitmentInspectorLabels}
+          nextAction={blockedCommitmentInspectorState.nextAction}
+        />
+        <DealCommitmentInspector.Readiness
+          labels={dealCommitmentInspectorLabels}
+          readiness={blockedCommitmentInspectorState.readiness}
+        />
+        <DealCommitmentInspector.Blockers
+          emptyLabel={dealCommitmentInspectorLabels.noBlockersLabel}
+          title={dealCommitmentInspectorLabels.blockersTitle}
+        >
+          <DealCommitmentInspector.Blocker
+            blocker={blocker}
+            labels={dealCommitmentInspectorLabels}
+          />
+        </DealCommitmentInspector.Blockers>
+        <DealCommitmentInspector.Documents
+          emptyLabel={dealCommitmentInspectorLabels.noDocumentsLabel}
+          title={dealCommitmentInspectorLabels.documentsTitle}
+        >
+          <DealCommitmentInspector.Document
+            document={document}
+            labels={dealCommitmentInspectorLabels}
+          />
+        </DealCommitmentInspector.Documents>
+        <DealCommitmentInspector.Activity
+          emptyLabel={dealCommitmentInspectorLabels.noActivityLabel}
+          title={dealCommitmentInspectorLabels.activityTitle}
+        >
+          <DealCommitmentInspector.ActivityItem item={activity} />
+        </DealCommitmentInspector.Activity>
+      </DealCommitmentInspector.Root>,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Meridian Ventures' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Related blockers' })).toBeInTheDocument()
+    expect(screen.getByText(blocker.title)).toBeInTheDocument()
+    expect(screen.getByText(document.label)).toBeInTheDocument()
+    expect(screen.getByText(activity.summary)).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="deal-commitment-inspector"]')).toHaveAttribute(
+      'data-inspector-tone',
+      'attention',
+    )
+  })
+
   it('renders readiness breakdown rows with details and metadata', () => {
     const { container } = renderInspector()
 

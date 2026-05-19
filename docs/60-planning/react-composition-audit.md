@@ -2,6 +2,7 @@
 
 Status: Audit findings
 Created: 2026-05-18
+Last updated: 2026-05-19
 Scope: React code under `apps/web`, `packages/ui`, and `packages/kit`
 Principle: prefer composition, `children`, and compound components over prop-driven UI structure
 
@@ -23,6 +24,130 @@ configuration objects.
 The highest-priority correction is to move kit components toward compound APIs:
 small, styled, reusable parts that accept children, while keeping domain records
 as data only at the leaves that truly render repeated business records.
+
+## Current Snapshot
+
+Snapshot date: 2026-05-19
+
+A fresh six-lane audit confirms the original composition concern. The priority
+order has changed in two places:
+
+- `DealDocumentsEvidence` is no longer an untracked/new surface. It is now
+  tracked, exported from `@repo/kit`, covered by tests/stories, consumed by the
+  app documents route, and asserted in package export tests. The composition
+  issue therefore moved from "fix before acceptance" to "accepted public surface
+  now needs an intentional migration or ADR."
+- `DealPendingWorkspaceSection` is gone from active app code. The documents
+  route now renders `DealDocumentsEvidence`, which strengthens the broader
+  finding that app routes are pass-through consumers of configured kit widgets.
+
+Remediated in this pass:
+
+- `DealDocumentsEvidence` now exposes compound parts (`Root`, `Header`,
+  `Summary`, `Metric`, `Groups`, `Group`, `Document`, `Fact`, `Loading`,
+  `Error`, and `Empty`) while keeping the original pre-composed component as a
+  compatibility wrapper.
+- The documents route now composes the document evidence surface explicitly
+  instead of spreading the adapter prop bag into a monolithic kit widget.
+- `DealOperationalOverview` now exposes compound parts (`Root`, `Header`,
+  `PrimaryGrid`, `SecondaryGrid`, `Readiness`, `Capital`, `Blockers`,
+  `Activity`, `Loading`, `Error`, and `Empty`) while keeping the original
+  pre-composed component as a compatibility wrapper.
+- The overview route now composes the operational overview explicitly instead
+  of spreading the adapter prop bag into a monolithic kit widget.
+- `DealCommitmentInspector` now exposes compound parts (`Root`, `Header`,
+  `NextAction`, `Readiness`, `ReadinessItem`, `Blockers`, `Blocker`,
+  `Documents`, `Document`, `Activity`, `ActivityItem`, `Loading`, `Error`, and
+  `Empty`) while keeping the original pre-composed component as a compatibility
+  wrapper.
+- The commitments workspace now composes the commitment inspector inside the
+  sheet instead of rendering the full configured inspector widget.
+- `DealCommitmentsTable` now exposes composable `Root`, `Content`, granular
+  toolbar/grid/footer parts, `Detail`, `RowActionButton`, and `Model` render-prop
+  boundaries, preserving the existing table model and pre-composed wrapper while
+  letting the commitments route own the table surface shell, part ordering, row
+  detail composition, and row action rendering.
+- `DealProgressPanel` now exposes composable `Root`, `Header`, `Capital`,
+  `DataQuality`, `Actions`, `ActionButton`, `Loading`, `Error`, and
+  `ReadyContent` parts, preserving the existing pre-composed wrapper while
+  letting app routes own panel section ordering.
+- `DealOperationalRail` now composes the progress panel from those parts instead
+  of spreading a configured panel prop object into the wrapper.
+- `DealAppShell` now accepts caller-owned `leftRail` content and exposes
+  composable left-rail parts (`LeftRail`, `Logo`, `Nav`, `NavLink`, `NavGlyph`,
+  and `VersionBadge`) instead of requiring navigation records.
+- `DealTabs` now exposes `Root` and `Link` compound parts, and the layout now
+  composes tab links directly. The small record-driven wrapper remains for
+  compatibility.
+- `DealEntityHeader` now exposes compound header parts (`Root`, `Hero`,
+  `Identity`, `BrandMark`, `Copy`, `Kicker`, `TitleBlock`, `Title`,
+  `Description`, `Metrics`, `Metric`, `Tabs`, and `LifecycleSummary`), and the
+  layout now assembles the entity header explicitly.
+- `SheetContent` no longer injects a close button behind a boolean. Consumers
+  compose `SheetCloseButton` or their own `SheetClose` control explicitly.
+- `DealOperationalRail` now accepts caller-owned rail card children. The layout
+  composes the operational snapshot and exception queue cards with rail card and
+  metric parts.
+- `ChartTooltipContent` and `ChartLegendContent` now compose public tooltip and
+  legend subparts, giving custom chart layouts a lower-level composition path.
+- Story layout helpers now expose composable section header/title/description
+  parts and an explicit `header` slot while keeping simple title/description
+  props as compatibility sugar.
+
+Remaining current P1 issues:
+
+- None currently known in the prioritized `@repo/kit` deal/commitment/document
+  surfaces after this remediation pass.
+Confirmed current P2 issues:
+
+- None currently known in the prioritized app route consumers.
+
+Confirmed current P3 issues:
+
+- None currently known from this audit pass.
+
+Post-remediation verification update:
+
+- The e2e suite exposed one non-composition regression after the composition
+  pass: `DealTabs.Root` and `DealTabs.Link` were accessed as static properties
+  across a React Server Component boundary, rendering as `undefined` in the
+  production route shell. The layout now imports `DealTabsRoot` and
+  `DealTabLink` directly, keeping the same composed tab structure without the
+  RSC static-property hazard.
+- The e2e suite also exposed a nearby semantic mismatch: document evidence rows
+  used status-only tone, so a missing document that blocked closing rendered as
+  `attention`. The kit now derives row tone from both status and closing impact,
+  so blocking document issues render as `danger`.
+- `pnpm --filter @repo/web e2e` passed after those fixes: 13/13 Playwright
+  tests. The composition snapshot is current with the implemented work.
+
+## Kit Component Split Review
+
+The composition pass intentionally exposed more compound parts. That made a few
+kit entry files longer than ideal even though the public APIs moved in the
+right direction.
+
+Current split decisions from the 2026-05-19 follow-up:
+
+- `packages/kit/src/document/deal-documents-evidence/deal-documents-evidence.tsx`
+  was split. The public wrapper now owns the root, compatibility component, and
+  aggregate exports; `deal-documents-evidence.content.tsx` owns composed ready
+  sections; `deal-documents-evidence.lifecycle.tsx` owns loading/error/empty
+  states; `deal-documents-evidence.parts.tsx` owns small reusable local parts.
+  This was the lowest-risk split because it preserved all public exports and did
+  not move stateful context.
+- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.tsx`
+  remains the largest production candidate. It should be split next around a
+  dedicated context/content module, then toolbar, grid/model, footer, and detail
+  modules. Do this deliberately because the controlled/uncontrolled table state
+  and render-prop model all share one context.
+- `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.tsx`
+  is the second production candidate. A safe split would mirror the document
+  evidence shape: root/wrapper exports, ready sections, lifecycle states, and
+  shared local parts. It is less urgent than the table because it has no local
+  controlled state.
+- Large fixture and test files are acceptable for now. Split them only when a
+  production module split makes test setup difficult to navigate.
 
 ## Audited Principle
 
@@ -62,11 +187,12 @@ The codebase was split into five review lanes, plus a manual consolidation pass:
 - `packages/kit/src/commitment`: commitment table and inspector surfaces.
 - `packages/kit/src/deal` and `packages/kit/src/document`: deal overview,
   progress panel, and document evidence surfaces.
-- `apps/web/app`: route-level shells, tabs, pending sections, and workspaces.
+- `apps/web/app`: route-level shells, tabs, rails, pages, and workspaces.
 - Stories and tests: consumer evidence for awkward or prop-heavy APIs.
 
-The final findings below are grouped by production API, not by every duplicate
-symptom found in stories or tests.
+The final findings below are grouped primarily by production API, not by every
+duplicate symptom found in stories or tests. Story-only helpers are listed as
+P3 local findings where they show the same pattern in miniature.
 
 ## Severity Definitions
 
@@ -80,6 +206,13 @@ symptom found in stories or tests.
 
 ### 1. `DealCommitmentsTable` Is A Configured Widget
 
+Remediation status: addressed on 2026-05-19 by splitting the public surface
+into `DealCommitmentsTable.Root`/`DealCommitmentsTableContent`, exposing
+toolbar, grid/table/header/body, footer, detail, row action, and model
+render-prop compound parts, and updating the commitments route to compose those
+parts explicitly. The provided toolbar/grid/footer remain opinionated defaults,
+but they are now replaceable presets rather than the only public rendering path.
+
 Evidence:
 
 - `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.types.ts:159`
@@ -87,12 +220,12 @@ Evidence:
 - `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.stories.tsx:53`
 - `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.test.tsx:81`
 
-The exported table API requires `title`, `subtitle`, `labels`, `toolbar`,
-`footer`, lifecycle `state`, export callbacks, selection callbacks, pagination
-callbacks, and row-open callbacks. The component then renders the same toolbar,
-table body, fixed column set, and footer every time.
+The original exported table API was centered on `title`, `subtitle`, `labels`, `toolbar`,
+`footer`, lifecycle `state`, and optional or conditional callbacks for export,
+selection, pagination, and row-open behavior. The component then rendered the
+same toolbar, table body, fixed column set, row action, and footer every time.
 
-This is not just data rendering. The consumer cannot compose:
+This was not just data rendering. The consumer could not compose:
 
 - a custom header,
 - extra toolbar actions,
@@ -100,16 +233,27 @@ This is not just data rendering. The consumer cannot compose:
 - a footer with custom metrics,
 - a table without footer,
 - a custom export control,
-- a row detail/drawer area,
 - a different column arrangement.
 
-Instead, consumers must feed implementation instructions into `toolbar`,
+Instead, consumers had to feed implementation instructions into `toolbar`,
 `footer`, `labels.columns`, and conditional export props.
 
 The stories and tests are strong evidence of the problem. They need wrappers,
 casts, fixture merges, and coordinated labels/callbacks just to mount common
 states. The export behavior is especially configuration-heavy: labels and two
 callbacks must line up so the table can infer what button to render.
+
+The earlier commitments route strengthened this finding. It tracked
+`activeRowId`, `drawerOpenRowId`, selected rows, Sheet state, telemetry events,
+and inspector lookup separately because the table did not expose a composed
+detail boundary. That detail boundary is now available through
+`DealCommitmentsTable.Detail`.
+
+The column model also shows future pressure. Rows carry a full readiness record,
+including reconciliation, while the visible table columns are fixed to KYC/KYB,
+signature, and wire in the default preset. Consumers can now replace the grid
+with a custom table via `DealCommitmentsTable.Model` without reimplementing the
+table controls.
 
 Rationale:
 
@@ -149,7 +293,11 @@ Suggested direction:
 Keep a convenience `DealCommitmentsTable.Default` only if it is clearly a
 pre-composed wrapper around composable parts.
 
-### 2. `DealCommitmentInspector` Owns The Whole Panel Body
+### 2. `DealCommitmentInspector` Owned The Whole Panel Body
+
+Remediation status: addressed on 2026-05-19 by adding compound inspector parts
+and updating the commitments sheet to compose them directly. The finding text
+below is retained as rationale and historical context.
 
 Evidence:
 
@@ -206,7 +354,11 @@ Suggested direction:
 </DealCommitmentInspector.Root>
 ```
 
-### 3. `DealOperationalOverview` Is A Monolithic `state + labels` Renderer
+### 3. `DealOperationalOverview` Was A Monolithic `state + labels` Renderer
+
+Remediation status: addressed on 2026-05-19 by adding compound overview parts
+and updating the overview route to compose them directly. The finding text below
+is retained as rationale and historical context.
 
 Evidence:
 
@@ -248,21 +400,31 @@ Suggested direction:
 </DealOperationalOverview.Root>
 ```
 
-### 4. `DealDocumentsEvidence` Introduces The Same Drift In New Code
+### 4. `DealDocumentsEvidence` Was An Accepted Configured Surface
+
+Remediation status: addressed on 2026-05-19 by adding compound document evidence
+parts and updating the documents route to compose them directly. The finding
+text below is retained as rationale and historical context.
 
 Evidence:
 
+- `packages/kit/src/package-exports.test.ts:13`
+- `packages/kit/src/package-exports.test.ts:34`
 - `packages/kit/src/document/deal-documents-evidence/deal-documents-evidence.types.ts:145`
 - `packages/kit/src/document/deal-documents-evidence/deal-documents-evidence.tsx:56`
+- `packages/kit/src/document/deal-documents-evidence/deal-documents-evidence.stories.tsx:39`
 - `packages/kit/src/document/index.ts:1`
+- `apps/web/app/deals/[dealId]/documents/page.tsx:19`
 
 `DealDocumentsEvidence` is an exported, fully prop-authored document surface.
 `labels`, `state`, and `onAction` drive header copy, summary metrics, group
 layout, document facts, badges, loading, empty, error, and retry UI.
 
-This is structurally similar to the overview and inspector problems, but it is
-more urgent because these files are currently untracked. The API can be corrected
-before it becomes accepted package surface area.
+This is structurally similar to the overview and inspector problems. The fresh
+2026-05-19 audit changes the status: this is no longer a new untracked surface.
+It is tracked, package-exported, covered by stories/tests, and consumed by the
+documents route. That makes it a normal public API migration problem rather
+than a pre-acceptance cleanup.
 
 Rationale:
 
@@ -289,21 +451,80 @@ Expose:
 
 Map domain records outside the root shell, then compose the rendered parts.
 
+### 5. App Routes Mostly Configured Kit Widgets
+
+Remediation status: addressed on 2026-05-19. The overview, documents,
+commitment inspector, progress panel, app shell, entity header, operational
+rail cards, and commitments table workflow are now route-composed through
+compound parts or explicit render-prop boundaries.
+
+Evidence:
+
+- `apps/web/app/deals/[dealId]/overview/page.tsx:19`
+- `apps/web/app/deals/[dealId]/documents/page.tsx:19`
+- `apps/web/app/deals/[dealId]/commitments/page.tsx:20`
+- `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx:82`
+- `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx:132`
+- `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx:177`
+
+The overview and documents routes were adapter-spread pass-throughs into
+monolithic kit components. The commitments route chose configured table and
+inspector view models, then `CommitmentsWorkspace` manually synchronized row
+state, drawer state, selected rows, telemetry, and inspector props around two
+configured kit widgets.
+
+Rationale:
+
+Route files are the natural home for product-level composition. Today they are
+mostly orchestration layers that feed view-model props into pre-authored kit
+surfaces. That is a symptom of the kit API shape, not a standalone route bug,
+but it means app code cannot exercise React's composition model until kit
+exports composable parts.
+
+Suggested direction:
+
+Once kit exposes compound pieces, route pages should assemble the workflow
+directly:
+
+```tsx
+<DealOperationalOverview.Root>
+  <DealOperationalOverview.Header>{header}</DealOperationalOverview.Header>
+  <DealOperationalOverview.Readiness readiness={readiness} />
+  <DealOperationalOverview.Capital capital={capital} />
+</DealOperationalOverview.Root>
+```
+
+For commitments, the table still needs column/toolbar/footer composition if
+those areas need route-specific customization beyond the provided defaults.
+
 ## P2 Findings
 
-### 5. `DealProgressPanel` Should Compose Actions
+### 6. `DealProgressPanel` Should Compose Actions And Sections
+
+Remediation status: addressed on 2026-05-19 by adding compound progress panel
+parts and updating the operational rail to compose the panel directly. The
+default `Actions` helper still renders the standard action-button group and
+disabled-reason UI, but it is now a replaceable compound part rather than the
+only public rendering path.
 
 Evidence:
 
 - `packages/kit/src/deal/deal-progress-panel/deal-progress-panel.types.ts:323`
+- `packages/kit/src/deal/deal-progress-panel/deal-progress-panel.ready-content.tsx:54`
 - `packages/kit/src/deal/deal-progress-panel/deal-progress-panel.ready-content.tsx:81`
 - `packages/kit/src/deal/deal-progress-panel/deal-progress-panel.lifecycle-content.tsx:49`
+- `packages/kit/src/deal/deal-progress-panel/deal-progress-panel.actions.tsx:20`
 - `packages/kit/src/deal/deal-progress-panel/deal-progress-panel.stories.tsx:58`
 
-`DealProgressPanel` models workflow actions as data: primary action, secondary
+`DealProgressPanel` modeled workflow actions as data: primary action, secondary
 actions, retry action, labels, audiences, availability, and disabled reasons.
-It then renders button order, variants, disabled state, and disabled-reason UI
+It then rendered button order, variants, disabled state, and disabled-reason UI
 internally.
+
+The ready content order was also fixed: header/status, capital, data-quality
+notice, then actions. Consumers cannot move data-quality messaging below
+actions, replace the header, split capital from controls, or insert adjacent
+warnings without more props.
 
 Rationale:
 
@@ -328,18 +549,23 @@ Keep the panel frame and progress primitives, but make actions compositional:
 </DealProgressPanel.Root>
 ```
 
-### 6. `DealAppShell` Still Configures Product-Specific Left Navigation
+### 7. `DealAppShell` Configured Product-Specific Left Navigation
+
+Remediation status: addressed on 2026-05-19 by changing the shell to accept a
+caller-owned `leftRail` node and by exposing composable left-rail, logo, nav,
+nav-link, glyph, and version-badge parts. The layout now assembles the
+product-specific navigation directly.
 
 Evidence:
 
 - `apps/web/app/deals/[dealId]/deal-app-shell.tsx:15`
 - `apps/web/app/deals/[dealId]/layout.tsx:39`
 
-`DealAppShell` already does one important thing right: it accepts `children`,
-`header`, and `rail` as React nodes. The drift is in the left rail. The shell
-receives `dealId`, `navItems`, `glyph`, and `workspaceLabel`, then renders fixed
-brand initials, glyph selection, link markup, nav active state, and a version
-badge.
+`DealAppShell` already did one important thing right: it accepted `children`,
+`header`, and `rail` as React nodes. The drift was in the left rail. The shell
+received `dealId`, `navItems`, `glyph`, and `workspaceLabel`, then rendered
+fixed brand initials, glyph selection, link markup, nav active state, and a
+version badge.
 
 Rationale:
 
@@ -362,19 +588,50 @@ Suggested direction:
 </DealAppShell>
 ```
 
+### 8. `DealOperationalRail` Hardcodes Rail Cards
+
+Remediation status: addressed on 2026-05-19 by changing the rail to accept
+caller-owned children after the progress panel and by moving the snapshot and
+exception card composition into the route layout.
+
+Evidence:
+
+- `apps/web/app/deals/[dealId]/deal-operational-rail.tsx:19`
+- `apps/web/app/deals/[dealId]/deal-operational-rail.tsx:45`
+- `apps/web/app/deals/[dealId]/deal-operational-rail.tsx:50`
+- `apps/web/app/deals/[dealId]/deal-operational-rail.tsx:59`
+
+The operational rail maps progress-panel events into router pushes and now
+composes the progress panel from compound parts. It previously still hardcoded
+the remaining rail sections as local metric cards.
+
+Rationale:
+
+The rail is app-local, so this is less risky than exported kit APIs. Still, it
+could not compose rail cards from children.
+
+Suggested direction:
+
+Keep snapshot/exception card content in the route layout. Add more rail card
+parts only if a second route needs a different rail structure.
+
 ## P3 Findings
 
-### 7. `SheetContent` Injects A Fixed Close Button
+### 9. `SheetContent` Injected A Fixed Close Button
+
+Remediation status: addressed on 2026-05-19 by removing the `showCloseButton`
+branch from `SheetContent` and exporting `SheetCloseButton` as an explicit
+composable close control.
 
 Evidence:
 
 - `packages/ui/src/components/sheet.tsx:68`
-- `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx:118`
+- `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx:144`
 
-`SheetContent` exposes `showCloseButton` and injects a fixed close button,
-placement, icon, label, size, and variant. The commitment workspace disables it
-with `showCloseButton={false}` so it can compose its own sticky close control,
-which proves the default is not always structurally appropriate.
+`SheetContent` exposed `showCloseButton` and injected a fixed close button,
+placement, icon, label, size, and variant. The commitment workspace previously
+disabled it with `showCloseButton={false}` so it could compose its own sticky
+close control, which proved the default was not always structurally appropriate.
 
 Suggested direction:
 
@@ -394,33 +651,50 @@ Prefer explicit composition:
 If a convenience close button is useful, export it as `SheetCloseButton` instead
 of making it a boolean branch inside `SheetContent`.
 
-### 8. `ChartTooltipContent` Has Layout Flags
+### 10. Chart Default Content Helpers Have Layout Flags
+
+Remediation status: addressed on 2026-05-19 by extracting public tooltip and
+legend subparts (`ChartTooltipContentRoot`, `ChartTooltipLabel`,
+`ChartTooltipItems`, `ChartTooltipIndicator`, `ChartTooltipItem`,
+`ChartLegendContentRoot`, `ChartLegendItem`, `ChartLegendIndicator`, and
+`ChartLegendLabel`) and composing the default helpers from them. The flag-based
+helpers remain compatibility presets for common chart layouts.
 
 Evidence:
 
 - `packages/ui/src/components/chart.tsx:230`
+- `packages/ui/src/components/chart.tsx:367`
+- `packages/ui/src/components/chart.tsx:475`
 - `packages/ui/src/components/chart.stories.tsx:131`
+- `packages/ui/src/components/chart.stories.tsx:224`
 
-`ChartTooltipContent` accepts legitimate Recharts/data props, but also includes
-presentational structure flags such as `hideLabel`, `hideIndicator`,
-`indicator`, `labelClassName`, and `color`.
+`ChartTooltipContent` and `ChartLegendContent` accept legitimate Recharts/data
+props such as payload, key selection, config, and custom `content`. Those should
+not be treated as composition problems. The narrower issue is that the default
+content helpers own fixed item markup and expose layout toggles such as
+`hideLabel`, `hideIndicator`, `indicator`, and `hideIcon`.
 
-This is lower risk because `ChartTooltip` already accepts custom `content`.
-Still, the provided content component is moving toward flag-driven layout
-rather than exposing composable tooltip parts.
+This is lower risk because `ChartTooltip` and `ChartLegend` already accept
+custom `content`. Still, the provided default content components are moving
+toward flag-driven layout rather than exposed composable parts.
 
 Suggested direction:
 
-Expose tooltip subparts, or keep `ChartTooltipContent` as a default convenience
-while encouraging custom composed content for non-default layouts.
+Expose tooltip/legend subparts, or keep the default content components as
+convenience wrappers while encouraging custom composed content for non-default
+layouts.
 
-### 9. `DealTabs` Receives Tab Config Objects
+### 11. `DealTabs` Received Tab Config Objects
+
+Remediation status: addressed on 2026-05-19 by exposing `DealTabs.Root` and
+`DealTabs.Link` compound parts and updating the layout to compose tab links
+directly. The record-driven wrapper remains available for small default usage.
 
 Evidence:
 
 - `apps/web/app/deals/[dealId]/deal-tabs.tsx:13`
 
-`DealTabs` receives a list of `{ href, label, segment }` records and owns all
+`DealTabs` received a list of `{ href, label, segment }` records and owned all
 link rendering. This is currently small, but future badges, icons, disabled
 states, or secondary labels would push it toward prop expansion.
 
@@ -433,28 +707,42 @@ Suggested direction:
 </DealTabs>
 ```
 
-### 10. `DealPendingWorkspaceSection` Is Over-Configured For Its Size
+### 12. `DealEntityHeader` Was Partially Compositional But Fixed
+
+Remediation status: addressed on 2026-05-19 by exposing compound header parts
+and updating the layout to compose the brand mark, status, title block, metrics,
+tabs, and lifecycle summary directly.
 
 Evidence:
 
-- `apps/web/app/deals/[dealId]/deal-pending-workspace-section.tsx:1`
+- `apps/web/app/deals/[dealId]/deal-entity-header.tsx:7`
+- `apps/web/app/deals/[dealId]/deal-entity-header.tsx:20`
+- `apps/web/app/deals/[dealId]/deal-entity-header.tsx:27`
+- `apps/web/app/deals/[dealId]/deal-entity-header.tsx:58`
 
-The component receives `sectionLabel` and `description`, then authors a complete
-heading and fixed three-card layout. The route is the natural owner of this
-small page structure.
+`DealEntityHeader` did one important thing right: `tabs` was a `ReactNode`, so
+the tab strip is caller-owned. The rest is fixed app-local structure: internal
+view-model mapping, hard-coded `NS` brand block, status badge placement, and
+exactly three header metrics.
 
 Suggested direction:
 
-Inline it in the route or turn it into a small shell with children.
+Keep this low priority because it is app-local. If it grows, split it into
+composable header pieces or move the metric list to children.
 
-### 11. Story Layout Helpers Use Text Props
+### 13. Story Layout Helpers Used Text Props
+
+Remediation status: addressed on 2026-05-19 by adding composable
+`StorySectionHeader`, `StorySectionTitle`, and `StorySectionDescription` parts
+plus a `header` slot to both UI and kit story helpers. Existing `title` and
+`description` props remain as simple compatibility sugar.
 
 Evidence:
 
 - `packages/ui/src/stories/story-layout.tsx:14`
 - `packages/kit/src/stories/story-layout.tsx:13`
 
-`StorySection` helpers take `title` and `description` props and own heading
+`StorySection` helpers took `title` and `description` props and owned heading
 markup. This is story-only and low priority, but it is the same pattern in
 miniature.
 
@@ -481,17 +769,22 @@ The following were intentionally not flagged:
 
 ## Recommended Refactor Order
 
-1. Start with `DealDocumentsEvidence` because it is new and currently
-   untracked. Correcting its API now prevents a new configured widget from
-   becoming accepted kit surface.
-2. Refactor `DealCommitmentsTable` next. It has the highest consumer friction
-   and the strongest story/test evidence of prop explosion.
-3. Refactor `DealCommitmentInspector` alongside or immediately after the table
-   so the row-detail boundary can become compositional.
-4. Convert `DealOperationalOverview` to a compound shell and section parts.
-5. Make `DealProgressPanel` actions compositional.
-6. Opportunistically simplify `DealAppShell`, `SheetContent`, `DealTabs`, and
-   the story helpers when those files are next touched.
+1. `DealDocumentsEvidence` is remediated. Keep the pre-composed wrapper for
+   compatibility, but route consumers should prefer the compound parts.
+2. `DealCommitmentsTable` is remediated. Keep the pre-composed wrapper and
+   default toolbar/grid/footer presets for compatibility, but route consumers
+   should prefer the granular parts or `Model` render prop when they need custom
+   structure.
+3. `DealCommitmentInspector` is remediated. Keep the pre-composed wrapper for
+   compatibility, but route consumers should prefer the compound parts.
+4. `DealOperationalOverview` is remediated. Keep the pre-composed wrapper for
+   compatibility, but route consumers should prefer the compound parts.
+5. `DealProgressPanel` is remediated. Keep the pre-composed wrapper for
+   compatibility, but app consumers should prefer the compound parts when they
+   need to own section ordering.
+6. `DealAppShell`, `DealTabs`, and `DealEntityHeader` are remediated for the
+   current route layout; keep route consumers on the compound parts.
+7. No remaining composition findings are currently known from this audit pass.
 
 ## Composition Guardrail Checklist
 
@@ -512,8 +805,7 @@ Use this checklist before adding a prop to a React component:
 
 ## Proposed `AGENT.md` Addition
 
-No root `AGENT.md` or `AGENTS.md` exists in this repository at the time of this
-audit. If one is added, this short rule should be included:
+Root `AGENT.md` now exists and contains this rule as its first entry:
 
 ```md
 ## React Composition Guardrail

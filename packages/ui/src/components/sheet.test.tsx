@@ -7,6 +7,7 @@ import { Button } from './button'
 import {
   Sheet,
   SheetClose,
+  SheetCloseButton,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -26,6 +27,7 @@ const renderOpenSheet = (side?: 'top' | 'right' | 'bottom' | 'left') => {
           <SheetDescription>Panel supporting description.</SheetDescription>
         </SheetHeader>
         <p>Panel content</p>
+        <SheetCloseButton />
       </SheetContent>
     </Sheet>,
   )
@@ -76,7 +78,7 @@ describe('Sheet', () => {
         <SheetTrigger asChild>
           <Button>Open panel</Button>
         </SheetTrigger>
-        <SheetContent showCloseButton={false}>
+        <SheetContent>
           <SheetHeader>
             <SheetTitle>Closable panel</SheetTitle>
             <SheetDescription>Can be dismissed.</SheetDescription>
@@ -105,7 +107,7 @@ describe('Sheet', () => {
     })
   })
 
-  it('renders a default accessible close button', () => {
+  it('renders a composed accessible close button', () => {
     renderOpenSheet()
 
     expect(screen.getByRole('button', { name: 'Close' })).toHaveClass(
@@ -160,6 +162,7 @@ describe('Sheet', () => {
             <SheetDescription>Useful supporting copy.</SheetDescription>
           </SheetHeader>
           <p>Accessible content.</p>
+          <SheetCloseButton />
         </SheetContent>
       </Sheet>,
     )

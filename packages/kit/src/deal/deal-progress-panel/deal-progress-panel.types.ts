@@ -1,4 +1,5 @@
 import type { StatusTone } from '@repo/domain'
+import type { ComponentPropsWithoutRef, ReactNode } from 'react'
 
 export type DealProgressStage =
   | 'draft'
@@ -294,6 +295,58 @@ export type DealProgressPanelLabels = {
 }
 
 export type DealProgressActionHandler = (event: DealProgressActionEvent) => void
+
+export type DealProgressPanelRootProps = ComponentPropsWithoutRef<'section'> & {
+  readonly busy?: boolean | undefined
+  readonly state?: DealProgressPanelState | undefined
+}
+
+export type DealProgressPanelReadyContentProps = {
+  readonly labels: DealProgressPanelLabels
+  readonly locale?: string | undefined
+  readonly onAction?: DealProgressActionHandler | undefined
+  readonly state: DealProgressReadyState
+  readonly titleId: string
+}
+
+export type DealProgressPanelHeaderProps = {
+  readonly labels: DealProgressPanelLabels
+  readonly state: DealProgressReadyState
+  readonly titleId: string
+}
+
+export type DealProgressPanelCapitalProps = {
+  readonly capital: DealProgressReadyState['capital']
+  readonly labels: DealProgressPanelLabels
+  readonly locale?: string | undefined
+}
+
+export type DealProgressPanelDataQualityProps = {
+  readonly dataQuality: Exclude<DealProgressDataQuality, { readonly kind: 'fresh' }>
+}
+
+export type DealProgressPanelActionsProps = {
+  readonly onAction?: DealProgressActionHandler | undefined
+  readonly state: DealProgressReadyState
+}
+
+export type DealProgressPanelActionProps = {
+  readonly action: DealProgressAction
+  readonly describedById?: string | undefined
+  readonly onAction?: DealProgressActionHandler | undefined
+  readonly primary?: boolean | undefined
+}
+
+export type DealProgressPanelLoadingProps = {
+  readonly label: ReactNode
+  readonly titleId: string
+}
+
+export type DealProgressPanelErrorProps = {
+  readonly onAction?: DealProgressActionHandler | undefined
+  readonly state: DealProgressErrorState
+  readonly titleId: string
+}
 
 type DealProgressPanelPropsBase = {
   readonly labels: DealProgressPanelLabels

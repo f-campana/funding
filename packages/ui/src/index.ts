@@ -63,6 +63,8 @@ export { Separator, type SeparatorProps } from './components/separator'
 export {
   Sheet,
   SheetClose,
+  SheetCloseButton,
+  type SheetCloseButtonProps,
   type SheetCloseProps,
   SheetContent,
   type SheetContentProps,

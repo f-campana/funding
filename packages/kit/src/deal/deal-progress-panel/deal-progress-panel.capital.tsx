@@ -9,19 +9,12 @@ import {
 import { getSegmentClassName, metricToneClasses } from './deal-progress-panel.styles'
 import type {
   DealProgressMetric,
+  DealProgressPanelCapitalProps,
   DealProgressPanelLabels,
   DealProgressReadyState,
 } from './deal-progress-panel.types'
 
-export const CapitalProgress = ({
-  capital,
-  labels,
-  locale,
-}: {
-  readonly capital: DealProgressReadyState['capital']
-  readonly labels: DealProgressPanelLabels
-  readonly locale?: string | undefined
-}) => (
+export const CapitalProgress = ({ capital, labels, locale }: DealProgressPanelCapitalProps) => (
   <>
     <div className="grid gap-3" data-slot="deal-progress-capital">
       <div className="grid gap-1">

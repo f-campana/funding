@@ -1,15 +1,16 @@
-import { isDocumentEvidenceIssueStatus } from '../../status/document-status'
+import {
+  getDocumentEvidenceStatusTone,
+  isDocumentEvidenceIssueStatus,
+} from '../../status/document-status'
 import { statusToneClasses } from '../../status/status-tone'
 import type {
   DealDocumentsEvidenceGroup,
+  DealDocumentsEvidenceItem,
   DealDocumentsEvidenceState,
   DealDocumentsEvidenceTone,
 } from './deal-documents-evidence.types'
 
-export {
-  getDocumentEvidenceStatusTone,
-  isDocumentEvidenceIssueStatus,
-} from '../../status/document-status'
+export { getDocumentEvidenceStatusTone, isDocumentEvidenceIssueStatus }
 
 export const documentEvidenceToneBadgeClasses = statusToneClasses satisfies Record<
   DealDocumentsEvidenceTone,
@@ -57,4 +58,14 @@ export const getDocumentsEvidenceTone = (
   }
 
   return totals.total > 0 ? 'success' : 'neutral'
+}
+
+export const getDocumentEvidenceItemTone = (
+  document: Pick<DealDocumentsEvidenceItem, 'blocksClosing' | 'status'>,
+): DealDocumentsEvidenceTone => {
+  if (document.blocksClosing && isDocumentEvidenceIssueStatus(document.status.kind)) {
+    return 'danger'
+  }
+
+  return getDocumentEvidenceStatusTone(document.status.kind)
 }

@@ -242,7 +242,7 @@ export type ChartTooltipContentProps = ComponentProps<'div'> & {
   readonly labelClassName?: string | undefined
 }
 
-type ChartTooltipIndicatorProps = {
+export type ChartTooltipIndicatorProps = {
   readonly color?: string | undefined
   readonly hideIndicator: boolean
   readonly icon?: ComponentType | undefined
@@ -250,7 +250,42 @@ type ChartTooltipIndicatorProps = {
   readonly nestLabel: boolean
 }
 
-const ChartTooltipIndicator = ({
+export type ChartTooltipContentRootProps = ComponentProps<'div'>
+
+export const ChartTooltipContentRoot = ({
+  children,
+  className,
+  ...props
+}: ChartTooltipContentRootProps) => (
+  <div
+    className={cn(
+      'grid min-w-32 items-start gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground shadow-popover',
+      className,
+    )}
+    data-slot="chart-tooltip-content"
+    {...props}
+  >
+    {children}
+  </div>
+)
+
+export type ChartTooltipLabelProps = ComponentProps<'div'>
+
+export const ChartTooltipLabel = ({ children, className, ...props }: ChartTooltipLabelProps) => (
+  <div className={cn('font-medium', className)} data-slot="chart-tooltip-label" {...props}>
+    {children}
+  </div>
+)
+
+export type ChartTooltipItemsProps = ComponentProps<'div'>
+
+export const ChartTooltipItems = ({ children, className, ...props }: ChartTooltipItemsProps) => (
+  <div className={cn('grid gap-1.5', className)} {...props}>
+    {children}
+  </div>
+)
+
+export const ChartTooltipIndicator = ({
   color,
   hideIndicator,
   icon: Icon,
@@ -287,7 +322,7 @@ const ChartTooltipIndicator = ({
   )
 }
 
-type ChartTooltipItemProps = {
+export type ChartTooltipItemProps = {
   readonly config: ChartConfig
   readonly formatter?: TooltipFormatter | undefined
   readonly hideIndicator: boolean
@@ -302,7 +337,7 @@ type ChartTooltipItemProps = {
   readonly color?: string | undefined
 }
 
-const ChartTooltipItem = ({
+export const ChartTooltipItem = ({
   color,
   config,
   formatter,
@@ -393,23 +428,16 @@ export const ChartTooltipContent = ({
     !labelKey && typeof label === 'string' ? (config[label]?.label ?? label) : labelConfig?.label
   const tooltipLabel =
     hideLabel || !resolvedLabel ? null : (
-      <div className={cn('font-medium', labelClassName)} data-slot="chart-tooltip-label">
+      <ChartTooltipLabel className={labelClassName}>
         {labelFormatter ? labelFormatter(resolvedLabel, payload) : resolvedLabel}
-      </div>
+      </ChartTooltipLabel>
     )
   const nestLabel = payload.length === 1 && indicator !== 'dot'
 
   return (
-    <div
-      className={cn(
-        'grid min-w-32 items-start gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground shadow-popover',
-        className,
-      )}
-      data-slot="chart-tooltip-content"
-      {...props}
-    >
+    <ChartTooltipContentRoot className={className} {...props}>
       {!nestLabel ? tooltipLabel : null}
-      <div className="grid gap-1.5">
+      <ChartTooltipItems>
         {payload
           .filter((item) => item.type !== 'none')
           .map((item, index) => {
@@ -434,8 +462,8 @@ export const ChartTooltipContent = ({
               />
             )
           })}
-      </div>
-    </div>
+      </ChartTooltipItems>
+    </ChartTooltipContentRoot>
   )
 }
 
@@ -479,6 +507,62 @@ export type ChartLegendContentProps = ComponentProps<'div'> & {
   readonly verticalAlign?: DefaultLegendContentProps['verticalAlign'] | undefined
 }
 
+export type ChartLegendContentRootProps = ComponentProps<'div'> & {
+  readonly verticalAlign?: DefaultLegendContentProps['verticalAlign'] | undefined
+}
+
+export const ChartLegendContentRoot = ({
+  children,
+  className,
+  verticalAlign = 'bottom',
+  ...props
+}: ChartLegendContentRootProps) => (
+  <div
+    className={cn(
+      'flex items-center justify-center gap-4',
+      verticalAlign === 'top' ? 'pb-3' : 'pt-3',
+      className,
+    )}
+    data-slot="chart-legend-content"
+    {...props}
+  >
+    {children}
+  </div>
+)
+
+export type ChartLegendItemProps = ComponentProps<'div'>
+
+export const ChartLegendItem = ({ children, className, ...props }: ChartLegendItemProps) => (
+  <div
+    className={cn(
+      'flex items-center gap-1.5 [&>svg]:size-3 [&>svg]:text-muted-foreground',
+      className,
+    )}
+    data-slot="chart-legend-item"
+    {...props}
+  >
+    {children}
+  </div>
+)
+
+export type ChartLegendIndicatorProps = ComponentProps<'div'>
+
+export const ChartLegendIndicator = ({ className, ...props }: ChartLegendIndicatorProps) => (
+  <div
+    className={cn('size-2 shrink-0 rounded-[2px] bg-[var(--chart-indicator-color)]', className)}
+    data-slot="chart-legend-indicator"
+    {...props}
+  />
+)
+
+export type ChartLegendLabelProps = ComponentProps<'span'>
+
+export const ChartLegendLabel = ({ children, ...props }: ChartLegendLabelProps) => (
+  <span data-slot="chart-legend-label" {...props}>
+    {children}
+  </span>
+)
+
 export const ChartLegendContent = ({
   className,
   hideIcon = false,
@@ -494,15 +578,7 @@ export const ChartLegendContent = ({
   }
 
   return (
-    <div
-      className={cn(
-        'flex items-center justify-center gap-4',
-        verticalAlign === 'top' ? 'pb-3' : 'pt-3',
-        className,
-      )}
-      data-slot="chart-legend-content"
-      {...props}
-    >
+    <ChartLegendContentRoot className={className} verticalAlign={verticalAlign} {...props}>
       {payload
         .filter((item) => item.type !== 'none')
         .map((item) => {
@@ -515,28 +591,17 @@ export const ChartLegendContent = ({
             : {}
 
           return (
-            <div
-              className="flex items-center gap-1.5 [&>svg]:size-3 [&>svg]:text-muted-foreground"
-              data-slot="chart-legend-item"
-              key={String(item.dataKey ?? item.value ?? key)}
-            >
+            <ChartLegendItem key={String(item.dataKey ?? item.value ?? key)}>
               {Icon && !hideIcon ? (
                 <Icon />
               ) : (
-                !hideIcon &&
-                indicatorColor && (
-                  <div
-                    className="size-2 shrink-0 rounded-[2px] bg-[var(--chart-indicator-color)]"
-                    data-slot="chart-legend-indicator"
-                    style={indicatorStyle}
-                  />
-                )
+                !hideIcon && indicatorColor && <ChartLegendIndicator style={indicatorStyle} />
               )}
-              <span data-slot="chart-legend-label">{itemConfig?.label ?? item.value}</span>
-            </div>
+              <ChartLegendLabel>{itemConfig?.label ?? item.value}</ChartLegendLabel>
+            </ChartLegendItem>
           )
         })}
-    </div>
+    </ChartLegendContentRoot>
   )
 }
 

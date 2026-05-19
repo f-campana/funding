@@ -136,6 +136,31 @@ describe('DealProgressPanel', () => {
     expect(screen.getByRole('button', { name: 'Invite' })).toBeInTheDocument()
   })
 
+  it('supports composing the panel from compound parts', () => {
+    const titleId = 'composed-deal-progress-title'
+    const { container } = render(
+      <DealProgressPanel.Root aria-labelledby={titleId} state={defaultCollectingCommitmentsState}>
+        <DealProgressPanel.Header
+          labels={dealProgressPanelLabels}
+          state={defaultCollectingCommitmentsState}
+          titleId={titleId}
+        />
+        <DealProgressPanel.Capital
+          capital={defaultCollectingCommitmentsState.capital}
+          labels={dealProgressPanelLabels}
+        />
+        <DealProgressPanel.Actions onAction={vi.fn()} state={defaultCollectingCommitmentsState} />
+      </DealProgressPanel.Root>,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Deal progression' })).toHaveAttribute('id', titleId)
+    expect(container.querySelector('[data-slot="deal-progress-panel"]')).toHaveAttribute(
+      'data-visual-state',
+      'ready',
+    )
+    expect(screen.getByRole('button', { name: 'Close deal' })).toBeInTheDocument()
+  })
+
   it('renders loading as an inert busy skeleton state', () => {
     const { container } = renderPanel(loadingState)
 

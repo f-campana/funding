@@ -14,20 +14,54 @@ export const StoryStack = ({ children, className }: StoryStackProps) => (
 export type StorySectionProps = {
   children: ReactNode
   className?: string
+  header?: ReactNode
   description?: string
-  title: string
+  title?: string
 }
 
-export const StorySection = ({ children, className, description, title }: StorySectionProps) => (
+export const StorySection = ({
+  children,
+  className,
+  description,
+  header,
+  title,
+}: StorySectionProps) => (
   <section className={cn('flex flex-col gap-3', className)}>
-    <div className="flex flex-col gap-1">
-      <h2 className="text-sm font-medium text-foreground">{title}</h2>
-      {description ? (
-        <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
-      ) : null}
-    </div>
+    {header ?? (
+      <StorySectionHeader>
+        {title ? <StorySectionTitle>{title}</StorySectionTitle> : null}
+        {description ? <StorySectionDescription>{description}</StorySectionDescription> : null}
+      </StorySectionHeader>
+    )}
     {children}
   </section>
+)
+
+export type StorySectionHeaderProps = {
+  children: ReactNode
+  className?: string
+}
+
+export const StorySectionHeader = ({ children, className }: StorySectionHeaderProps) => (
+  <div className={cn('flex flex-col gap-1', className)}>{children}</div>
+)
+
+export type StorySectionTitleProps = {
+  children: ReactNode
+  className?: string
+}
+
+export const StorySectionTitle = ({ children, className }: StorySectionTitleProps) => (
+  <h2 className={cn('text-sm font-medium text-foreground', className)}>{children}</h2>
+)
+
+export type StorySectionDescriptionProps = {
+  children: ReactNode
+  className?: string
+}
+
+export const StorySectionDescription = ({ children, className }: StorySectionDescriptionProps) => (
+  <p className={cn('max-w-2xl text-sm text-muted-foreground', className)}>{children}</p>
 )
 
 export type StoryGridProps = {

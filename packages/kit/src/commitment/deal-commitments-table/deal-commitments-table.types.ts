@@ -1,3 +1,5 @@
+import type { ComponentPropsWithoutRef, ReactNode } from 'react'
+
 import type { CommitmentReadinessRecord } from '../commitment-readiness.types'
 
 export type {
@@ -55,6 +57,26 @@ export type CommitmentTableRetryAction = {
 }
 
 export type CommitmentTableExportHandler = (rowIds: readonly string[]) => void
+
+export type DealCommitmentsTableRowActionRenderProps = {
+  readonly active: boolean
+  readonly disabled: boolean
+  readonly drawerOpen: boolean
+  readonly label: string
+  readonly onOpen: () => void
+  readonly row: CommitmentInvestorRow
+}
+
+export type DealCommitmentsTableDetailRenderProps = {
+  readonly onOpenChange: (open: boolean) => void
+  readonly open: boolean
+  readonly row: CommitmentInvestorRow | undefined
+  readonly rowId: string | undefined
+}
+
+export type DealCommitmentsTableDetailProps = {
+  readonly children: (props: DealCommitmentsTableDetailRenderProps) => ReactNode
+}
 
 export type DealCommitmentsTableBaseToolbarLabels = {
   readonly searchPlaceholder: string
@@ -159,6 +181,9 @@ export type DealCommitmentsTableBaseProps = {
   readonly onRowStateChange?: (rowState: CommitmentTableRowState) => void
   readonly onPageChange?: (page: number) => void
   readonly onPageSizeChange?: (pageSize: number) => void
+  readonly renderRowAction?:
+    | ((props: DealCommitmentsTableRowActionRenderProps) => ReactNode)
+    | undefined
   readonly className?: string
 }
 
@@ -177,6 +202,29 @@ export type DealCommitmentsTableExportProps = DealCommitmentsTableBaseProps & {
 export type DealCommitmentsTableProps =
   | DealCommitmentsTableNoExportProps
   | DealCommitmentsTableExportProps
+
+export type DealCommitmentsTableRootProps = ComponentPropsWithoutRef<'section'> & {
+  readonly busy?: boolean | undefined
+  readonly state?: DealCommitmentsTableLifecycleState | undefined
+}
+
+export type DealCommitmentsTableNoExportContentProps = Omit<
+  DealCommitmentsTableNoExportProps,
+  'className'
+> & {
+  readonly children?: ReactNode | undefined
+}
+
+export type DealCommitmentsTableExportContentProps = Omit<
+  DealCommitmentsTableExportProps,
+  'className'
+> & {
+  readonly children?: ReactNode | undefined
+}
+
+export type DealCommitmentsTableContentProps =
+  | DealCommitmentsTableNoExportContentProps
+  | DealCommitmentsTableExportContentProps
 
 export type DealCommitmentsTableLabels = {
   readonly columns: {
@@ -269,6 +317,22 @@ export type CommitmentTableModel = {
   readonly totalRows: number
   readonly visibleExportRowIds: readonly string[]
   readonly visibleRows: readonly CommitmentInvestorRow[]
+}
+
+export type DealCommitmentsTableModelRenderProps = {
+  readonly controls: ReadyControls
+  readonly disabled: boolean
+  readonly labels: DealCommitmentsTableLabels
+  readonly model: CommitmentTableModel | undefined
+  readonly onRowOpen: (row: CommitmentInvestorRow) => void
+  readonly onRowSelect: (row: CommitmentInvestorRow) => void
+  readonly onSelectVisible: () => void
+  readonly renderRowAction: DealCommitmentsTableContentProps['renderRowAction']
+  readonly state: DealCommitmentsTableContentProps['state']
+}
+
+export type DealCommitmentsTableModelProps = {
+  readonly children: (props: DealCommitmentsTableModelRenderProps) => ReactNode
 }
 
 export type CommitmentRowVisualState =

@@ -1,14 +1,11 @@
 import { Button, Skeleton } from '@repo/ui'
 
-import type { DealProgressActionHandler, DealProgressErrorState } from './deal-progress-panel.types'
+import type {
+  DealProgressPanelErrorProps,
+  DealProgressPanelLoadingProps,
+} from './deal-progress-panel.types'
 
-export const LoadingContent = ({
-  label,
-  titleId,
-}: {
-  readonly label: string
-  readonly titleId: string
-}) => (
+export const LoadingContent = ({ label, titleId }: DealProgressPanelLoadingProps) => (
   <>
     <div className="flex items-start justify-between gap-3" data-slot="deal-progress-header">
       <h2 className="text-sm font-semibold text-command-foreground" id={titleId}>
@@ -28,15 +25,7 @@ export const LoadingContent = ({
   </>
 )
 
-export const ErrorContent = ({
-  onAction,
-  state,
-  titleId,
-}: {
-  readonly onAction: DealProgressActionHandler | undefined
-  readonly state: DealProgressErrorState
-  readonly titleId: string
-}) => (
+export const ErrorContent = ({ onAction, state, titleId }: DealProgressPanelErrorProps) => (
   <>
     <div className="grid gap-2" data-slot="deal-progress-header">
       <h2 className="text-sm font-semibold text-command-foreground" id={titleId}>
