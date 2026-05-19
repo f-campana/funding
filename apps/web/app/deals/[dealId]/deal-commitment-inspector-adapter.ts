@@ -13,6 +13,10 @@ import type {
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
 
+import {
+  isFinanceAcceptedInvestor,
+  isMatchedPendingFinanceAcceptance,
+} from './deal-operational-capital-helpers'
 import { formatDateTimeLabel, formatMoney, pluralize } from './deal-operational-formatting'
 import { blockerSurfaceLabel, ownerLabel, severityLabel } from './deal-operational-labels'
 
@@ -251,7 +255,7 @@ const mapInvestorStatus = (
 
   if (investor.readinessState === 'ready') {
     return {
-      label: 'Ready for closing',
+      label: 'Ready for closing review',
       tone: 'success',
     }
   }
@@ -388,17 +392,23 @@ const mapWireReadiness = (investor: InvestorOperationDTO): DealCommitmentReadine
 const mapReconciliationReadiness = (
   investor: InvestorOperationDTO,
 ): DealCommitmentReadinessItem<'reconciliation'> => {
-  if (
-    investor.commitmentStatus === 'reconciled' ||
-    investor.wireStatus === 'matched' ||
-    investor.wireStatus === 'reconciled'
-  ) {
+  if (isFinanceAcceptedInvestor(investor)) {
     return {
       detail: `Commitment: ${investor.commitmentStatusLabel} | Wire: ${investor.wireStatusLabel}`,
       key: 'reconciliation',
       label: 'Reconciliation',
       tone: 'success',
-      value: 'Reconciled',
+      value: 'Finance accepted',
+    }
+  }
+
+  if (isMatchedPendingFinanceAcceptance(investor)) {
+    return {
+      detail: `Commitment: ${investor.commitmentStatusLabel} | Wire: ${investor.wireStatusLabel}`,
+      key: 'reconciliation',
+      label: 'Reconciliation',
+      tone: 'info',
+      value: 'Matched, finance pending',
     }
   }
 
@@ -596,7 +606,7 @@ const getNextAction = (
   }
 
   if (readiness.reconciliation.tone !== 'success') {
-    return 'Review reconciliation status before closing review.'
+    return 'Review finance reconciliation before closing review.'
   }
 
   return undefined

@@ -48,7 +48,7 @@ const commitmentsTableLabels = {
     completedKycKyb: 'Completed KYC/KYB',
     needsAttention: 'Needs attention',
     pendingKycKyb: 'Pending KYC/KYB',
-    readyForClosing: 'Ready for closing',
+    readyForClosing: 'Ready for closing review',
     signaturePending: 'Signature pending',
     wirePending: 'Wire pending',
   },

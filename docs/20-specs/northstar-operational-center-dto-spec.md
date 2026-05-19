@@ -544,6 +544,14 @@ Rules:
 - Reconciliation numbers come from `@repo/domain`.
 - Economics fields can be fixture-backed in the first slice.
 - The DTO must not conflate gross committed and net investable amount.
+- Northstar V1 capital uses one invariant:
+  `grossCommitted = netInvestableAmount + entryFees + spvFee`.
+- `grossCommitted` is the investor commitment/cash basis for the closing
+  cohort. `netInvestableAmount` is the amount available for the target
+  investment after entry fees and SPV/setup fees.
+- `receivedAmount` and `matchedAmount` are payment-stage values. `matchedAmount`
+  is not finance-accepted, reconciled, or deployable capital unless an explicit
+  finance-accepted/reconciled field or investor state proves that status.
 
 ### Blockers
 

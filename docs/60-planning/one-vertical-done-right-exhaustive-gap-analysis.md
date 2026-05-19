@@ -306,24 +306,23 @@ The vertical is done right when it satisfies these conditions.
 
 P0 means the gap directly undermines "one vertical done right" as a reviewer-ready frontend application.
 
-### 7.1 Capital Economics Are Inconsistent
+### 7.1 Capital Economics Were Inconsistent
 
-Current issue:
+Status:
 
-The fixture has committed capital, entry fees, SPV fee, and net investable amount values that do not clearly reconcile. The UI displays a capital composition based on `net + entry + spv`, which can exceed gross committed capital depending on the intended fee model.
+Resolved for Northstar V1 in the capital semantic hardening pass. The fixture
+now uses `grossCommitted = netInvestable + entryFees + spvFee`, and the
+progress panel labels the composition as a gross committed breakdown.
 
 Why it matters:
 
 Financial software credibility depends on exact, explainable amounts. A reviewer may not audit the math deeply, but if they do, this becomes a trust failure.
 
-Needed work:
+Future work:
 
-- Decide the invariant:
-  - either `grossCommitted = netInvestable + entryFees + spvFee`
-  - or entry fees are outside the SPV investment base and must be labeled separately
-- Add tests around the chosen invariant.
 - Replace `carryPercent: number` with `carryBps` or explicitly explain why percent is display-only.
-- Make capital composition basis points sum to 10,000 bps when rendered as a composition.
+- Promote the economics calculation out of the fixture when a repository-backed
+  data source exists.
 
 Acceptance criteria:
 
@@ -331,11 +330,14 @@ Acceptance criteria:
 - Progress rail and overview use the same economic model.
 - No route presents more capital composition than the gross amount unless explicitly labelled.
 
-### 7.2 Matched Is Presented As Reconciled
+### 7.2 Matched Was Presented As Reconciled
 
-Current issue:
+Status:
 
-The route adapters treat `wireStatus === 'matched'` as "Reconciled" in commitment table/inspector mapping.
+Resolved for Northstar V1 in the capital semantic hardening pass. Matched-only
+investor wires now render as "Matched, finance pending" in the commitment table
+and inspector, while explicit reconciled investor states render as
+"Finance accepted".
 
 Why it matters:
 
@@ -347,12 +349,11 @@ received -> matched -> reconciled
 
 Matched means a wire has been associated with a commitment. Reconciled means finance/operations accepted the match and resolved discrepancies.
 
-Needed work:
+Future work:
 
 - Add explicit `reconciledAmount` or `reconciliationStatus`.
-- Stop mapping `matched` to "Reconciled".
-- Use labels such as "Matched, review pending" or "Matched" until reconciled.
-- Add tests for a matched-but-not-reconciled investor.
+- Add aggregate finance-accepted/deployable capital only when the source model
+  can prove it.
 
 Acceptance criteria:
 

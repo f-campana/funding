@@ -178,12 +178,12 @@ export const northstarOperationalFixture = {
   capital: {
     carryPercent: 10,
     committedAmountCents: cents(485_000_000),
-    entryFeesCents: cents(100_000_000),
+    entryFeesCents: cents(10_000_000),
     matchedAmountCents: cents(365_000_000),
     netInvestableAmountCents: cents(470_000_000),
     receivedAmountCents: cents(395_000_000),
     signedAmountCents: cents(440_000_000),
-    spvFeeCents: cents(15_000_000),
+    spvFeeCents: cents(5_000_000),
     targetAmountCents: cents(500_000_000),
   },
   deal: {

@@ -29,6 +29,11 @@ upload, reminder, approval, or persistence behavior.
   demo/internal access through `publicProcedure`. It is not
   production-private-data safe until real auth, protected procedures, and
   output validation exist.
+- Northstar capital follows the invariant
+  `gross committed = net investable amount + entry fees + SPV fees`.
+- Matched funds are a payment-matching stage. They are not presented as
+  finance-accepted, reconciled, or deployable capital unless the source model
+  explicitly proves finance acceptance.
 
 ## Implementation Notes
 

@@ -31,6 +31,12 @@ The repository has:
 - DTO-backed overview, commitments, and documents routes under
   `/deals/northstar-energy`
 
+Northstar capital semantics are explicit for the current operator vertical:
+gross committed equals net investable amount plus entry fees plus SPV fees.
+Matched funds remain a payment-matching stage and must not be presented as
+finance-accepted, reconciled, or deployable capital unless an explicit modeled
+state proves that status.
+
 Deleted kit surfaces from earlier passes are historical and are not current
 public API.
 

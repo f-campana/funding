@@ -58,6 +58,19 @@ describe('getDealOperationalCenter', () => {
       amountMinor: 470_000_000,
       currency: 'EUR',
     })
+    expect(result.value.capital.economics.entryFees).toEqual({
+      amountMinor: 10_000_000,
+      currency: 'EUR',
+    })
+    expect(result.value.capital.economics.spvFee).toEqual({
+      amountMinor: 5_000_000,
+      currency: 'EUR',
+    })
+    expect(
+      result.value.capital.economics.netInvestableAmount.amountMinor +
+        result.value.capital.economics.entryFees.amountMinor +
+        result.value.capital.economics.spvFee.amountMinor,
+    ).toBe(result.value.capital.economics.grossCommitted.amountMinor)
     expect(result.value.capital.economics.netInvestableAmount.amountMinor).toBeLessThan(
       result.value.capital.economics.grossCommitted.amountMinor,
     )
@@ -222,7 +235,7 @@ describe('getDealOperationalCenter', () => {
       entity: {
         kind: 'individual',
       },
-      readinessState: 'ready',
+      readinessState: 'attention',
       wireStatus: 'matched',
     })
   })

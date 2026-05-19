@@ -5,6 +5,10 @@ import type {
 } from '@repo/kit/deal-commitments-table'
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
+import {
+  isFinanceAcceptedInvestor,
+  isMatchedPendingFinanceAcceptance,
+} from './deal-operational-capital-helpers'
 import { formatDateTimeLabel, formatMoney, pluralize } from './deal-operational-formatting'
 
 type InvestorOperationDTO = DealOperationalCenterDTO['investors'][number]
@@ -254,17 +258,23 @@ const mapWireReadiness = (investor: InvestorOperationDTO): CommitmentReadinessSt
 const mapReconciliationReadiness = (
   investor: InvestorOperationDTO,
 ): CommitmentReadinessState<'reconciliation'> => {
-  if (
-    investor.commitmentStatus === 'reconciled' ||
-    investor.wireStatus === 'matched' ||
-    investor.wireStatus === 'reconciled'
-  ) {
+  if (isFinanceAcceptedInvestor(investor)) {
     return {
-      detail: investor.commitmentStatusLabel,
+      detail: `Commitment: ${investor.commitmentStatusLabel} | Wire: ${investor.wireStatusLabel}`,
       key: 'reconciliation',
       label: 'Reconciliation',
-      value: 'Reconciled',
+      value: 'Finance accepted',
       variant: 'reconciled',
+    }
+  }
+
+  if (isMatchedPendingFinanceAcceptance(investor)) {
+    return {
+      detail: `Commitment: ${investor.commitmentStatusLabel} | Wire: ${investor.wireStatusLabel}`,
+      key: 'reconciliation',
+      label: 'Reconciliation',
+      value: 'Matched, finance pending',
+      variant: 'reconciling',
     }
   }
 
@@ -318,7 +328,7 @@ const mapReconciliationReadiness = (
 const mapInvestorStatus = (investor: InvestorOperationDTO): CommitmentInvestorRow['status'] => {
   if (investor.readinessState === 'ready') {
     return {
-      label: 'Ready for closing',
+      label: 'Ready for closing review',
       sortValue: 3,
       tone: 'complete',
     }

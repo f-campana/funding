@@ -53,8 +53,11 @@ async function expectCommitmentsTable(page: Page) {
   await expect(table.getByText('Overall committed €4,850,000')).toBeVisible()
   await expect(table).toContainText('Verified')
   await expect(table).toContainText('Signed')
-  await expect(table).toContainText('Reconciled')
-  await expect(table).toContainText('Ready for closing')
+  await expect(commitmentRow(page, 'Alba Family Office')).toContainText('Reconciled')
+  await expect(commitmentRow(page, 'Julien Moreau')).toContainText('Matched')
+  await expect(commitmentRow(page, 'Julien Moreau')).toContainText('In progress')
+  await expect(commitmentRow(page, 'Julien Moreau')).not.toContainText('Reconciled')
+  await expect(table).toContainText('Ready for closing review')
   await expect(table).toContainText('Needs attention')
 }
 
@@ -241,8 +244,10 @@ async function expectOperationalOverview(page: Page) {
   await expect(capital.getByRole('heading', { name: 'Capital reconciliation' })).toBeVisible()
   await expect(capital.getByText('€300,000 unmatched received')).toBeVisible()
   await expect(capital.getByText('€3,950,000 received')).toBeVisible()
-  await expect(capital.getByText('€3,650,000 matched')).toBeVisible()
-  await expect(capital.getByText('92% of received capital matched')).toBeVisible()
+  await expect(capital.getByText('€3,650,000 matched funds')).toBeVisible()
+  await expect(
+    capital.getByText('92% of received capital matched; finance acceptance pending'),
+  ).toBeVisible()
   await expect(capital.getByText('Exception evidence')).toBeVisible()
   await expect(capital.getByText('Unreceived signed')).toBeVisible()
   await expect(capital.getByText('€450,000 signed not received')).toBeVisible()

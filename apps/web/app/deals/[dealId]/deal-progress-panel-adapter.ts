@@ -80,8 +80,8 @@ export const mapDealProgressPanelProps = (
   onAction: DealProgressActionHandler,
 ): DealProgressPanelProps => ({
   labels: {
-    capitalBreakdownLabel: 'Capital breakdown',
-    capitalCompositionLabel: 'Capital composition',
+    capitalBreakdownLabel: 'Gross committed breakdown',
+    capitalCompositionLabel: 'Gross committed composition',
     progressCappedLabel: 'capped',
     progressAriaLabel: 'Deal capital progress',
     title: 'Deal progression',
@@ -123,7 +123,7 @@ const mapDealProgressCapital = (
       amountLabel: formatMoney(data.capital.economics.netInvestableAmount),
       basisPoints: compositionBasisPoints(data.capital.economics.netInvestableAmount, data.capital),
       kind: 'investable',
-      label: 'Investable',
+      label: 'Net investable after fees',
       tone: 'success',
     },
     {
@@ -155,8 +155,8 @@ const mapDealProgressCapital = (
       description:
         data.capital.matching.kind === 'unmatched'
           ? 'Finance still needs to match received wires.'
-          : undefined,
-      label: 'Matched',
+          : 'Finance acceptance is not modeled for matched funds.',
+      label: 'Matched funds',
       value: formatMoney(data.capital.matchedAmount),
       tone: data.capital.matching.kind === 'unmatched' ? 'danger' : 'default',
     },
@@ -168,7 +168,7 @@ const mapDealProgressCapital = (
     basisPoints: basisPoints(data.capital.committedAmount, data.capital.targetAmount),
     capped: data.capital.targetPosition.kind === 'over_target',
     kind: 'knownTarget',
-    label: 'Committed capital / target',
+    label: 'Gross committed / target',
   },
 })
 

@@ -171,7 +171,7 @@ const SIGNATURE_STATUS_READINESS = {
 const WIRE_STATUS_READINESS = {
   failed: 'blocked',
   instructions_sent: 'attention',
-  matched: 'ready',
+  matched: 'attention',
   not_requested: 'attention',
   partially_matched: 'attention',
   pending: 'attention',

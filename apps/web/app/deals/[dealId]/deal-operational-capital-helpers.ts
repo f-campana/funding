@@ -10,6 +10,8 @@ import type {
 
 import { formatMoney } from './deal-operational-formatting'
 
+type InvestorOperationDTO = DealOperationalCenterDTO['investors'][number]
+
 export const getCapitalProgressLabel = (capital: CapitalReconciliationDTO): string => {
   if (capital.targetPosition.kind === 'over_target') {
     return `${formatMoney(capital.targetPosition.overTarget)} over target`
@@ -79,3 +81,10 @@ export const compositionBasisPoints = (
 
   return Math.max(0, Math.round((part.amountMinor / total) * 10_000))
 }
+
+export const isFinanceAcceptedInvestor = (investor: InvestorOperationDTO): boolean =>
+  investor.commitmentStatus === 'reconciled' || investor.wireStatus === 'reconciled'
+
+export const isMatchedPendingFinanceAcceptance = (investor: InvestorOperationDTO): boolean =>
+  !isFinanceAcceptedInvestor(investor) &&
+  (investor.commitmentStatus === 'wire_matched' || investor.wireStatus === 'matched')

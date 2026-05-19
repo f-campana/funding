@@ -13,7 +13,7 @@ export const getDealOperationalRailViewModel = (data: DealOperationalCenterDTO) 
 
   return {
     blockedInvestorCountLabel: String(getBlockedInvestorCount(data)),
-    capitalCalloutLabel: 'Net investable amount',
+    capitalCalloutLabel: 'Net investable after fees',
     capitalCalloutValueLabel: formatMoney(data.capital.economics.netInvestableAmount),
     criticalBlockerCountLabel: String(blockerCounts.critical),
     documentIssueCountLabel: String(getRequiredDocumentIssueCount(data)),

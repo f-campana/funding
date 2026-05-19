@@ -19,7 +19,7 @@ const OPERATIONAL_READINESS_LABELS = {
   attention: 'Attention needed',
   blocked: 'Blocked from close',
   not_started: 'Readiness not started',
-  ready: 'Ready to close',
+  ready: 'Ready for closing review',
 } as const satisfies Record<DealOperationalReadinessState, string>
 
 const READINESS_NEXT_ACTION_LABELS = {

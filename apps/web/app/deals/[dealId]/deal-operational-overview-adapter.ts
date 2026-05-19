@@ -86,8 +86,8 @@ const mapDealOperationalOverviewState = (
       headlineLabel:
         unmatchedReceived.amountMinor > 0
           ? `${formatMoney(unmatchedReceived)} unmatched received`
-          : 'Received capital matched',
-      matchedLabel: `${formatMoney(data.capital.matchedAmount)} matched`,
+          : 'Matched funds, finance reconciliation pending',
+      matchedLabel: `${formatMoney(data.capital.matchedAmount)} matched funds`,
       metrics: [
         {
           label: 'Signed',
@@ -102,12 +102,12 @@ const mapDealOperationalOverviewState = (
           tone: amountTone(data.capital.unreceivedSigned, 'attention', 'success'),
         },
         {
-          label: 'Matched',
+          label: 'Matched funds',
           value: formatMoney(data.capital.matchedAmount),
           ...(matching.kind === 'unmatched'
             ? { description: 'Finance still needs to match received wires.' }
-            : {}),
-          tone: matching.kind === 'unmatched' ? 'danger' : 'success',
+            : { description: 'Finance acceptance is not modeled for matched funds.' }),
+          tone: matching.kind === 'unmatched' ? 'danger' : 'default',
         },
         {
           label: 'Unmatched received',
@@ -121,7 +121,7 @@ const mapDealOperationalOverviewState = (
         },
       ],
       progress: {
-        label: `${reconciliationProgress}% of received capital matched`,
+        label: `${reconciliationProgress}% of received capital matched; finance acceptance pending`,
         value: reconciliationProgress,
       },
       supportingLabel:

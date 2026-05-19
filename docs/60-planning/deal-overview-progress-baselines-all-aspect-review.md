@@ -70,10 +70,10 @@ However, they should not be frozen as final baselines yet.
 The main reason is not code style. The main reason is product and domain
 semantics:
 
-- the overview can show matched capital as success before reconciliation is
-  represented
+- pre-hardening overview copy could show matched capital as success before
+  finance acceptance was represented
 - the progress panel action model is semantically overloaded
-- the capital composition can present financially impossible economics
+- pre-hardening capital composition could present financially impossible economics
 - lifecycle tone is driven by readiness tone
 - blocker ordering can deprioritize critical close blockers
 - the app declares `fr-FR` while the baselines render English copy and
@@ -218,11 +218,12 @@ Route hints should guide navigation and filtering, not override severity.
 
 ### 6.2 Matched Capital Is Treated Too Close To Reconciled Capital
 
-Finding:
+Finding status:
 
-The current model and UI emphasize matched capital, but do not represent a
-separate finance-accepted reconciled amount. The overview success copy can say
-"Received capital matched" when the domain still lacks reconciliation approval.
+Resolved for Northstar V1 in the capital semantic hardening pass. The model
+still does not represent an aggregate finance-accepted reconciled amount, so
+the app now labels matched aggregate capital as matched funds with finance
+acceptance pending instead of terminal reconciliation success.
 
 Evidence:
 
@@ -252,11 +253,11 @@ Do not use "matched" as the terminal success state for close readiness.
 
 ### 6.3 Capital Composition Can Display Impossible Economics
 
-Finding:
+Finding status:
 
-The Northstar fixture and progress panel composition currently combine net
-investable amount, entry fees, and SPV fees in a way that can exceed committed
-capital depending on the intended fee model.
+Resolved for Northstar V1 in the capital semantic hardening pass. The fixture
+now uses one invariant: gross committed equals net investable amount plus entry
+fees plus SPV fees.
 
 Evidence:
 
