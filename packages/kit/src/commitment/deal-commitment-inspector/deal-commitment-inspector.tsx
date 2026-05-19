@@ -10,6 +10,7 @@ import {
   FileText,
   Landmark,
   ListChecks,
+  type LucideIcon,
   Route,
   Scale,
   ShieldCheck,
@@ -22,7 +23,9 @@ import { match } from 'ts-pattern'
 import {
   blockerSeverityToneClasses,
   commitmentInspectorReadinessKeys,
+  getCommitmentInspectorReadinessTone,
   getCommitmentInspectorTone,
+  getDocumentEvidenceStatusTone,
   inspectorToneBadgeClasses,
   inspectorToneDotClasses,
 } from './deal-commitment-inspector.model'
@@ -47,6 +50,8 @@ export type {
   DealCommitmentBlocker,
   DealCommitmentBlockerSeverity,
   DealCommitmentEvidenceItem,
+  DealCommitmentEvidenceStatus,
+  DealCommitmentEvidenceStatusKind,
   DealCommitmentInspectorActionEvent,
   DealCommitmentInspectorActionHandler,
   DealCommitmentInspectorErrorState,
@@ -205,39 +210,43 @@ const ReadinessSection = ({
   )
 }
 
-const ReadinessRow = ({ item }: { readonly item: DealCommitmentReadinessItem }) => (
-  <div
-    className="grid gap-2 rounded-md border border-border/70 bg-background/60 p-3"
-    data-readiness-key={item.key}
-    data-slot="deal-commitment-readiness-item"
-    data-tone={item.tone}
-  >
-    <dt className="flex min-w-0 items-center gap-2 text-sm font-medium text-card-foreground">
-      <ReadinessIcon readinessKey={item.key} />
-      <span className="min-w-0 break-words">{item.label}</span>
-    </dt>
-    <dd className="min-w-0">
-      <ToneBadge tone={item.tone}>{item.value}</ToneBadge>
-    </dd>
-    {item.detail ? (
-      <dd className="text-sm leading-6 text-muted-foreground">{item.detail}</dd>
-    ) : null}
-    {item.metadata && item.metadata.length > 0 ? (
-      <dd>
-        <ul className="flex flex-wrap gap-1.5">
-          {item.metadata.map((metadata) => (
-            <li
-              className="rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-              key={metadata}
-            >
-              {metadata}
-            </li>
-          ))}
-        </ul>
+const ReadinessRow = ({ item }: { readonly item: DealCommitmentReadinessItem }) => {
+  const tone = getCommitmentInspectorReadinessTone(item)
+
+  return (
+    <div
+      className="grid gap-2 rounded-md border border-border/70 bg-background/60 p-3"
+      data-readiness-key={item.key}
+      data-slot="deal-commitment-readiness-item"
+      data-tone={tone}
+    >
+      <dt className="flex min-w-0 items-center gap-2 text-sm font-medium text-card-foreground">
+        <ReadinessIcon readinessKey={item.key} />
+        <span className="min-w-0 break-words">{item.label}</span>
+      </dt>
+      <dd className="min-w-0">
+        <ToneBadge tone={tone}>{item.value}</ToneBadge>
       </dd>
-    ) : null}
-  </div>
-)
+      {item.detail ? (
+        <dd className="text-sm leading-6 text-muted-foreground">{item.detail}</dd>
+      ) : null}
+      {item.metadata && item.metadata.length > 0 ? (
+        <dd>
+          <ul className="flex flex-wrap gap-1.5">
+            {item.metadata.map((metadata) => (
+              <li
+                className="rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                key={metadata}
+              >
+                {metadata}
+              </li>
+            ))}
+          </ul>
+        </dd>
+      ) : null}
+    </div>
+  )
+}
 
 const BlockersSection = ({
   blockers,
@@ -380,67 +389,74 @@ const DocumentItem = ({
 }: {
   readonly document: DealCommitmentEvidenceItem
   readonly labels: DealCommitmentInspectorLabels
-}) => (
-  <li>
-    <article
-      className="grid gap-3 rounded-md border border-border/70 bg-background/60 p-3"
-      data-document-id={document.id}
-      data-slot="deal-commitment-document"
-      data-tone={document.statusTone}
-    >
-      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <h4 className="break-words text-sm font-semibold text-card-foreground">{document.label}</h4>
-        <ToneBadge tone={document.statusTone}>{document.statusLabel}</ToneBadge>
-      </div>
-      <dl className="grid gap-2 text-xs sm:grid-cols-2">
-        <Fact
-          icon={<UserRound aria-hidden="true" className="size-3.5" />}
-          label={labels.documentOwnerLabel}
-          value={document.owner}
-        />
-        <Fact
-          icon={<Scale aria-hidden="true" className="size-3.5" />}
-          label={labels.documentRequirementLabel}
-          value={document.requirementLabel}
-        />
-        {document.blockingLabel ? (
+}) => {
+  const statusTone = getDocumentEvidenceStatusTone(document.status.kind)
+
+  return (
+    <li>
+      <article
+        className="grid gap-3 rounded-md border border-border/70 bg-background/60 p-3"
+        data-document-id={document.id}
+        data-slot="deal-commitment-document"
+        data-status={document.status.kind}
+        data-tone={statusTone}
+      >
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <h4 className="break-words text-sm font-semibold text-card-foreground">
+            {document.label}
+          </h4>
+          <ToneBadge tone={statusTone}>{document.status.label}</ToneBadge>
+        </div>
+        <dl className="grid gap-2 text-xs sm:grid-cols-2">
           <Fact
-            icon={<CircleAlert aria-hidden="true" className="size-3.5" />}
-            label={labels.documentBlockingLabel}
-            value={document.blockingLabel}
+            icon={<UserRound aria-hidden="true" className="size-3.5" />}
+            label={labels.documentOwnerLabel}
+            value={document.owner}
           />
-        ) : null}
-        {document.dueLabel ? (
           <Fact
-            icon={<Clock3 aria-hidden="true" className="size-3.5" />}
-            label={labels.documentDueLabel}
-            value={document.dueLabel}
+            icon={<Scale aria-hidden="true" className="size-3.5" />}
+            label={labels.documentRequirementLabel}
+            value={document.requirementLabel}
           />
-        ) : null}
-        {document.lastActivityLabel ? (
-          <Fact
-            icon={<Activity aria-hidden="true" className="size-3.5" />}
-            label={labels.documentLastActivityLabel}
-            value={
-              document.lastActivityDateTime ? (
-                <time dateTime={document.lastActivityDateTime}>{document.lastActivityLabel}</time>
-              ) : (
-                document.lastActivityLabel
-              )
-            }
-          />
-        ) : null}
-        {document.visibilityLabel ? (
-          <Fact
-            icon={<Landmark aria-hidden="true" className="size-3.5" />}
-            label={labels.documentVisibilityLabel}
-            value={document.visibilityLabel}
-          />
-        ) : null}
-      </dl>
-    </article>
-  </li>
-)
+          {document.blockingLabel ? (
+            <Fact
+              icon={<CircleAlert aria-hidden="true" className="size-3.5" />}
+              label={labels.documentBlockingLabel}
+              value={document.blockingLabel}
+            />
+          ) : null}
+          {document.dueLabel ? (
+            <Fact
+              icon={<Clock3 aria-hidden="true" className="size-3.5" />}
+              label={labels.documentDueLabel}
+              value={document.dueLabel}
+            />
+          ) : null}
+          {document.lastActivityLabel ? (
+            <Fact
+              icon={<Activity aria-hidden="true" className="size-3.5" />}
+              label={labels.documentLastActivityLabel}
+              value={
+                document.lastActivityDateTime ? (
+                  <time dateTime={document.lastActivityDateTime}>{document.lastActivityLabel}</time>
+                ) : (
+                  document.lastActivityLabel
+                )
+              }
+            />
+          ) : null}
+          {document.visibilityLabel ? (
+            <Fact
+              icon={<Landmark aria-hidden="true" className="size-3.5" />}
+              label={labels.documentVisibilityLabel}
+              value={document.visibilityLabel}
+            />
+          ) : null}
+        </dl>
+      </article>
+    </li>
+  )
+}
 
 const ActivitySection = ({
   activity,
@@ -645,19 +661,15 @@ const Fact = ({
   </div>
 )
 
-const ReadinessIcon = ({ readinessKey }: { readonly readinessKey: DealCommitmentReadinessKey }) =>
-  match(readinessKey)
-    .returnType<ReactNode>()
-    .with('kycKyb', () => (
-      <ShieldCheck aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
-    ))
-    .with('signature', () => (
-      <Signature aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
-    ))
-    .with('wire', () => (
-      <Banknote aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
-    ))
-    .with('reconciliation', () => (
-      <Scale aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
-    ))
-    .exhaustive()
+const readinessIconByKey = {
+  kycKyb: ShieldCheck,
+  reconciliation: Scale,
+  signature: Signature,
+  wire: Banknote,
+} as const satisfies Record<DealCommitmentReadinessKey, LucideIcon>
+
+const ReadinessIcon = ({ readinessKey }: { readonly readinessKey: DealCommitmentReadinessKey }) => {
+  const Icon = readinessIconByKey[readinessKey]
+
+  return <Icon aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
+}

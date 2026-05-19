@@ -6,12 +6,7 @@ import type {
   CapitalReconciliationDTO,
   CapitalReconciliationErrorDTO,
 } from './operational-center-dto'
-import {
-  firstError,
-  type MoneySerializationResult,
-  mapMoneyFields,
-  money,
-} from './operational-center-money'
+import { type MoneySerializationResult, mapMoneyFields, money } from './operational-center-money'
 
 export const mapCapital = (
   summary: CapitalReconciliationSummary,
@@ -108,16 +103,23 @@ export const mapCapitalReconciliationError = (
     }))
   }
 
-  return Result.all([
-    money(error.earlierAmountCents, `capital.${error.earlierStage}`),
-    money(error.laterAmountCents, `capital.${error.laterStage}`),
-  ])
-    .mapError(firstError)
-    .map(([earlierAmount, laterAmount]) => ({
-      _tag: 'StageOrderViolation',
-      earlierAmount,
-      earlierStage: error.earlierStage,
-      laterAmount,
-      laterStage: error.laterStage,
-    }))
+  const earlierAmount = money(error.earlierAmountCents, `capital.${error.earlierStage}`)
+
+  if (earlierAmount.isError()) {
+    return Result.Error(earlierAmount.error)
+  }
+
+  const laterAmount = money(error.laterAmountCents, `capital.${error.laterStage}`)
+
+  if (laterAmount.isError()) {
+    return Result.Error(laterAmount.error)
+  }
+
+  return Result.Ok({
+    _tag: 'StageOrderViolation',
+    earlierAmount: earlierAmount.value,
+    earlierStage: error.earlierStage,
+    laterAmount: laterAmount.value,
+    laterStage: error.laterStage,
+  })
 }

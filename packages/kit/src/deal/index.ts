@@ -11,6 +11,7 @@ export {
   type DealOperationalOverviewActionEvent,
   type DealOperationalOverviewLabels,
   type DealOperationalOverviewProps,
+  type DealOperationalOverviewReadyState,
   type DealOperationalOverviewState,
   type DealOperationalProgress,
   type DealOperationalReadinessDimension,

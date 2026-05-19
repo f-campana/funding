@@ -1,7 +1,11 @@
 import { DealOperationalOverview } from '@repo/kit/deal-operational-overview'
 import { notFound } from 'next/navigation'
 
-import { getDealOperationsData } from '../data'
+import {
+  dealOperationsRouteDataError,
+  getDealOperationsData,
+  isDealOperationsRouteNotFoundError,
+} from '../data'
 import { mapDealOperationalOverviewProps } from '../deal-operational-adapters'
 
 type DealOverviewPageProps = {
@@ -10,11 +14,16 @@ type DealOverviewPageProps = {
 
 export default async function DealOverviewPage({ params }: DealOverviewPageProps) {
   const { dealId } = await params
-  const data = getDealOperationsData(dealId)
+  const dataResult = getDealOperationsData(dealId)
 
-  if (!data) {
-    notFound()
+  if (dataResult.isError()) {
+    if (isDealOperationsRouteNotFoundError(dataResult.error)) {
+      notFound()
+    }
+
+    throw dealOperationsRouteDataError(dataResult.error)
   }
 
+  const data = dataResult.value
   return <DealOperationalOverview {...mapDealOperationalOverviewProps(data)} />
 }

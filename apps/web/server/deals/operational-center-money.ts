@@ -9,25 +9,13 @@ export const money = (
   value: EuroCents,
   field: string,
 ): MoneySerializationResult<MoneyMinorUnitsDTO> =>
-  serializeEuroCentsToNumber(value).match({
-    Error: () =>
-      Result.Error({
-        _tag: 'UnsafeMoneyAmount',
-        amountMinor: euroCentsToMinorUnits(value).toString(),
-        field,
-      }),
-    Ok: (amountMinor) => Result.Ok({ amountMinor, currency: 'EUR' }),
-  })
-
-export const firstError = <ErrorValue>(errors: readonly ErrorValue[]): ErrorValue => {
-  const [first] = errors
-
-  if (first === undefined) {
-    throw new Error('Expected at least one Result error')
-  }
-
-  return first
-}
+  serializeEuroCentsToNumber(value)
+    .map((amountMinor) => ({ amountMinor, currency: 'EUR' as const }))
+    .mapError(() => ({
+      _tag: 'UnsafeMoneyAmount',
+      amountMinor: euroCentsToMinorUnits(value).toString(),
+      field,
+    }))
 
 type MoneyField<Key extends string> = {
   readonly key: Key
@@ -41,9 +29,18 @@ type MoneyFieldValues<Fields extends readonly MoneyField<string>[]> = {
 
 export const mapMoneyFields = <const Fields extends readonly MoneyField<string>[]>(
   fields: Fields,
-): MoneySerializationResult<MoneyFieldValues<Fields>> =>
-  Result.traverse(fields, ({ field, key, value }) =>
-    money(value, field).map((amount) => [key, amount] as const),
-  )
-    .mapError(firstError)
-    .map((entries) => Object.fromEntries(entries) as MoneyFieldValues<Fields>)
+): MoneySerializationResult<MoneyFieldValues<Fields>> => {
+  const entries: [string, MoneyMinorUnitsDTO][] = []
+
+  for (const { field, key, value } of fields) {
+    const amount = money(value, field)
+
+    if (amount.isError()) {
+      return Result.Error(amount.error)
+    }
+
+    entries.push([key, amount.value])
+  }
+
+  return Result.Ok(Object.fromEntries(entries) as MoneyFieldValues<Fields>)
+}

@@ -1,43 +1,55 @@
 import 'server-only'
 
+import { Result } from '@repo/core'
+import { fromZod } from '@repo/core/adapters/zod'
+
 import {
   type DealOperationalCenterDTO,
+  type GetDealOperationalCenterError,
   GetOperationalCenterInputSchema,
   getDealOperationalCenter,
 } from '@/server/deals'
 
 export type DealOperationsRouteData = DealOperationalCenterDTO
 
+export type InvalidDealRouteParamError = {
+  readonly _tag: 'InvalidDealRouteParam'
+  readonly dealId: string
+}
+
+export type DealOperationsRouteDataError =
+  | InvalidDealRouteParamError
+  | GetDealOperationalCenterError
+
 export function isSupportedDealId(dealId: string): boolean {
-  return getDealOperationsData(dealId) !== null
+  return getDealOperationsData(dealId).isOk()
 }
 
-export function normalizeDealId(dealId: string): string | null {
-  const parsed = GetOperationalCenterInputSchema.safeParse({ dealId })
-
-  if (!parsed.success) {
-    return null
-  }
-
-  return parsed.data.dealId
+export function normalizeDealId(dealId: string): Result<string, InvalidDealRouteParamError> {
+  return fromZod(GetOperationalCenterInputSchema, { dealId })
+    .map((input) => input.dealId)
+    .mapError(() => ({
+      _tag: 'InvalidDealRouteParam',
+      dealId,
+    }))
 }
 
-export function getDealOperationsData(dealId: string): DealOperationsRouteData | null {
+export function getDealOperationsData(
+  dealId: string,
+): Result<DealOperationsRouteData, DealOperationsRouteDataError> {
   const normalizedDealId = normalizeDealId(dealId)
 
-  if (normalizedDealId === null) {
-    return null
+  if (normalizedDealId.isError()) {
+    return Result.Error(normalizedDealId.error)
   }
 
-  const result = getDealOperationalCenter({ dealId: normalizedDealId })
-
-  if (result.isOk()) {
-    return result.value
-  }
-
-  if (result.error._tag === 'UnsupportedDeal') {
-    return null
-  }
-
-  throw new Error(`Unable to load deal operational center: ${result.error._tag}`)
+  return getDealOperationalCenter({ dealId: normalizedDealId.value }).mapError(
+    (error): DealOperationsRouteDataError => error,
+  )
 }
+
+export const isDealOperationsRouteNotFoundError = (error: DealOperationsRouteDataError): boolean =>
+  error._tag === 'InvalidDealRouteParam' || error._tag === 'UnsupportedDeal'
+
+export const dealOperationsRouteDataError = (error: DealOperationsRouteDataError): Error =>
+  new Error(`Unable to load deal operational center: ${error._tag}`)

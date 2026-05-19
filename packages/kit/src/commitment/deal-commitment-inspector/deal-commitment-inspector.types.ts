@@ -1,4 +1,12 @@
-import type { CommitmentReadinessKey } from '../commitment-readiness.types'
+import type {
+  DocumentEvidenceStatus,
+  DocumentEvidenceStatusKind,
+} from '../../status/document-status'
+import type {
+  CommitmentReadinessKey,
+  CommitmentReadinessRecord,
+  CommitmentReadinessState,
+} from '../commitment-readiness.types'
 
 export type DealCommitmentInspectorTone =
   | 'success'
@@ -11,6 +19,10 @@ export type DealCommitmentInspectorTone =
 export type DealCommitmentReadinessKey = CommitmentReadinessKey
 
 export type DealCommitmentBlockerSeverity = 'critical' | 'warning' | 'info'
+
+export type DealCommitmentEvidenceStatusKind = DocumentEvidenceStatusKind
+
+export type DealCommitmentEvidenceStatus = DocumentEvidenceStatus
 
 export type DealCommitmentStatus = {
   readonly label: string
@@ -31,17 +43,13 @@ export type DealCommitmentInvestorSummary = {
 export type DealCommitmentReadinessItem<
   Key extends DealCommitmentReadinessKey = DealCommitmentReadinessKey,
 > = Key extends DealCommitmentReadinessKey
-  ? {
-      readonly key: Key
-      readonly label: string
-      readonly value: string
-      readonly tone: DealCommitmentInspectorTone
+  ? CommitmentReadinessState<Key> & {
       readonly detail?: string | undefined
       readonly metadata?: readonly string[] | undefined
     }
   : never
 
-export type DealCommitmentReadinessRecord = {
+export type DealCommitmentReadinessRecord = CommitmentReadinessRecord & {
   readonly [Key in DealCommitmentReadinessKey]: DealCommitmentReadinessItem<Key>
 }
 
@@ -61,8 +69,7 @@ export type DealCommitmentBlocker = {
 export type DealCommitmentEvidenceItem = {
   readonly id: string
   readonly label: string
-  readonly statusLabel: string
-  readonly statusTone: DealCommitmentInspectorTone
+  readonly status: DealCommitmentEvidenceStatus
   readonly owner: string
   readonly requirementLabel: string
   readonly blockingLabel?: string | undefined

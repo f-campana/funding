@@ -5,7 +5,6 @@ import type {
   DealDocumentsEvidenceProps,
   DealDocumentsEvidenceReadyState,
   DealDocumentsEvidenceSummaryMetric,
-  DealDocumentsEvidenceTone,
 } from '@repo/kit/deal-documents-evidence'
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
@@ -44,15 +43,6 @@ const documentStatusLabel = {
   under_review: 'Under review',
   uploaded: 'Uploaded',
 } as const satisfies Record<DocumentRequirementDTO['status'], string>
-
-const documentStatusTone = {
-  approved: 'success',
-  expired: 'attention',
-  missing: 'danger',
-  rejected: 'danger',
-  under_review: 'pending',
-  uploaded: 'info',
-} as const satisfies Record<DocumentRequirementDTO['status'], DealDocumentsEvidenceTone>
 
 const documentOwnerLabel = {
   deal: 'Deal',
@@ -135,19 +125,18 @@ const mapDocumentItem = (
   group: DocumentGroupDTO,
 ): DealDocumentsEvidenceItem => ({
   blockingLabel: getBlockingLabel(document),
-  blocksClosing: document.blocksClosing,
+  blocksClosing: isDocumentBlocking(document),
   description: documentCategoryLabel[document.category],
   id: document.id,
   label: document.label,
   ownerLabel: documentOwnerLabel[document.owner],
   requirement: {
-    kind: document.required ? 'required' : 'optional',
-    label: document.required ? 'Required' : 'Optional',
+    kind: document.requirement.kind,
+    label: getRequirementLabel(document),
   },
   status: {
     kind: document.status,
     label: documentStatusLabel[document.status],
-    tone: documentStatusTone[document.status],
   },
   visibilityLabel: documentVisibilityLabel[group.visibility],
   ...(document.relatedInvestorId
@@ -171,7 +160,7 @@ const mapSummary = (
   documents: readonly DocumentRequirementDTO[],
 ): DealDocumentsEvidenceReadyState['summary'] => {
   const total = documents.length
-  const blocking = documents.filter((document) => document.blocksClosing).length
+  const blocking = documents.filter(isDocumentBlocking).length
   const missing = countByStatus(documents, 'missing')
   const underReview = countByStatus(documents, 'under_review')
   const approved = countByStatus(documents, 'approved')
@@ -202,12 +191,21 @@ const countByStatus = (
 ): number => documents.filter((document) => document.status === status).length
 
 const getBlockingLabel = (document: DocumentRequirementDTO): string => {
-  if (document.blocksClosing) {
-    return 'Blocks closing'
+  switch (document.closingImpact.kind) {
+    case 'blocks_closing':
+      return 'Blocks closing'
+    case 'cleared_for_closing':
+      return 'Cleared for closing'
+    case 'does_not_block_closing':
+      return 'Does not block closing'
   }
-
-  return document.status === 'approved' ? 'Cleared for closing' : 'Does not block closing'
 }
+
+const getRequirementLabel = (document: DocumentRequirementDTO): string =>
+  document.requirement.kind === 'required' ? 'Required' : 'Optional'
+
+const isDocumentBlocking = (document: DocumentRequirementDTO): boolean =>
+  document.closingImpact.kind === 'blocks_closing'
 
 const getRelatedInvestorLabel = (
   investorId: string,

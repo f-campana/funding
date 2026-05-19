@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { Result } from '@repo/core'
+import { fromZod } from '@repo/core/adapters/zod'
 import {
   type Brand,
   getDealLifecycleLabel,
@@ -22,11 +23,11 @@ import type {
   DealOperationalCenterValidationErrorDTO,
   DocumentCenterDTO,
   GetOperationalCenterInputDTO,
+  InvestorOperationDTO,
   MoneySerializationErrorDTO,
 } from './operational-center-dto'
 import { GetOperationalCenterInputSchema } from './operational-center-dto'
 import { mapInvestor } from './operational-center-investor-mapper'
-import { firstError } from './operational-center-money'
 import { deriveClosingReadiness } from './operational-center-readiness'
 import { validateDealOperationalCenter } from './operational-center-validation'
 
@@ -57,13 +58,16 @@ export type GetDealOperationalCenterError =
 export const getDealOperationalCenter = (
   input: GetOperationalCenterInputDTO,
 ): Result<DealOperationalCenterDTO, GetDealOperationalCenterError> => {
-  const parsedInput = GetOperationalCenterInputSchema.safeParse(input)
+  const parsedInput = fromZod(GetOperationalCenterInputSchema, input).mapError(() => ({
+    _tag: 'UnsupportedDeal' as const,
+    dealId: input.dealId.trim(),
+  }))
 
-  if (!parsedInput.success) {
-    return Result.Error({ _tag: 'UnsupportedDeal', dealId: input.dealId.trim() })
+  if (parsedInput.isError()) {
+    return Result.Error(parsedInput.error)
   }
 
-  const dealId = dealSlugFromInput(parsedInput.data.dealId)
+  const dealId = dealSlugFromInput(parsedInput.value.dealId)
 
   if (dealId !== NORTHSTAR_DEAL_SLUG) {
     return Result.Error({ _tag: 'UnsupportedDeal', dealId })
@@ -105,12 +109,16 @@ export const getDealOperationalCenter = (
     return Result.Error({ _tag: 'MoneySerializationError', error: capitalDtoResult.error })
   }
 
-  const investorsResult = Result.traverse(northstarOperationalFixture.investors, (investor) =>
-    mapInvestor(investor, northstarOperationalFixture.blockers),
-  ).mapError(firstError)
+  const investors: InvestorOperationDTO[] = []
 
-  if (investorsResult.isError()) {
-    return Result.Error({ _tag: 'MoneySerializationError', error: investorsResult.error })
+  for (const investor of northstarOperationalFixture.investors) {
+    const investorResult = mapInvestor(investor, northstarOperationalFixture.blockers)
+
+    if (investorResult.isError()) {
+      return Result.Error({ _tag: 'MoneySerializationError', error: investorResult.error })
+    }
+
+    investors.push(investorResult.value)
   }
 
   const dto = {
@@ -124,7 +132,7 @@ export const getDealOperationalCenter = (
     },
     documents: documentsCenter,
     generatedAt: northstarOperationalFixture.generatedAt,
-    investors: investorsResult.value,
+    investors,
     readiness,
   } satisfies DealOperationalCenterDTO
 

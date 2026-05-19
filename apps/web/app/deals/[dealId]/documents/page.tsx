@@ -1,7 +1,11 @@
 import { DealDocumentsEvidence } from '@repo/kit/deal-documents-evidence'
 import { notFound } from 'next/navigation'
 
-import { getDealOperationsData } from '../data'
+import {
+  dealOperationsRouteDataError,
+  getDealOperationsData,
+  isDealOperationsRouteNotFoundError,
+} from '../data'
 import { mapDealDocumentsEvidenceProps } from '../deal-documents-evidence-adapter'
 
 type DealDocumentsPageProps = {
@@ -10,11 +14,16 @@ type DealDocumentsPageProps = {
 
 export default async function DealDocumentsPage({ params }: DealDocumentsPageProps) {
   const { dealId } = await params
-  const data = getDealOperationsData(dealId)
+  const dataResult = getDealOperationsData(dealId)
 
-  if (!data) {
-    notFound()
+  if (dataResult.isError()) {
+    if (isDealOperationsRouteNotFoundError(dataResult.error)) {
+      notFound()
+    }
+
+    throw dealOperationsRouteDataError(dataResult.error)
   }
 
+  const data = dataResult.value
   return <DealDocumentsEvidence {...mapDealDocumentsEvidenceProps(data)} />
 }

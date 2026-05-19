@@ -90,8 +90,8 @@ describe('Northstar capital and reconciliation semantics adapters', () => {
     expect(props.state.investor.status.label).toBe('Needs attention')
     expect(props.state.readiness.reconciliation).toMatchObject({
       detail: 'Commitment: Wire matched | Wire: Matched',
-      tone: 'info',
       value: 'Matched, finance pending',
+      variant: 'reconciling',
     })
     expect(props.state.nextAction).toBe('Review finance reconciliation before closing review.')
   })

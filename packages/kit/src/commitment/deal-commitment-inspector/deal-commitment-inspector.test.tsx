@@ -9,6 +9,7 @@ import { axe } from '../../test/axe'
 import type { CommitmentReadinessKey } from '../commitment-readiness.types'
 import { commitmentReadinessKeys } from '../commitment-readiness.types'
 import type {
+  DealCommitmentEvidenceItem,
   DealCommitmentInspectorActionEvent,
   DealCommitmentInspectorProps,
   DealCommitmentInspectorState,
@@ -42,6 +43,7 @@ const renderInspector = (props: Partial<ComponentProps<typeof DealCommitmentInsp
 
 const expectInspectorState = (_state: DealCommitmentInspectorState) => undefined
 const expectInspectorProps = (_props: DealCommitmentInspectorProps) => undefined
+const expectEvidenceItem = (_item: DealCommitmentEvidenceItem) => undefined
 const expectTone = (_tone: DealCommitmentInspectorTone) => undefined
 const expectActionEvent = (_event: DealCommitmentInspectorActionEvent) => undefined
 const expectSharedReadinessKey = (_key: CommitmentReadinessKey) => undefined
@@ -89,6 +91,23 @@ const _mismatchedReadiness: DealCommitmentReadinessRecord = {
   // @ts-expect-error Readiness record keys and inner semantic keys must match.
   wire: { ...blockedCommitmentInspectorState.readiness.wire, key: 'signature' },
 }
+
+expectEvidenceItem({
+  id: 'typed-document',
+  label: 'Typed document',
+  owner: 'Legal ops',
+  requirementLabel: 'Required',
+  status: { kind: 'missing', label: 'Missing' },
+})
+
+expectEvidenceItem({
+  id: 'typed-document',
+  label: 'Typed document',
+  owner: 'Legal ops',
+  requirementLabel: 'Required',
+  // @ts-expect-error Evidence status tone is derived from status.kind.
+  status: { kind: 'missing', label: 'Missing', tone: 'danger' },
+})
 
 const walk = async (directory: string): Promise<readonly string[]> => {
   const entries = await readdir(directory, { withFileTypes: true })
@@ -186,7 +205,7 @@ describe('DealCommitmentInspector', () => {
 
     expect(screen.getByRole('heading', { name: 'Related evidence' })).toBeInTheDocument()
     expect(screen.getByText('Meridian UBO declaration')).toBeInTheDocument()
-    expect(screen.getByText('Missing')).toHaveAttribute('data-tone', 'danger')
+    expect(screen.getByText('Missing')).toHaveAttribute('data-tone', 'attention')
     expect(screen.getAllByText('Required').length).toBeGreaterThan(0)
     expect(screen.getByText('Blocks closing')).toBeInTheDocument()
     expect(screen.getByText('Investor evidence')).toBeInTheDocument()

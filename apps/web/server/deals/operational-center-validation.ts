@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { Result } from '@repo/core'
-import { z } from 'zod'
+import { fromZod } from '@repo/core/adapters/zod'
 
 import type {
   CapitalReconciliationDTO,
@@ -9,15 +9,7 @@ import type {
   DealOperationalCenterValidationErrorDTO,
   MoneyMinorUnitsDTO,
 } from './operational-center-dto'
-
-export const MoneyMinorUnitsSchema = z
-  .object({
-    amountMinor: z.number().int().safe().nonnegative(),
-    currency: z.literal('EUR'),
-  })
-  .strict()
-
-export const IsoDateTimeStringSchema = z.string().datetime()
+import { IsoDateTimeStringSchema, MoneyMinorUnitsSchema } from './operational-center-dto'
 
 type MoneyCandidate = {
   readonly path: string
@@ -57,6 +49,12 @@ export const validateDealOperationalCenter = (
     return Result.Error(capitalError)
   }
 
+  const documentError = validateDocuments(data)
+
+  if (documentError !== null) {
+    return Result.Error(documentError)
+  }
+
   const graphError = findDanglingReference(data)
 
   if (graphError !== null) {
@@ -70,7 +68,7 @@ const findInvalidMoney = (
   data: DealOperationalCenterDTO,
 ): DealOperationalCenterValidationErrorDTO | null => {
   for (const candidate of getMoneyCandidates(data)) {
-    if (!MoneyMinorUnitsSchema.safeParse(candidate.value).success) {
+    if (fromZod(MoneyMinorUnitsSchema, candidate.value).isError()) {
       return { _tag: 'InvalidMoney', path: candidate.path }
     }
   }
@@ -82,7 +80,7 @@ const findInvalidDate = (
   data: DealOperationalCenterDTO,
 ): DealOperationalCenterValidationErrorDTO | null => {
   for (const candidate of getDateCandidates(data)) {
-    if (!IsoDateTimeStringSchema.safeParse(candidate.value).success) {
+    if (fromZod(IsoDateTimeStringSchema, candidate.value).isError()) {
       return { _tag: 'InvalidDateTime', path: candidate.path }
     }
   }
@@ -94,6 +92,8 @@ const validateCapital = (
   capital: CapitalReconciliationDTO,
 ): DealOperationalCenterValidationErrorDTO | null =>
   validateNoFinanceAcceptedCapitalFields(capital) ??
+  validateTargetPositionShape(capital) ??
+  validateMatchingShape(capital) ??
   validateEconomicsInvariant(capital) ??
   validateMatchingInvariant(capital) ??
   validateTargetPositionInvariant(capital)
@@ -109,6 +109,61 @@ const validateNoFinanceAcceptedCapitalFields = (
         _tag: 'CapitalInvariantViolation',
         message: `DTO must not expose ${field} without source finance acceptance`,
       }
+    }
+  }
+
+  return null
+}
+
+const validateTargetPositionShape = (
+  capital: CapitalReconciliationDTO,
+): DealOperationalCenterValidationErrorDTO | null => {
+  const targetPosition = capital.targetPosition as Record<string, unknown>
+
+  if (
+    capital.targetPosition.kind === 'under_target' &&
+    Object.hasOwn(targetPosition, 'overTarget')
+  ) {
+    return {
+      _tag: 'CapitalInvariantViolation',
+      message: 'under_target cannot expose overTarget',
+    }
+  }
+
+  if (capital.targetPosition.kind === 'at_target') {
+    if (
+      Object.hasOwn(targetPosition, 'remainingToTarget') ||
+      Object.hasOwn(targetPosition, 'overTarget')
+    ) {
+      return {
+        _tag: 'CapitalInvariantViolation',
+        message: 'at_target cannot expose target delta fields',
+      }
+    }
+  }
+
+  if (
+    capital.targetPosition.kind === 'over_target' &&
+    Object.hasOwn(targetPosition, 'remainingToTarget')
+  ) {
+    return {
+      _tag: 'CapitalInvariantViolation',
+      message: 'over_target cannot expose remainingToTarget',
+    }
+  }
+
+  return null
+}
+
+const validateMatchingShape = (
+  capital: CapitalReconciliationDTO,
+): DealOperationalCenterValidationErrorDTO | null => {
+  const matching = capital.matching as Record<string, unknown>
+
+  if (capital.matching.kind === 'matched' && Object.hasOwn(matching, 'unmatchedReceived')) {
+    return {
+      _tag: 'CapitalInvariantViolation',
+      message: 'matched capital cannot expose unmatchedReceived',
     }
   }
 
@@ -198,6 +253,41 @@ const validateTargetPositionInvariant = (
         _tag: 'CapitalInvariantViolation',
         message: 'at_target requires committedAmount to equal targetAmount',
       }
+}
+
+const validateDocuments = (
+  data: DealOperationalCenterDTO,
+): DealOperationalCenterValidationErrorDTO | null => {
+  for (const document of data.documents.requirements) {
+    if (
+      document.requirement.kind === 'optional' &&
+      document.closingImpact.kind === 'blocks_closing'
+    ) {
+      return {
+        _tag: 'DocumentInvariantViolation',
+        documentId: document.id,
+        message: 'optional documents cannot block closing',
+      }
+    }
+
+    if (document.closingImpact.kind === 'cleared_for_closing' && document.status !== 'approved') {
+      return {
+        _tag: 'DocumentInvariantViolation',
+        documentId: document.id,
+        message: 'cleared_for_closing requires approved status',
+      }
+    }
+
+    if (document.closingImpact.kind === 'blocks_closing' && document.status === 'approved') {
+      return {
+        _tag: 'DocumentInvariantViolation',
+        documentId: document.id,
+        message: 'approved documents cannot block closing',
+      }
+    }
+  }
+
+  return null
 }
 
 const findDanglingReference = (

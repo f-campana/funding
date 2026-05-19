@@ -163,10 +163,9 @@ const contextRows = [
 ] as const satisfies readonly CommitmentInvestorRow[]
 
 const contextState = {
-  activeRowId: 'meridian-ventures',
-  drawerOpenRowId: 'meridian-ventures',
   kind: 'ready',
   pagination: { page: 1, pageSize: 4 },
+  rowState: { drawerOpen: true, kind: 'active', rowId: 'meridian-ventures' },
   rows: contextRows,
 } as const satisfies DealCommitmentsTableLifecycleState
 

@@ -1,26 +1,16 @@
-export type DealDocumentsEvidenceTone =
-  | 'neutral'
-  | 'info'
-  | 'pending'
-  | 'attention'
-  | 'success'
-  | 'danger'
+import type {
+  DocumentEvidenceStatus,
+  DocumentEvidenceStatusKind,
+} from '../../status/document-status'
+import type { StatusTone } from '../../status/status-tone'
 
-export type DealDocumentsEvidenceStatusKind =
-  | 'missing'
-  | 'uploaded'
-  | 'under_review'
-  | 'approved'
-  | 'rejected'
-  | 'expired'
+export type DealDocumentsEvidenceTone = StatusTone
+
+export type DealDocumentsEvidenceStatusKind = DocumentEvidenceStatusKind
 
 export type DealDocumentsEvidenceRequirementKind = 'required' | 'optional'
 
-export type DealDocumentsEvidenceStatus = {
-  readonly kind: DealDocumentsEvidenceStatusKind
-  readonly label: string
-  readonly tone: DealDocumentsEvidenceTone
-}
+export type DealDocumentsEvidenceStatus = DocumentEvidenceStatus
 
 export type DealDocumentsEvidenceRequirement = {
   readonly kind: DealDocumentsEvidenceRequirementKind

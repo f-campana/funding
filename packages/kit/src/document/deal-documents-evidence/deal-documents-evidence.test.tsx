@@ -15,6 +15,7 @@ import type {
   DealDocumentsEvidenceProps,
   DealDocumentsEvidenceRequirementKind,
   DealDocumentsEvidenceState,
+  DealDocumentsEvidenceStatus,
   DealDocumentsEvidenceStatusKind,
   DealDocumentsEvidenceTone,
 } from './deal-documents-evidence.types'
@@ -52,6 +53,7 @@ const renderDocumentsEvidence = (
 
 const expectLifecycleState = (_state: DealDocumentsEvidenceState) => undefined
 const expectDocumentsEvidenceProps = (_props: DealDocumentsEvidenceProps) => undefined
+const expectDocumentStatus = (_status: DealDocumentsEvidenceStatus) => undefined
 const expectStatusKind = (_status: DealDocumentsEvidenceStatusKind) => undefined
 const expectTone = (_tone: DealDocumentsEvidenceTone) => undefined
 const expectRequirementKind = (_requirement: DealDocumentsEvidenceRequirementKind) => undefined
@@ -72,6 +74,11 @@ expectStatusKind('under_review')
 
 // @ts-expect-error Status kind must stay on the documents evidence vocabulary.
 expectStatusKind('reviewing')
+
+expectDocumentStatus({ kind: 'missing', label: 'Missing' })
+
+// @ts-expect-error Document evidence status tone is derived from kind.
+expectDocumentStatus({ kind: 'missing', label: 'Missing', tone: 'danger' })
 
 expectTone('pending')
 
@@ -124,7 +131,7 @@ describe('DealDocumentsEvidence', () => {
     expect(screen.getAllByText('Investor evidence').length).toBeGreaterThan(0)
     expect(
       container.querySelector(
-        '[data-slot="deal-documents-evidence-document"][data-status="missing"][data-tone="danger"]',
+        '[data-slot="deal-documents-evidence-document"][data-status="missing"][data-tone="attention"]',
       ),
     ).toBeInTheDocument()
     expect(

@@ -12,8 +12,10 @@ import {
 import type {
   DealOperationalBlockerSeverity,
   DealOperationalOverviewProps,
+  DealOperationalOverviewReadyState,
   DealOperationalOverviewState,
   DealOperationalReadinessState,
+  DealOperationalReadinessSummary,
 } from './deal-operational-overview.types'
 import {
   blockedOperationalOverviewState,
@@ -38,6 +40,10 @@ const renderOverview = (
 
 const expectLifecycleState = (_state: DealOperationalOverviewState) => undefined
 const expectOverviewProps = (_props: DealOperationalOverviewProps) => undefined
+const expectReadyState = (_state: DealOperationalOverviewReadyState) => undefined
+const expectBlockedReadiness = (
+  _readiness: Extract<DealOperationalReadinessSummary, { readonly state: 'blocked' }>,
+) => undefined
 const expectReadinessState = (_state: DealOperationalReadinessState) => undefined
 const expectBlockerSeverity = (_severity: DealOperationalBlockerSeverity) => undefined
 
@@ -49,6 +55,12 @@ expectLifecycleState({ blockers: blockedOperationalOverviewState.blockers, kind:
 
 // @ts-expect-error Ready state requires capital summary.
 expectLifecycleState({ kind: 'ready', readiness: blockedOperationalOverviewState.readiness })
+
+expectReadyState(blockedOperationalOverviewState)
+expectBlockedReadiness(blockedOperationalOverviewState.readiness)
+
+// @ts-expect-error Readiness summary state remains the discriminant.
+expectBlockedReadiness(readyOperationalOverviewState.readiness)
 
 // @ts-expect-error Error retry UI uses retryAction, not a detached retry label.
 expectLifecycleState({ kind: 'error', retryLabel: 'Retry', title: 'Could not load' })

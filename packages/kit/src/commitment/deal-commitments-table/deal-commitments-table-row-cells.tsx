@@ -11,7 +11,6 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { match } from 'ts-pattern'
 
 import { statusToneClasses } from '../../status/status-tone'
 import { getCommitmentReadinessTone } from './deal-commitments-table.model'
@@ -169,27 +168,35 @@ export const ReadinessStatusCell = ({
 
 type ReadinessIconName = 'alert' | 'bank' | 'check' | 'clock' | 'minus' | 'refresh' | 'signature'
 
+type ReadinessIconConfig = { readonly Icon: LucideIcon; readonly name: ReadinessIconName }
+
+const readinessIconByTone = {
+  attention: { Icon: Clock3, name: 'clock' },
+  danger: { Icon: AlertCircle, name: 'alert' },
+  info: { Icon: Clock3, name: 'clock' },
+  neutral: { Icon: CircleMinus, name: 'minus' },
+  success: { Icon: CheckCircle2, name: 'check' },
+} as const satisfies Record<CommitmentReadinessTone, ReadinessIconConfig>
+
+const successReadinessIconByKey: Partial<Record<CommitmentReadinessKey, ReadinessIconConfig>> = {
+  signature: { Icon: FilePenLine, name: 'signature' },
+  wire: { Icon: Landmark, name: 'bank' },
+}
+
 const getReadinessIcon = (
   key: CommitmentReadinessKey,
   tone: CommitmentReadinessTone,
-): { readonly Icon: LucideIcon; readonly name: ReadinessIconName } =>
-  match({ key, tone })
-    .returnType<{ readonly Icon: LucideIcon; readonly name: ReadinessIconName }>()
-    .with({ tone: 'danger' }, () => ({ Icon: AlertCircle, name: 'alert' }))
-    .with({ tone: 'attention' }, () => ({ Icon: Clock3, name: 'clock' }))
-    .with({ tone: 'neutral' }, () => ({ Icon: CircleMinus, name: 'minus' }))
-    .with({ key: 'reconciliation', tone: 'info' }, () => ({
-      Icon: RefreshCw,
-      name: 'refresh',
-    }))
-    .with({ key: 'signature', tone: 'success' }, () => ({
-      Icon: FilePenLine,
-      name: 'signature',
-    }))
-    .with({ key: 'wire', tone: 'success' }, () => ({ Icon: Landmark, name: 'bank' }))
-    .with({ tone: 'success' }, () => ({ Icon: CheckCircle2, name: 'check' }))
-    .with({ tone: 'info' }, () => ({ Icon: Clock3, name: 'clock' }))
-    .exhaustive()
+): ReadinessIconConfig => {
+  if (tone === 'info' && key === 'reconciliation') {
+    return { Icon: RefreshCw, name: 'refresh' }
+  }
+
+  if (tone === 'success') {
+    return successReadinessIconByKey[key] ?? readinessIconByTone.success
+  }
+
+  return readinessIconByTone[tone]
+}
 
 export const CommitmentStatusPill = ({
   status,

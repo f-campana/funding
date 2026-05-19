@@ -10,6 +10,7 @@ import {
 import type {
   CommitmentInvestorRow,
   CommitmentTableFilterId,
+  CommitmentTableRowState,
   CommitmentTableSortState,
   DealCommitmentsTableExportProps,
   DealCommitmentsTableProps,
@@ -35,6 +36,7 @@ export type {
   CommitmentTableGroupValue,
   CommitmentTablePaginationState,
   CommitmentTableRetryAction,
+  CommitmentTableRowState,
   CommitmentTableSortDirection,
   CommitmentTableSortKey,
   CommitmentTableSortState,
@@ -58,6 +60,7 @@ export const DealCommitmentsTable = (props: DealCommitmentsTableProps) => {
     onPageChange,
     onPageSizeChange,
     onRowOpen,
+    onRowStateChange,
     onSearchValueChange,
     onSelectedRowIdsChange,
     state,
@@ -68,8 +71,9 @@ export const DealCommitmentsTable = (props: DealCommitmentsTableProps) => {
   const [localActiveFilterIds, setLocalActiveFilterIds] = useState<
     readonly CommitmentTableFilterId[]
   >(() => (state.kind === 'ready' ? (state.activeFilterIds ?? []) : []))
-  const [localActiveRowId, setLocalActiveRowId] = useState<string>()
-  const [localDrawerOpenRowId, setLocalDrawerOpenRowId] = useState<string>()
+  const [localRowState, setLocalRowState] = useState<CommitmentTableRowState>(() =>
+    state.kind === 'ready' ? (state.rowState ?? { kind: 'idle' }) : { kind: 'idle' },
+  )
   const [localPage, setLocalPage] = useState(() =>
     state.kind === 'ready' ? (state.pagination?.page ?? 1) : 1,
   )
@@ -126,16 +130,16 @@ export const DealCommitmentsTable = (props: DealCommitmentsTableProps) => {
       activeFilterIds: onActiveFilterIdsChange !== undefined,
       page: onPageChange !== undefined,
       pageSize: onPageSizeChange !== undefined,
+      rowState: onRowStateChange !== undefined,
       searchValue: onSearchValueChange !== undefined,
       selectedRowIds: onSelectedRowIdsChange !== undefined,
     },
     local: {
       activeFilterIds: localActiveFilterIds,
-      activeRowId: localActiveRowId,
-      drawerOpenRowId: localDrawerOpenRowId,
       group: 'none',
       page: localPage,
       pageSize: localPageSize,
+      rowState: localRowState,
       searchValue: localSearchValue,
       selectedRowIds: localSelectedRowIds,
       sort: localSort,
@@ -178,6 +182,14 @@ export const DealCommitmentsTable = (props: DealCommitmentsTableProps) => {
     onSelectedRowIdsChange?.(rowIds)
   }
 
+  const setRowState = (rowState: CommitmentTableRowState) => {
+    if (onRowStateChange === undefined) {
+      setLocalRowState(rowState)
+    }
+
+    onRowStateChange?.(rowState)
+  }
+
   const setPageSize = (pageSize: number) => {
     setLocalPageSize(pageSize)
     onPageSizeChange?.(pageSize)
@@ -189,8 +201,7 @@ export const DealCommitmentsTable = (props: DealCommitmentsTableProps) => {
       return
     }
 
-    setLocalActiveRowId(row.id)
-    setLocalDrawerOpenRowId(row.id)
+    setRowState({ drawerOpen: true, kind: 'active', rowId: row.id })
     onRowOpen?.(row.id)
   }
 

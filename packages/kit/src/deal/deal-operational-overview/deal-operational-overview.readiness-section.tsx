@@ -1,7 +1,12 @@
 import { Badge, cn } from '@repo/ui'
-import { AlertTriangle, CheckCircle2, CircleAlert, CircleDotDashed } from 'lucide-react'
-import { type ReactNode, useId } from 'react'
-import { match } from 'ts-pattern'
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CircleAlert,
+  CircleDotDashed,
+  type LucideIcon,
+} from 'lucide-react'
+import { useId } from 'react'
 
 import { getOperationalBlockerTotal } from './deal-operational-overview.model'
 import {
@@ -120,15 +125,17 @@ const DimensionItem = ({
 
 const DimensionIcon = ({ state }: { readonly state: DealOperationalReadinessState }) => {
   const className = cn('size-4 shrink-0', metricToneClasses[getDimensionTone(state)])
+  const Icon = dimensionIconByState[state]
 
-  return match(state)
-    .returnType<ReactNode>()
-    .with('ready', () => <CheckCircle2 aria-hidden="true" className={className} />)
-    .with('blocked', () => <AlertTriangle aria-hidden="true" className={className} />)
-    .with('attention', () => <CircleAlert aria-hidden="true" className={className} />)
-    .with('not_started', () => <CircleDotDashed aria-hidden="true" className={className} />)
-    .exhaustive()
+  return <Icon aria-hidden="true" className={className} />
 }
+
+const dimensionIconByState = {
+  attention: CircleAlert,
+  blocked: AlertTriangle,
+  not_started: CircleDotDashed,
+  ready: CheckCircle2,
+} as const satisfies Record<DealOperationalReadinessState, LucideIcon>
 
 const dimensionToneByState = {
   attention: 'attention',

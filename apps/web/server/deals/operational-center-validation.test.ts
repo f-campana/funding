@@ -103,6 +103,56 @@ describe('validateDealOperationalCenter', () => {
     expectValidationError(invalid, 'CapitalInvariantViolation')
   })
 
+  it('rejects impossible capital variant payloads', () => {
+    const data = getNorthstarData()
+    const invalid = {
+      ...data,
+      capital: {
+        ...data.capital,
+        matching: {
+          kind: 'matched',
+          unmatchedReceived:
+            data.capital.matching.kind === 'unmatched'
+              ? data.capital.matching.unmatchedReceived
+              : data.capital.receivedAmount,
+        },
+      },
+    } as unknown as DealOperationalCenterDTO
+
+    const error = expectValidationError(invalid, 'CapitalInvariantViolation')
+
+    expect(error).toMatchObject({
+      message: 'matched capital cannot expose unmatchedReceived',
+    })
+  })
+
+  it('rejects impossible document requirement and closing impact combinations', () => {
+    const data = getNorthstarData()
+    const document = firstOf(data.documents.requirements, 'document')
+    const invalid = {
+      ...data,
+      documents: {
+        ...data.documents,
+        requirements: data.documents.requirements.map((candidate) =>
+          candidate.id === document.id
+            ? {
+                ...candidate,
+                closingImpact: { kind: 'blocks_closing' },
+                requirement: { kind: 'optional' },
+              }
+            : candidate,
+        ),
+      },
+    } as unknown as DealOperationalCenterDTO
+
+    const error = expectValidationError(invalid, 'DocumentInvariantViolation')
+
+    expect(error).toMatchObject({
+      documentId: document.id,
+      message: 'optional documents cannot block closing',
+    })
+  })
+
   it('rejects dangling investor graph references', () => {
     const data = getNorthstarData()
     const blocker = firstOf(data.blockers, 'blocker')

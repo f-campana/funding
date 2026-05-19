@@ -78,7 +78,9 @@ export const getUnresolvedBlockerCounts = (
 
 export const getRequiredDocumentIssueCount = (data: DealOperationalCenterDTO): number =>
   data.documents.requirements.filter(
-    (document) => document.required && REQUIRED_DOCUMENT_ISSUE_BY_STATUS[document.status],
+    (document) =>
+      document.requirement.kind === 'required' &&
+      REQUIRED_DOCUMENT_ISSUE_BY_STATUS[document.status],
   ).length
 
 const REQUIRED_DOCUMENT_ISSUE_BY_STATUS = {

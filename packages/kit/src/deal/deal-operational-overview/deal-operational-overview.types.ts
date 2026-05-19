@@ -6,13 +6,17 @@ export type DealOperationalMetricTone = 'default' | 'success' | 'attention' | 'd
 
 export type DealOperationalActivityTone = 'neutral' | 'success' | 'attention' | 'danger' | 'info'
 
-export type DealOperationalReadinessDimension = {
-  readonly id: string
-  readonly label: string
-  readonly state: DealOperationalReadinessState
-  readonly blockerCount: number
-  readonly description?: string | undefined
-}
+export type DealOperationalReadinessDimension<
+  State extends DealOperationalReadinessState = DealOperationalReadinessState,
+> = State extends DealOperationalReadinessState
+  ? {
+      readonly id: string
+      readonly label: string
+      readonly state: State
+      readonly blockerCount: number
+      readonly description?: string | undefined
+    }
+  : never
 
 export type DealOperationalBlockerCount = {
   readonly severity: DealOperationalBlockerSeverity
@@ -20,13 +24,17 @@ export type DealOperationalBlockerCount = {
   readonly count: number
 }
 
-export type DealOperationalReadinessSummary = {
-  readonly state: DealOperationalReadinessState
-  readonly label: string
-  readonly nextAction: string
-  readonly blockerCounts: readonly DealOperationalBlockerCount[]
-  readonly dimensions: readonly DealOperationalReadinessDimension[]
-}
+export type DealOperationalReadinessSummary<
+  State extends DealOperationalReadinessState = DealOperationalReadinessState,
+> = State extends DealOperationalReadinessState
+  ? {
+      readonly state: State
+      readonly label: string
+      readonly nextAction: string
+      readonly blockerCounts: readonly DealOperationalBlockerCount[]
+      readonly dimensions: readonly DealOperationalReadinessDimension[]
+    }
+  : never
 
 export type DealOperationalProgress = {
   readonly value: number
@@ -73,6 +81,15 @@ export type DealOperationalActivityItem = {
   readonly tone?: DealOperationalActivityTone | undefined
 }
 
+export type DealOperationalOverviewReadyState = {
+  readonly kind: 'ready'
+  readonly readiness: DealOperationalReadinessSummary
+  readonly capital: DealOperationalCapitalSummary
+  readonly blockerSummary: string
+  readonly blockers: readonly DealOperationalBlocker[]
+  readonly activity: readonly DealOperationalActivityItem[]
+}
+
 export type DealOperationalOverviewState =
   | {
       readonly kind: 'loading'
@@ -84,14 +101,7 @@ export type DealOperationalOverviewState =
       readonly title: string
       readonly description?: string | undefined
     }
-  | {
-      readonly kind: 'ready'
-      readonly readiness: DealOperationalReadinessSummary
-      readonly capital: DealOperationalCapitalSummary
-      readonly blockerSummary: string
-      readonly blockers: readonly DealOperationalBlocker[]
-      readonly activity: readonly DealOperationalActivityItem[]
-    }
+  | DealOperationalOverviewReadyState
 
 export type DealOperationalOverviewActionEvent = {
   readonly kind: 'retry'

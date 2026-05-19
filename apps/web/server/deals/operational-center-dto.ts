@@ -1,19 +1,34 @@
-import type {
-  CapitalStage,
-  ClosingBlockerOwner,
-  ClosingBlockerSeverity,
-  ClosingBlockerType,
-  ClosingReadinessState,
-  CommitmentLifecycleState,
-  DealLifecycleState,
-  DocumentRequirementCategory,
-  DocumentRequirementOwner,
-  DocumentRequirementStatus,
-  KybOperationalStatus,
-  KycOperationalStatus,
-  SignatureOperationalStatus,
-  StatusTone,
-  WireOperationalStatus,
+import {
+  type CapitalStage,
+  CapitalStageSchema,
+  type ClosingBlockerOwner,
+  ClosingBlockerOwnerSchema,
+  type ClosingBlockerSeverity,
+  ClosingBlockerSeveritySchema,
+  type ClosingBlockerType,
+  ClosingBlockerTypeSchema,
+  type ClosingReadinessState,
+  ClosingReadinessStateSchema,
+  type CommitmentLifecycleState,
+  CommitmentLifecycleStateSchema,
+  type DealLifecycleState,
+  DealLifecycleStateSchema,
+  type DocumentRequirementCategory,
+  DocumentRequirementCategorySchema,
+  type DocumentRequirementOwner,
+  DocumentRequirementOwnerSchema,
+  type DocumentRequirementStatus,
+  DocumentRequirementStatusSchema,
+  type KybOperationalStatus,
+  KybOperationalStatusSchema,
+  type KycOperationalStatus,
+  KycOperationalStatusSchema,
+  type SignatureOperationalStatus,
+  SignatureOperationalStatusSchema,
+  STATUS_TONES,
+  type StatusTone,
+  type WireOperationalStatus,
+  WireOperationalStatusSchema,
 } from '@repo/domain'
 import { z } from 'zod'
 
@@ -23,9 +38,11 @@ export const DealSlugSchema = z
   .min(1)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
 
-export const GetOperationalCenterInputSchema = z.object({
-  dealId: DealSlugSchema,
-})
+export const GetOperationalCenterInputSchema = z
+  .object({
+    dealId: DealSlugSchema,
+  })
+  .strict()
 
 export type GetOperationalCenterInputDTO = z.infer<typeof GetOperationalCenterInputSchema>
 
@@ -206,15 +223,33 @@ export type DocumentCenterDTO = {
   readonly groups: readonly DocumentGroupDTO[]
 }
 
+export type DocumentRequirementLevelDTO =
+  | {
+      readonly kind: 'required'
+    }
+  | {
+      readonly kind: 'optional'
+    }
+
+export type DocumentClosingImpactDTO =
+  | {
+      readonly kind: 'blocks_closing'
+    }
+  | {
+      readonly kind: 'cleared_for_closing'
+    }
+  | {
+      readonly kind: 'does_not_block_closing'
+    }
+
 export type DocumentRequirementDTO = {
   readonly id: string
   readonly category: DocumentRequirementCategory
   readonly label: string
-  readonly required: boolean
+  readonly requirement: DocumentRequirementLevelDTO
   readonly status: DocumentRequirementStatus
   readonly owner: DocumentRequirementOwner
-  readonly tone: StatusToneDTO
-  readonly blocksClosing: boolean
+  readonly closingImpact: DocumentClosingImpactDTO
   readonly relatedInvestorId?: string
   readonly groupId: string
   readonly dueDate?: string
@@ -301,6 +336,11 @@ export type DealOperationalCenterValidationErrorDTO =
       readonly message: string
     }
   | {
+      readonly _tag: 'DocumentInvariantViolation'
+      readonly documentId: string
+      readonly message: string
+    }
+  | {
       readonly _tag: 'DanglingReference'
       readonly path: string
       readonly target: string
@@ -327,3 +367,466 @@ export type GetDealOperationalCenterOutputDTO =
       readonly _tag: 'ValidationError'
       readonly error: DealOperationalCenterValidationErrorDTO
     }
+
+const NonEmptyStringSchema = z.string().min(1)
+const StatusToneSchema = z.enum(STATUS_TONES)
+
+export const CurrencyCodeSchema = z.literal('EUR')
+
+export const MoneyMinorUnitsSchema = z
+  .object({
+    amountMinor: z.number().int().safe().nonnegative(),
+    currency: CurrencyCodeSchema,
+  })
+  .strict()
+
+export const IsoDateTimeStringSchema = z.string().datetime()
+
+const DealVehicleTypeSchema = z.enum(['luxembourg_scsp', 'french_sc', 'french_sas'])
+const DealVehicleSetupStatusSchema = z.enum(['not_started', 'in_progress', 'ready', 'blocked'])
+const DealClosingModeSchema = z.enum(['standard', 'ongoing'])
+const DealSharingModeSchema = z.enum(['disabled', 'request_access', 'anyone_with_link'])
+const ClosingBlockerRouteHintSchema = z.enum(['about', 'commitments', 'documents'])
+const ReadinessDimensionStateSchema = z.enum(['ready', 'attention', 'blocked', 'not_started'])
+
+const ReadinessDimensionSchema = z
+  .object({
+    blockerCount: z.number().int().nonnegative(),
+    id: z.enum([
+      'investor_identity',
+      'signatures',
+      'wires',
+      'documents',
+      'capital_reconciliation',
+      'vehicle_setup',
+    ]),
+    label: NonEmptyStringSchema,
+    state: ReadinessDimensionStateSchema,
+  })
+  .strict()
+
+const ClosingReadinessSchema = z
+  .object({
+    dimensions: z.array(ReadinessDimensionSchema),
+    state: ClosingReadinessStateSchema,
+  })
+  .strict()
+
+const CapitalTargetPositionSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('under_target'),
+      remainingToTarget: MoneyMinorUnitsSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('at_target'),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('over_target'),
+      overTarget: MoneyMinorUnitsSchema,
+    })
+    .strict(),
+])
+
+const CapitalMatchingSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('matched'),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('unmatched'),
+      unmatchedReceived: MoneyMinorUnitsSchema,
+    })
+    .strict(),
+])
+
+const DealEconomicsSchema = z
+  .object({
+    carryPercent: z.number().finite().nonnegative(),
+    entryFees: MoneyMinorUnitsSchema,
+    grossCommitted: MoneyMinorUnitsSchema,
+    netInvestableAmount: MoneyMinorUnitsSchema,
+    spvFee: MoneyMinorUnitsSchema,
+  })
+  .strict()
+
+const CapitalReconciliationSchema = z
+  .object({
+    committedAmount: MoneyMinorUnitsSchema,
+    economics: DealEconomicsSchema,
+    matchedAmount: MoneyMinorUnitsSchema,
+    matching: CapitalMatchingSchema,
+    receivedAmount: MoneyMinorUnitsSchema,
+    signedAmount: MoneyMinorUnitsSchema,
+    targetAmount: MoneyMinorUnitsSchema,
+    targetPosition: CapitalTargetPositionSchema,
+    unfundedCommitted: MoneyMinorUnitsSchema,
+    unreceivedSigned: MoneyMinorUnitsSchema,
+    unsignedCommitted: MoneyMinorUnitsSchema,
+  })
+  .strict()
+
+const ClosingBlockerSchema = z
+  .object({
+    description: NonEmptyStringSchema,
+    id: NonEmptyStringSchema,
+    owner: ClosingBlockerOwnerSchema,
+    relatedDocumentIds: z.array(NonEmptyStringSchema),
+    relatedInvestorIds: z.array(NonEmptyStringSchema),
+    resolved: z.boolean(),
+    routeHint: ClosingBlockerRouteHintSchema,
+    severity: ClosingBlockerSeveritySchema,
+    title: NonEmptyStringSchema,
+    tone: StatusToneSchema,
+    type: ClosingBlockerTypeSchema,
+  })
+  .strict()
+
+const InvestorEntitySchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('individual'),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('legal_entity'),
+      legalEntity: z
+        .object({
+          kyb: z.discriminatedUnion('kind', [
+            z
+              .object({
+                kind: z.literal('available'),
+                status: KybOperationalStatusSchema,
+                statusLabel: NonEmptyStringSchema,
+              })
+              .strict(),
+            z
+              .object({
+                kind: z.literal('missing'),
+                statusLabel: NonEmptyStringSchema,
+              })
+              .strict(),
+          ]),
+          name: NonEmptyStringSchema,
+        })
+        .strict(),
+    })
+    .strict(),
+])
+
+const InvestorOperationSchema = z
+  .object({
+    blockerIds: z.array(NonEmptyStringSchema),
+    commitmentAmount: MoneyMinorUnitsSchema,
+    commitmentStatus: CommitmentLifecycleStateSchema,
+    commitmentStatusLabel: NonEmptyStringSchema,
+    documentIds: z.array(NonEmptyStringSchema),
+    entity: InvestorEntitySchema,
+    id: NonEmptyStringSchema,
+    investorEmail: NonEmptyStringSchema.optional(),
+    investorName: NonEmptyStringSchema,
+    kycStatus: KycOperationalStatusSchema,
+    kycStatusLabel: NonEmptyStringSchema,
+    lastActivityAt: IsoDateTimeStringSchema.optional(),
+    readinessState: ReadinessDimensionStateSchema,
+    signatureStatus: SignatureOperationalStatusSchema,
+    signatureStatusLabel: NonEmptyStringSchema,
+    wireStatus: WireOperationalStatusSchema,
+    wireStatusLabel: NonEmptyStringSchema,
+  })
+  .strict()
+
+const DocumentRequirementLevelSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('required'),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('optional'),
+    })
+    .strict(),
+])
+
+const DocumentClosingImpactSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('blocks_closing'),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('cleared_for_closing'),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('does_not_block_closing'),
+    })
+    .strict(),
+])
+
+const DocumentRequirementSchema = z
+  .object({
+    category: DocumentRequirementCategorySchema,
+    closingImpact: DocumentClosingImpactSchema,
+    dueDate: IsoDateTimeStringSchema.optional(),
+    groupId: NonEmptyStringSchema,
+    id: NonEmptyStringSchema,
+    label: NonEmptyStringSchema,
+    lastActivityAt: IsoDateTimeStringSchema.optional(),
+    owner: DocumentRequirementOwnerSchema,
+    relatedInvestorId: NonEmptyStringSchema.optional(),
+    requirement: DocumentRequirementLevelSchema,
+    status: DocumentRequirementStatusSchema,
+  })
+  .strict()
+
+const DocumentGroupSchema = z
+  .object({
+    documentIds: z.array(NonEmptyStringSchema),
+    id: NonEmptyStringSchema,
+    label: NonEmptyStringSchema,
+    visibility: z.enum(['internal', 'investor_visible', 'protected']),
+  })
+  .strict()
+
+const DocumentCenterSchema = z
+  .object({
+    groups: z.array(DocumentGroupSchema),
+    requirements: z.array(DocumentRequirementSchema),
+  })
+  .strict()
+
+const ActivityEventBaseFields = {
+  actorLabel: NonEmptyStringSchema,
+  id: NonEmptyStringSchema,
+  occurredAt: IsoDateTimeStringSchema,
+  summary: NonEmptyStringSchema,
+} as const
+
+const ActivityEventSchema = z.discriminatedUnion('eventType', [
+  z
+    .object({
+      ...ActivityEventBaseFields,
+      eventType: z.literal('commitment_updated'),
+      relatedInvestorId: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...ActivityEventBaseFields,
+      eventType: z.literal('document_uploaded'),
+      relatedDocumentId: NonEmptyStringSchema,
+      relatedInvestorId: NonEmptyStringSchema.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      ...ActivityEventBaseFields,
+      eventType: z.literal('document_rejected'),
+      relatedDocumentId: NonEmptyStringSchema,
+      relatedInvestorId: NonEmptyStringSchema.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      ...ActivityEventBaseFields,
+      eventType: z.literal('signature_sent'),
+      relatedInvestorId: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...ActivityEventBaseFields,
+      eventType: z.literal('signature_completed'),
+      relatedInvestorId: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...ActivityEventBaseFields,
+      eventType: z.literal('wire_flagged'),
+      relatedBlockerId: NonEmptyStringSchema,
+      relatedInvestorId: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...ActivityEventBaseFields,
+      eventType: z.literal('wire_matched'),
+      relatedInvestorId: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...ActivityEventBaseFields,
+      eventType: z.literal('blocker_created'),
+      relatedBlockerId: NonEmptyStringSchema,
+      relatedDocumentId: NonEmptyStringSchema.optional(),
+      relatedInvestorId: NonEmptyStringSchema.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      ...ActivityEventBaseFields,
+      eventType: z.literal('blocker_resolved'),
+      relatedBlockerId: NonEmptyStringSchema,
+      relatedDocumentId: NonEmptyStringSchema.optional(),
+      relatedInvestorId: NonEmptyStringSchema.optional(),
+    })
+    .strict(),
+])
+
+const DealVehicleSchema = z
+  .object({
+    jurisdiction: NonEmptyStringSchema,
+    name: NonEmptyStringSchema,
+    setupStatus: DealVehicleSetupStatusSchema,
+    type: DealVehicleTypeSchema,
+  })
+  .strict()
+
+const DealAccessSchema = z
+  .object({
+    pendingAccessRequestCount: z.number().int().nonnegative(),
+    sharingMode: DealSharingModeSchema,
+  })
+  .strict()
+
+const DealSummarySchema = z
+  .object({
+    access: DealAccessSchema,
+    closingMode: DealClosingModeSchema,
+    companyName: NonEmptyStringSchema,
+    currency: CurrencyCodeSchema,
+    id: NonEmptyStringSchema,
+    lastUpdatedAt: IsoDateTimeStringSchema,
+    name: NonEmptyStringSchema,
+    slug: DealSlugSchema,
+    stage: DealLifecycleStateSchema,
+    stageLabel: NonEmptyStringSchema,
+    targetCloseDate: IsoDateTimeStringSchema,
+    vehicle: DealVehicleSchema,
+  })
+  .strict()
+
+export const DealOperationalCenterSchema = z
+  .object({
+    _tag: z.literal('DealOperationalCenter'),
+    activity: z.array(ActivityEventSchema),
+    blockers: z.array(ClosingBlockerSchema),
+    capital: CapitalReconciliationSchema,
+    deal: DealSummarySchema,
+    documents: DocumentCenterSchema,
+    generatedAt: IsoDateTimeStringSchema,
+    investors: z.array(InvestorOperationSchema),
+    readiness: ClosingReadinessSchema,
+  })
+  .strict()
+
+const CapitalReconciliationErrorSchema = z.discriminatedUnion('_tag', [
+  z
+    .object({
+      _tag: z.literal('NegativeAmount'),
+      amount: MoneyMinorUnitsSchema,
+      field: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      _tag: z.literal('StageOrderViolation'),
+      earlierAmount: MoneyMinorUnitsSchema,
+      earlierStage: CapitalStageSchema,
+      laterAmount: MoneyMinorUnitsSchema,
+      laterStage: CapitalStageSchema,
+    })
+    .strict(),
+])
+
+const MoneySerializationErrorSchema = z
+  .object({
+    _tag: z.literal('UnsafeMoneyAmount'),
+    amountMinor: NonEmptyStringSchema,
+    field: NonEmptyStringSchema,
+  })
+  .strict()
+
+const DealOperationalCenterValidationErrorSchema = z.discriminatedUnion('_tag', [
+  z
+    .object({
+      _tag: z.literal('InvalidMoney'),
+      path: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      _tag: z.literal('InvalidDateTime'),
+      path: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      _tag: z.literal('CapitalInvariantViolation'),
+      message: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      _tag: z.literal('DocumentInvariantViolation'),
+      documentId: NonEmptyStringSchema,
+      message: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      _tag: z.literal('DanglingReference'),
+      path: NonEmptyStringSchema,
+      target: NonEmptyStringSchema,
+    })
+    .strict(),
+])
+
+const GetDealOperationalCenterOutputSchemaBase = z.discriminatedUnion('_tag', [
+  z
+    .object({
+      _tag: z.literal('Ok'),
+      data: DealOperationalCenterSchema,
+    })
+    .strict(),
+  z
+    .object({
+      _tag: z.literal('UnsupportedDeal'),
+      dealId: DealSlugSchema,
+    })
+    .strict(),
+  z
+    .object({
+      _tag: z.literal('ReconciliationError'),
+      error: CapitalReconciliationErrorSchema,
+    })
+    .strict(),
+  z
+    .object({
+      _tag: z.literal('MoneySerializationError'),
+      error: MoneySerializationErrorSchema,
+    })
+    .strict(),
+  z
+    .object({
+      _tag: z.literal('ValidationError'),
+      error: DealOperationalCenterValidationErrorSchema,
+    })
+    .strict(),
+])
+
+export const GetDealOperationalCenterOutputSchema =
+  GetDealOperationalCenterOutputSchemaBase as z.ZodType<GetDealOperationalCenterOutputDTO>

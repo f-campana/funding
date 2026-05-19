@@ -1,8 +1,4 @@
-import {
-  summarizeCapitalReconciliation,
-  summarizeClosingReadiness,
-  summarizeDocumentCompleteness,
-} from '@repo/domain'
+import { summarizeCapitalReconciliation, summarizeClosingReadiness } from '@repo/domain'
 import { describe, expect, it } from 'vitest'
 
 import { northstarOperationalFixture } from './fixtures/northstar-energy.fixture'
@@ -247,13 +243,17 @@ describe('getDealOperationalCenter', () => {
       throw new Error(`Expected DTO, received ${result.error._tag}`)
     }
 
-    const summary = summarizeDocumentCompleteness(result.value.documents.requirements)
+    const requiredDocuments = result.value.documents.requirements.filter(
+      (document) => document.requirement.kind === 'required',
+    )
 
-    expect(summary.requiredMissingCount).toBe(1)
-    expect(summary.requiredRejectedCount).toBe(1)
-    expect(summary.requiredExpiredCount).toBe(1)
+    expect(countDocumentsByStatus(requiredDocuments, 'missing')).toBe(1)
+    expect(countDocumentsByStatus(requiredDocuments, 'rejected')).toBe(1)
+    expect(countDocumentsByStatus(requiredDocuments, 'expired')).toBe(1)
     expect(
-      result.value.documents.requirements.filter((document) => document.blocksClosing),
+      result.value.documents.requirements.filter(
+        (document) => document.closingImpact.kind === 'blocks_closing',
+      ),
     ).toHaveLength(4)
     expect(result.value.documents.groups.map((group) => group.id)).toEqual([
       'group-generated-closing',
@@ -296,3 +296,10 @@ const getCapitalSummary = (capital: typeof northstarOperationalFixture.capital) 
 
   return result.value
 }
+
+const countDocumentsByStatus = (
+  documents: readonly {
+    readonly status: string
+  }[],
+  status: string,
+): number => documents.filter((document) => document.status === status).length

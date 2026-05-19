@@ -2,6 +2,7 @@
 
 import { DealCommitmentInspector } from '@repo/kit/deal-commitment-inspector'
 import {
+  type CommitmentTableRowState,
   DealCommitmentsTable,
   type DealCommitmentsTableLabels,
   type DealCommitmentsTableLifecycleState,
@@ -27,7 +28,6 @@ type CommitmentsWorkspaceProps = {
   readonly table: DealCommitmentsTableViewModel
 }
 
-const closedInspectorRowId = '__commitment_inspector_closed__'
 const commitmentsRoutePattern = '/deals/[dealId]/commitments'
 const inspectorTelemetryMetadata = {
   routeKind: 'commitments',
@@ -104,6 +104,13 @@ export function CommitmentsWorkspace({ inspector, table }: CommitmentsWorkspaceP
     )
   }
 
+  const syncRowState = (rowState: CommitmentTableRowState) => {
+    const next = getActiveRowIds(rowState)
+
+    setActiveRowId(next.activeRowId)
+    setDrawerOpenRowId(next.drawerOpenRowId)
+  }
+
   const handleInspectorOpenChange = (open: boolean) => {
     if (open) {
       return
@@ -134,6 +141,7 @@ export function CommitmentsWorkspace({ inspector, table }: CommitmentsWorkspaceP
         className="min-w-0"
         labels={commitmentsTableLabels}
         onRowOpen={openInspector}
+        onRowStateChange={syncRowState}
         onSelectedRowIdsChange={setSelectedRowIds}
         state={controlledTableState}
       />
@@ -186,8 +194,38 @@ const getControlledTableState = (
 
   return {
     ...state,
-    activeRowId: activeRowId ?? closedInspectorRowId,
-    drawerOpenRowId: drawerOpenRowId ?? closedInspectorRowId,
+    rowState: getTableRowState(activeRowId, drawerOpenRowId),
     selectedRowIds,
+  }
+}
+
+const getTableRowState = (
+  activeRowId: string | undefined,
+  drawerOpenRowId: string | undefined,
+): CommitmentTableRowState => {
+  if (drawerOpenRowId) {
+    return { drawerOpen: true, kind: 'active', rowId: drawerOpenRowId }
+  }
+
+  if (activeRowId) {
+    return { drawerOpen: false, kind: 'active', rowId: activeRowId }
+  }
+
+  return { kind: 'idle' }
+}
+
+const getActiveRowIds = (
+  rowState: CommitmentTableRowState,
+): {
+  readonly activeRowId: string | undefined
+  readonly drawerOpenRowId: string | undefined
+} => {
+  if (rowState.kind === 'idle') {
+    return { activeRowId: undefined, drawerOpenRowId: undefined }
+  }
+
+  return {
+    activeRowId: rowState.rowId,
+    drawerOpenRowId: rowState.drawerOpen ? rowState.rowId : undefined,
   }
 }

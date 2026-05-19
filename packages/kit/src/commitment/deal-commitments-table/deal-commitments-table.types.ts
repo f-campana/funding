@@ -1,17 +1,13 @@
-import type { CommitmentReadinessKey } from '../commitment-readiness.types'
+import type { CommitmentReadinessRecord } from '../commitment-readiness.types'
 
-export type { CommitmentReadinessKey } from '../commitment-readiness.types'
-
-export type CommitmentReadinessTone = 'success' | 'danger' | 'attention' | 'info' | 'neutral'
-
-export type CommitmentReadinessVariantByKey = {
-  readonly kycKyb: 'verified' | 'inReview' | 'expired' | 'unavailable'
-  readonly signature: 'signed' | 'pending' | 'unavailable'
-  readonly wire: 'received' | 'pending' | 'notReceived' | 'syncFailed'
-  readonly reconciliation: 'reconciled' | 'pending' | 'notStarted' | 'reconciling' | 'needsReview'
-}
-
-export type CommitmentReadinessVariant = CommitmentReadinessVariantByKey[CommitmentReadinessKey]
+export type {
+  CommitmentReadinessKey,
+  CommitmentReadinessRecord,
+  CommitmentReadinessState,
+  CommitmentReadinessTone,
+  CommitmentReadinessVariant,
+  CommitmentReadinessVariantByKey,
+} from '../commitment-readiness.types'
 
 export type CommitmentInvestorStatusTone = 'complete' | 'attention' | 'inProgress' | 'pending'
 
@@ -51,25 +47,6 @@ export type CommitmentTableGroupValue = 'none' | 'status' | 'readinessIssue'
 export type CommitmentTablePaginationState = {
   readonly page: number
   readonly pageSize: number
-}
-
-export type CommitmentReadinessState<Key extends CommitmentReadinessKey = CommitmentReadinessKey> =
-  Key extends CommitmentReadinessKey
-    ? {
-        readonly key: Key
-        readonly variant: CommitmentReadinessVariantByKey[Key]
-        /**
-         * Display labels remain caller-owned for localization. Table behavior derives from
-         * `variant`, not from these strings.
-         */
-        readonly label: string
-        readonly value: string
-        readonly detail?: string | undefined
-      }
-    : never
-
-export type CommitmentReadinessRecord = {
-  readonly [Key in CommitmentReadinessKey]: CommitmentReadinessState<Key>
 }
 
 export type CommitmentTableRetryAction = {
@@ -120,6 +97,11 @@ export type CommitmentInvestorRow = {
   readonly disabled?: boolean
 }
 
+export type CommitmentTableRowState =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'active'; readonly rowId: string; readonly drawerOpen: false }
+  | { readonly kind: 'active'; readonly rowId: string; readonly drawerOpen: true }
+
 export type DealCommitmentsTableLifecycleState =
   | {
       readonly kind: 'loading'
@@ -140,8 +122,7 @@ export type DealCommitmentsTableLifecycleState =
   | {
       readonly kind: 'ready'
       readonly rows: readonly CommitmentInvestorRow[]
-      readonly activeRowId?: string | undefined
-      readonly drawerOpenRowId?: string | undefined
+      readonly rowState?: CommitmentTableRowState | undefined
       readonly hoveredRowId?: string | undefined
       readonly selectedRowIds?: readonly string[] | undefined
       readonly searchValue?: string | undefined
@@ -175,6 +156,7 @@ export type DealCommitmentsTableBaseProps = {
   readonly onSelectedRowIdsChange?: (rowIds: readonly string[]) => void
   readonly onSearchValueChange?: (value: string) => void
   readonly onActiveFilterIdsChange?: (ids: readonly CommitmentTableFilterId[]) => void
+  readonly onRowStateChange?: (rowState: CommitmentTableRowState) => void
   readonly onPageChange?: (page: number) => void
   readonly onPageSizeChange?: (pageSize: number) => void
   readonly className?: string
@@ -235,8 +217,6 @@ export type DealCommitmentsTableLabels = {
 
 export type ReadyControls = {
   readonly activeFilterIds: readonly CommitmentTableFilterId[]
-  readonly activeRowId: string | undefined
-  readonly drawerOpenRowId: string | undefined
   readonly group: CommitmentTableGroupValue
   readonly hoveredRowId: string | undefined
   readonly page: number
@@ -244,19 +224,19 @@ export type ReadyControls = {
   readonly searchValue: string
   readonly selectedRowIds: readonly string[]
   readonly sort: CommitmentTableSortState | undefined
+  readonly rowState: CommitmentTableRowState
   readonly view: CommitmentTableViewValue
 }
 
 export type LocalReadyControls = {
   readonly activeFilterIds: readonly CommitmentTableFilterId[]
-  readonly activeRowId: string | undefined
-  readonly drawerOpenRowId: string | undefined
   readonly group: CommitmentTableGroupValue
   readonly page: number
   readonly pageSize: number
   readonly searchValue: string
   readonly selectedRowIds: readonly string[]
   readonly sort: CommitmentTableSortState | undefined
+  readonly rowState: CommitmentTableRowState
   readonly view: CommitmentTableViewValue
 }
 

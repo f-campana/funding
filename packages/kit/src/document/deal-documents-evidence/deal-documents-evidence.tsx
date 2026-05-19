@@ -18,6 +18,7 @@ import { match } from 'ts-pattern'
 
 import {
   documentEvidenceToneBadgeClasses,
+  getDocumentEvidenceStatusTone,
   getDocumentsEvidenceTone,
 } from './deal-documents-evidence.model'
 import type {
@@ -268,93 +269,97 @@ const DocumentItem = ({
 }: {
   readonly document: DealDocumentsEvidenceItem
   readonly labels: DealDocumentsEvidenceLabels
-}) => (
-  <li>
-    <article
-      className="grid gap-3 rounded-md border border-border/70 bg-card/80 p-3"
-      data-blocks-closing={document.blocksClosing ? 'true' : 'false'}
-      data-document-id={document.id}
-      data-requirement={document.requirement.kind}
-      data-slot="deal-documents-evidence-document"
-      data-status={document.status.kind}
-      data-tone={document.status.tone}
-    >
-      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="grid min-w-0 gap-1">
-          <h5 className="break-words text-sm font-semibold text-card-foreground">
-            {document.label}
-          </h5>
-          {document.description ? (
-            <p className="text-sm leading-6 text-muted-foreground">{document.description}</p>
-          ) : null}
+}) => {
+  const statusTone = getDocumentEvidenceStatusTone(document.status.kind)
+
+  return (
+    <li>
+      <article
+        className="grid gap-3 rounded-md border border-border/70 bg-card/80 p-3"
+        data-blocks-closing={document.blocksClosing ? 'true' : 'false'}
+        data-document-id={document.id}
+        data-requirement={document.requirement.kind}
+        data-slot="deal-documents-evidence-document"
+        data-status={document.status.kind}
+        data-tone={statusTone}
+      >
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="grid min-w-0 gap-1">
+            <h5 className="break-words text-sm font-semibold text-card-foreground">
+              {document.label}
+            </h5>
+            {document.description ? (
+              <p className="text-sm leading-6 text-muted-foreground">{document.description}</p>
+            ) : null}
+          </div>
+          <ToneBadge tone={statusTone}>{document.status.label}</ToneBadge>
         </div>
-        <ToneBadge tone={document.status.tone}>{document.status.label}</ToneBadge>
-      </div>
-      <dl className="grid gap-2 text-xs sm:grid-cols-2 xl:grid-cols-3">
-        <Fact
-          icon={<FileCheck2 aria-hidden="true" className="size-3.5" />}
-          label={labels.documentStatusLabel}
-          value={document.status.label}
-        />
-        <Fact
-          icon={<UserRound aria-hidden="true" className="size-3.5" />}
-          label={labels.documentOwnerLabel}
-          value={document.ownerLabel}
-        />
-        <Fact
-          icon={<Scale aria-hidden="true" className="size-3.5" />}
-          label={labels.documentRequirementLabel}
-          value={document.requirement.label}
-        />
-        <Fact
-          icon={<CircleAlert aria-hidden="true" className="size-3.5" />}
-          label={labels.documentBlockingLabel}
-          value={document.blockingLabel}
-        />
-        {document.relatedInvestorLabel ? (
+        <dl className="grid gap-2 text-xs sm:grid-cols-2 xl:grid-cols-3">
           <Fact
-            icon={<Landmark aria-hidden="true" className="size-3.5" />}
-            label={labels.documentRelatedInvestorLabel}
-            value={document.relatedInvestorLabel}
+            icon={<FileCheck2 aria-hidden="true" className="size-3.5" />}
+            label={labels.documentStatusLabel}
+            value={document.status.label}
           />
-        ) : null}
-        {document.dueLabel ? (
           <Fact
-            icon={<Clock3 aria-hidden="true" className="size-3.5" />}
-            label={labels.documentDueLabel}
-            value={
-              document.dueDateTime ? (
-                <time dateTime={document.dueDateTime}>{document.dueLabel}</time>
-              ) : (
-                document.dueLabel
-              )
-            }
+            icon={<UserRound aria-hidden="true" className="size-3.5" />}
+            label={labels.documentOwnerLabel}
+            value={document.ownerLabel}
           />
-        ) : null}
-        {document.lastActivityLabel ? (
           <Fact
-            icon={<Activity aria-hidden="true" className="size-3.5" />}
-            label={labels.documentLastActivityLabel}
-            value={
-              document.lastActivityDateTime ? (
-                <time dateTime={document.lastActivityDateTime}>{document.lastActivityLabel}</time>
-              ) : (
-                document.lastActivityLabel
-              )
-            }
+            icon={<Scale aria-hidden="true" className="size-3.5" />}
+            label={labels.documentRequirementLabel}
+            value={document.requirement.label}
           />
-        ) : null}
-        {document.visibilityLabel ? (
           <Fact
-            icon={<Eye aria-hidden="true" className="size-3.5" />}
-            label={labels.documentVisibilityLabel}
-            value={document.visibilityLabel}
+            icon={<CircleAlert aria-hidden="true" className="size-3.5" />}
+            label={labels.documentBlockingLabel}
+            value={document.blockingLabel}
           />
-        ) : null}
-      </dl>
-    </article>
-  </li>
-)
+          {document.relatedInvestorLabel ? (
+            <Fact
+              icon={<Landmark aria-hidden="true" className="size-3.5" />}
+              label={labels.documentRelatedInvestorLabel}
+              value={document.relatedInvestorLabel}
+            />
+          ) : null}
+          {document.dueLabel ? (
+            <Fact
+              icon={<Clock3 aria-hidden="true" className="size-3.5" />}
+              label={labels.documentDueLabel}
+              value={
+                document.dueDateTime ? (
+                  <time dateTime={document.dueDateTime}>{document.dueLabel}</time>
+                ) : (
+                  document.dueLabel
+                )
+              }
+            />
+          ) : null}
+          {document.lastActivityLabel ? (
+            <Fact
+              icon={<Activity aria-hidden="true" className="size-3.5" />}
+              label={labels.documentLastActivityLabel}
+              value={
+                document.lastActivityDateTime ? (
+                  <time dateTime={document.lastActivityDateTime}>{document.lastActivityLabel}</time>
+                ) : (
+                  document.lastActivityLabel
+                )
+              }
+            />
+          ) : null}
+          {document.visibilityLabel ? (
+            <Fact
+              icon={<Eye aria-hidden="true" className="size-3.5" />}
+              label={labels.documentVisibilityLabel}
+              value={document.visibilityLabel}
+            />
+          ) : null}
+        </dl>
+      </article>
+    </li>
+  )
+}
 
 const LoadingContent = ({
   label,

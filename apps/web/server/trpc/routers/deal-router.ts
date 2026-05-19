@@ -2,6 +2,7 @@ import {
   type DealOperationalCenterDTO,
   type GetDealOperationalCenterError,
   type GetDealOperationalCenterOutputDTO,
+  GetDealOperationalCenterOutputSchema,
   GetOperationalCenterInputSchema,
   getDealOperationalCenter,
 } from '../../deals'
@@ -51,14 +52,22 @@ const mapGetDealOperationalCenterError = (
         error: error.error,
       }
   }
+
+  return assertNever(error)
+}
+
+const assertNever = (value: never): never => {
+  throw new Error(`Unhandled getDealOperationalCenter error: ${JSON.stringify(value)}`)
 }
 
 export const dealRouter = createTrpcRouter({
   // Fixture-backed demo seam. Production private deal data must require real auth.
   getOperationalCenter: publicProcedure
     .input(GetOperationalCenterInputSchema)
-    .query(
-      ({ input }): GetDealOperationalCenterOutputDTO =>
+    .output(GetDealOperationalCenterOutputSchema)
+    .query(({ input }) =>
+      GetDealOperationalCenterOutputSchema.parse(
         mapGetDealOperationalCenterResult(getDealOperationalCenter(input)),
+      ),
     ),
 })

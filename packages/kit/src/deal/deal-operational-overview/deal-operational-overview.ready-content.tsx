@@ -7,7 +7,7 @@ import { ReadinessSection } from './deal-operational-overview.readiness-section'
 import { readinessToneClasses } from './deal-operational-overview.styles'
 import type {
   DealOperationalOverviewLabels,
-  DealOperationalOverviewState,
+  DealOperationalOverviewReadyState,
   DealOperationalReadinessSummary,
 } from './deal-operational-overview.types'
 
@@ -17,7 +17,7 @@ export const ReadyContent = ({
   titleId,
 }: {
   readonly labels: DealOperationalOverviewLabels
-  readonly state: Extract<DealOperationalOverviewState, { readonly kind: 'ready' }>
+  readonly state: DealOperationalOverviewReadyState
   readonly titleId: string
 }) => (
   <>

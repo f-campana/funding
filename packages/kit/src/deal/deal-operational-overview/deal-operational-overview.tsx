@@ -26,6 +26,7 @@ export type {
   DealOperationalOverviewErrorState,
   DealOperationalOverviewLabels,
   DealOperationalOverviewProps,
+  DealOperationalOverviewReadyState,
   DealOperationalOverviewRetryAction,
   DealOperationalOverviewState,
   DealOperationalProgress,

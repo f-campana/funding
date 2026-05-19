@@ -114,14 +114,19 @@ export const Default = {
 }
 
 export const ActiveDrawerClosed = {
-  render: () => renderTable({ state: readyTableState({ activeRowId: 'pine-point-capital' }) }),
+  render: () =>
+    renderTable({
+      state: readyTableState({
+        rowState: { drawerOpen: false, kind: 'active', rowId: 'pine-point-capital' },
+      }),
+    }),
 }
 
 export const ActiveDrawerOpen = {
   render: () =>
     renderTable({
       state: readyTableState({
-        drawerOpenRowId: 'pine-point-capital',
+        rowState: { drawerOpen: true, kind: 'active', rowId: 'pine-point-capital' },
       }),
     }),
 }
@@ -219,10 +224,14 @@ export const RowStates = {
       })}
       {renderRowStateTable('Attention not selected')}
       {renderRowStateTable('Active drawer closed', {
-        state: readyTableState({ activeRowId: 'pine-point-capital' }),
+        state: readyTableState({
+          rowState: { drawerOpen: false, kind: 'active', rowId: 'pine-point-capital' },
+        }),
       })}
       {renderRowStateTable('Active drawer open', {
-        state: readyTableState({ drawerOpenRowId: 'pine-point-capital' }),
+        state: readyTableState({
+          rowState: { drawerOpen: true, kind: 'active', rowId: 'pine-point-capital' },
+        }),
       })}
       {renderRowStateTable('Loading', { state: { kind: 'loading', rowCount: 3 } })}
     </StoryStack>
@@ -237,7 +246,7 @@ export const DarkDrawerOpen = {
   render: () =>
     renderDarkTable({
       state: readyTableState({
-        drawerOpenRowId: 'pine-point-capital',
+        rowState: { drawerOpen: true, kind: 'active', rowId: 'pine-point-capital' },
       }),
     }),
 }

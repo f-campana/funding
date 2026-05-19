@@ -1,5 +1,7 @@
 import type { StatusTone } from '@repo/domain'
 
+export type { StatusTone } from '@repo/domain'
+
 export const statusToneClasses = {
   attention: 'border-status-attention-border bg-status-attention-muted text-status-attention',
   danger: 'border-status-danger-border bg-status-danger-muted text-status-danger',

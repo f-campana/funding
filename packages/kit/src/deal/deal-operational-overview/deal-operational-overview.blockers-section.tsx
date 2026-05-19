@@ -1,7 +1,6 @@
 import { Badge, cn } from '@repo/ui'
-import { Clock3, FileCheck2, Landmark, ListChecks, UserRound } from 'lucide-react'
-import { type ReactNode, useId } from 'react'
-import { match } from 'ts-pattern'
+import { Clock3, FileCheck2, Landmark, ListChecks, type LucideIcon, UserRound } from 'lucide-react'
+import { useId } from 'react'
 
 import { severityToneClasses } from './deal-operational-overview.styles'
 import type {
@@ -10,6 +9,14 @@ import type {
 } from './deal-operational-overview.types'
 
 type BlockerFactIconName = 'documents' | 'due' | 'investors' | 'owner' | 'surface'
+
+const blockerFactIconByName = {
+  documents: FileCheck2,
+  due: Clock3,
+  investors: Landmark,
+  owner: UserRound,
+  surface: ListChecks,
+} as const satisfies Record<BlockerFactIconName, LucideIcon>
 
 export const BlockersSection = ({
   blockers,
@@ -126,13 +133,7 @@ const BlockerFact = ({
 
 const BlockerFactIcon = ({ icon }: { readonly icon: BlockerFactIconName }) => {
   const className = 'size-3.5 shrink-0'
+  const Icon = blockerFactIconByName[icon]
 
-  return match(icon)
-    .returnType<ReactNode>()
-    .with('owner', () => <UserRound aria-hidden="true" className={className} />)
-    .with('surface', () => <ListChecks aria-hidden="true" className={className} />)
-    .with('documents', () => <FileCheck2 aria-hidden="true" className={className} />)
-    .with('due', () => <Clock3 aria-hidden="true" className={className} />)
-    .with('investors', () => <Landmark aria-hidden="true" className={className} />)
-    .exhaustive()
+  return <Icon aria-hidden="true" className={className} />
 }

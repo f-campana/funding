@@ -13,6 +13,7 @@ export {
   type DealOperationalOverviewErrorState,
   type DealOperationalOverviewLabels,
   type DealOperationalOverviewProps,
+  type DealOperationalOverviewReadyState,
   type DealOperationalOverviewRetryAction,
   type DealOperationalOverviewState,
   type DealOperationalProgress,

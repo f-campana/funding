@@ -1,7 +1,11 @@
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
-import { getDealOperationsData } from './data'
+import {
+  dealOperationsRouteDataError,
+  getDealOperationsData,
+  isDealOperationsRouteNotFoundError,
+} from './data'
 import { DealAppShell, type DealAppShellNavItem } from './deal-app-shell'
 import { DealEntityHeader } from './deal-entity-header'
 import { DealOperationalRail } from './deal-operational-rail'
@@ -14,12 +18,17 @@ type DealLayoutProps = {
 
 export default async function DealLayout({ children, params }: DealLayoutProps) {
   const { dealId } = await params
-  const data = getDealOperationsData(dealId)
+  const dataResult = getDealOperationsData(dealId)
 
-  if (!data) {
-    notFound()
+  if (dataResult.isError()) {
+    if (isDealOperationsRouteNotFoundError(dataResult.error)) {
+      notFound()
+    }
+
+    throw dealOperationsRouteDataError(dataResult.error)
   }
 
+  const data = dataResult.value
   const routeDealId = data.deal.slug
   const t = await getTranslations('DealLayout')
   const tabs = [

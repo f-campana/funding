@@ -81,32 +81,6 @@ const identityStatusTone = {
   rejected: 'danger',
 } as const satisfies Record<InvestorOperationDTO['kycStatus'], DealCommitmentInspectorTone>
 
-const signatureStatusTone = {
-  completed: 'success',
-  declined: 'danger',
-  expired: 'danger',
-  failed: 'danger',
-  not_sent: 'neutral',
-  part_signed: 'attention',
-  prepared: 'pending',
-  sent: 'pending',
-  viewed: 'info',
-} as const satisfies Record<InvestorOperationDTO['signatureStatus'], DealCommitmentInspectorTone>
-
-const wireStatusTone = {
-  failed: 'danger',
-  instructions_sent: 'pending',
-  matched: 'success',
-  not_requested: 'neutral',
-  partially_matched: 'attention',
-  pending: 'pending',
-  received: 'attention',
-  reconciled: 'success',
-  returned: 'danger',
-  under_review: 'pending',
-  unmatched: 'danger',
-} as const satisfies Record<InvestorOperationDTO['wireStatus'], DealCommitmentInspectorTone>
-
 const documentStatusLabel = {
   approved: 'Approved',
   expired: 'Expired',
@@ -314,8 +288,8 @@ const mapKycKybReadiness = (
       key: 'kycKyb',
       label: 'KYC/KYB',
       metadata: [...metadata, `KYB ${investor.entity.legalEntity.kyb.statusLabel}`],
-      tone: 'attention',
       value: 'KYB missing',
+      variant: 'unavailable',
     }
   }
 
@@ -329,8 +303,8 @@ const mapKycKybReadiness = (
       key: 'kycKyb',
       label: 'KYC/KYB',
       metadata,
-      tone: 'danger',
       value: blockingStatus.statusLabel,
+      variant: 'expired',
     }
   }
 
@@ -340,8 +314,8 @@ const mapKycKybReadiness = (
       key: 'kycKyb',
       label: 'KYC/KYB',
       metadata,
-      tone: 'pending',
       value: pendingStatus.statusLabel,
+      variant: 'inReview',
     }
   }
 
@@ -351,8 +325,8 @@ const mapKycKybReadiness = (
       key: 'kycKyb',
       label: 'KYC/KYB',
       metadata,
-      tone: 'neutral',
       value: 'Not started',
+      variant: 'unavailable',
     }
   }
 
@@ -361,33 +335,60 @@ const mapKycKybReadiness = (
     key: 'kycKyb',
     label: 'KYC/KYB',
     metadata,
-    tone: 'success',
     value: 'Verified',
+    variant: 'verified',
   }
 }
 
 const mapSignatureReadiness = (
   investor: InvestorOperationDTO,
-): DealCommitmentReadinessItem<'signature'> => ({
-  detail: `Signature: ${investor.signatureStatusLabel}`,
-  key: 'signature',
-  label: 'Signature',
-  metadata: [investor.signatureStatusLabel],
-  tone: signatureStatusTone[investor.signatureStatus],
-  value: investor.signatureStatus === 'completed' ? 'Signed' : investor.signatureStatusLabel,
-})
+): DealCommitmentReadinessItem<'signature'> => {
+  const variant =
+    investor.signatureStatus === 'completed'
+      ? 'signed'
+      : investor.signatureStatus === 'not_sent'
+        ? 'unavailable'
+        : 'pending'
+
+  return {
+    detail: `Signature: ${investor.signatureStatusLabel}`,
+    key: 'signature',
+    label: 'Signature',
+    metadata: [investor.signatureStatusLabel],
+    value: investor.signatureStatus === 'completed' ? 'Signed' : investor.signatureStatusLabel,
+    variant,
+  }
+}
 
 const mapWireReadiness = (investor: InvestorOperationDTO): DealCommitmentReadinessItem<'wire'> => ({
   detail: `Wire: ${investor.wireStatusLabel}`,
   key: 'wire',
   label: 'Wire',
   metadata: [`Expected ${formatMoney(investor.commitmentAmount)}`],
-  tone: wireStatusTone[investor.wireStatus],
   value:
     investor.wireStatus === 'matched' || investor.wireStatus === 'reconciled'
       ? investor.wireStatusLabel
       : investor.wireStatusLabel,
+  variant: getWireReadinessVariant(investor),
 })
+
+const getWireReadinessVariant = (
+  investor: InvestorOperationDTO,
+): DealCommitmentReadinessItem<'wire'>['variant'] => {
+  if (investor.wireStatus === 'matched' || investor.wireStatus === 'reconciled') {
+    return 'received'
+  }
+
+  if (
+    investor.wireStatus === 'failed' ||
+    investor.wireStatus === 'returned' ||
+    investor.wireStatus === 'unmatched'
+  ) {
+    return 'syncFailed'
+  }
+
+  return investor.wireStatus === 'not_requested' ? 'notReceived' : 'pending'
+}
 
 const mapReconciliationReadiness = (
   investor: InvestorOperationDTO,
@@ -397,8 +398,8 @@ const mapReconciliationReadiness = (
       detail: `Commitment: ${investor.commitmentStatusLabel} | Wire: ${investor.wireStatusLabel}`,
       key: 'reconciliation',
       label: 'Reconciliation',
-      tone: 'success',
       value: 'Finance accepted',
+      variant: 'reconciled',
     }
   }
 
@@ -407,8 +408,8 @@ const mapReconciliationReadiness = (
       detail: `Commitment: ${investor.commitmentStatusLabel} | Wire: ${investor.wireStatusLabel}`,
       key: 'reconciliation',
       label: 'Reconciliation',
-      tone: 'info',
       value: 'Matched, finance pending',
+      variant: 'reconciling',
     }
   }
 
@@ -421,8 +422,8 @@ const mapReconciliationReadiness = (
       detail: `Commitment: ${investor.commitmentStatusLabel} | Wire: ${investor.wireStatusLabel}`,
       key: 'reconciliation',
       label: 'Reconciliation',
-      tone: 'danger',
       value: 'Needs review',
+      variant: 'needsReview',
     }
   }
 
@@ -435,8 +436,8 @@ const mapReconciliationReadiness = (
       detail: `Commitment: ${investor.commitmentStatusLabel} | Wire: ${investor.wireStatusLabel}`,
       key: 'reconciliation',
       label: 'Reconciliation',
-      tone: 'info',
       value: 'Reconciling',
+      variant: 'reconciling',
     }
   }
 
@@ -445,8 +446,8 @@ const mapReconciliationReadiness = (
       detail: `Commitment: ${investor.commitmentStatusLabel} | Wire: ${investor.wireStatusLabel}`,
       key: 'reconciliation',
       label: 'Reconciliation',
-      tone: 'pending',
       value: 'Pending',
+      variant: 'pending',
     }
   }
 
@@ -454,8 +455,8 @@ const mapReconciliationReadiness = (
     detail: `Commitment: ${investor.commitmentStatusLabel} | Wire: ${investor.wireStatusLabel}`,
     key: 'reconciliation',
     label: 'Reconciliation',
-    tone: 'neutral',
     value: 'Not started',
+    variant: 'notStarted',
   }
 }
 
@@ -495,7 +496,7 @@ const selectRelatedDocuments = (
 }
 
 const compareDocuments = (left: DocumentRequirementDTO, right: DocumentRequirementDTO): number =>
-  Number(right.blocksClosing) - Number(left.blocksClosing) ||
+  Number(isDocumentBlocking(right)) - Number(isDocumentBlocking(left)) ||
   documentStatusRank[left.status] - documentStatusRank[right.status] ||
   compareOptionalDate(left.dueDate, right.dueDate) ||
   left.label.localeCompare(right.label)
@@ -553,13 +554,15 @@ const mapDocument = (
   const group = groups.find((candidate) => candidate.id === document.groupId)
 
   return {
-    blockingLabel: document.blocksClosing ? 'Blocks closing' : 'Does not block closing',
+    blockingLabel: getDocumentBlockingLabel(document),
     id: document.id,
     label: document.label,
     owner: documentOwnerLabel[document.owner],
-    requirementLabel: document.required ? 'Required' : 'Optional',
-    statusLabel: documentStatusLabel[document.status],
-    statusTone: document.tone,
+    requirementLabel: getDocumentRequirementLabel(document),
+    status: {
+      kind: document.status,
+      label: documentStatusLabel[document.status],
+    },
     ...(document.dueDate ? { dueLabel: `Due ${formatDateTimeLabel(document.dueDate)}` } : {}),
     ...(document.lastActivityAt
       ? {
@@ -572,6 +575,23 @@ const mapDocument = (
       : {}),
   }
 }
+
+const isDocumentBlocking = (document: DocumentRequirementDTO): boolean =>
+  document.closingImpact.kind === 'blocks_closing'
+
+const getDocumentBlockingLabel = (document: DocumentRequirementDTO): string => {
+  switch (document.closingImpact.kind) {
+    case 'blocks_closing':
+      return 'Blocks closing'
+    case 'cleared_for_closing':
+      return 'Cleared for closing'
+    case 'does_not_block_closing':
+      return 'Does not block closing'
+  }
+}
+
+const getDocumentRequirementLabel = (document: DocumentRequirementDTO): string =>
+  document.requirement.kind === 'required' ? 'Required' : 'Optional'
 
 const mapActivity = (activity: ActivityEventDTO): DealCommitmentActivityItem => ({
   actor: activity.actorLabel,
@@ -593,19 +613,19 @@ const getNextAction = (
     return `Review ${unresolvedBlocker.title} before closing review.`
   }
 
-  if (readiness.kycKyb.tone !== 'success') {
+  if (readiness.kycKyb.variant !== 'verified') {
     return 'Review KYC/KYB status before closing review.'
   }
 
-  if (readiness.signature.tone !== 'success') {
+  if (readiness.signature.variant !== 'signed') {
     return 'Review signature status before closing review.'
   }
 
-  if (readiness.wire.tone !== 'success') {
+  if (readiness.wire.variant !== 'received') {
     return 'Review wire status before closing review.'
   }
 
-  if (readiness.reconciliation.tone !== 'success') {
+  if (readiness.reconciliation.variant !== 'reconciled') {
     return 'Review finance reconciliation before closing review.'
   }
 

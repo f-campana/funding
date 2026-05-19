@@ -1,6 +1,10 @@
 import { notFound, redirect } from 'next/navigation'
 
-import { getDealOperationsData } from '../data'
+import {
+  dealOperationsRouteDataError,
+  getDealOperationsData,
+  isDealOperationsRouteNotFoundError,
+} from '../data'
 
 type LegacyInvestorRouteRedirectProps = {
   params: Promise<{ dealId: string }>
@@ -10,11 +14,16 @@ export default async function LegacyInvestorRouteRedirectPage({
   params,
 }: LegacyInvestorRouteRedirectProps) {
   const { dealId } = await params
-  const data = getDealOperationsData(dealId)
+  const dataResult = getDealOperationsData(dealId)
 
-  if (!data) {
-    notFound()
+  if (dataResult.isError()) {
+    if (isDealOperationsRouteNotFoundError(dataResult.error)) {
+      notFound()
+    }
+
+    throw dealOperationsRouteDataError(dataResult.error)
   }
 
+  const data = dataResult.value
   redirect(`/deals/${data.deal.slug}/overview`)
 }

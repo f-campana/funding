@@ -41,29 +41,29 @@ describe('mapDealDocumentsEvidenceProps', () => {
       blocksClosing: true,
       label: 'Meridian UBO declaration',
       relatedInvestorLabel: 'Meridian Ventures',
-      status: { kind: 'missing', label: 'Missing', tone: 'danger' },
+      status: { kind: 'missing', label: 'Missing' },
     })
     expect(documents.find((document) => document.id === 'doc-subscription-bulletin')).toMatchObject(
       {
         blockingLabel: 'Blocks closing',
-        status: { kind: 'under_review', label: 'Under review', tone: 'pending' },
+        status: { kind: 'under_review', label: 'Under review' },
       },
     )
     expect(
       documents.find((document) => document.id === 'doc-riverbend-proof-address'),
     ).toMatchObject({
       relatedInvestorLabel: 'Riverbend Holdings',
-      status: { kind: 'expired', label: 'Expired', tone: 'attention' },
+      status: { kind: 'expired', label: 'Expired' },
     })
     expect(documents.find((document) => document.id === 'doc-target-legal-pack')).toMatchObject({
       blockingLabel: 'Blocks closing',
-      status: { kind: 'rejected', label: 'Rejected', tone: 'danger' },
+      status: { kind: 'rejected', label: 'Rejected' },
     })
     expect(
       documents.find((document) => document.id === 'doc-shareholders-agreement'),
     ).toMatchObject({
       blockingLabel: 'Cleared for closing',
-      status: { kind: 'approved', label: 'Approved', tone: 'success' },
+      status: { kind: 'approved', label: 'Approved' },
     })
   })
 })

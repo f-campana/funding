@@ -1,15 +1,13 @@
-import { match } from 'ts-pattern'
-
+import { commitmentReadinessNeedsAttention } from '../commitment-readiness.model'
 import { commitmentReadinessKeys } from '../commitment-readiness.types'
 import type {
   CommitmentInvestorRow,
-  CommitmentReadinessState,
-  CommitmentReadinessTone,
   CommitmentRowVisualState,
   CommitmentTableBodyItem,
   CommitmentTableFilterId,
   CommitmentTableGroupValue,
   CommitmentTableModel,
+  CommitmentTableRowState,
   CommitmentTableSortKey,
   CommitmentTableSortState,
   CommitmentTableViewValue,
@@ -17,6 +15,8 @@ import type {
   LocalReadyControls,
   ReadyControls,
 } from './deal-commitments-table.types'
+
+export { getCommitmentReadinessTone } from '../commitment-readiness.model'
 
 export const readinessKeys = commitmentReadinessKeys
 
@@ -56,6 +56,7 @@ export const getReadyControls = ({
     readonly activeFilterIds: boolean
     readonly page: boolean
     readonly pageSize: boolean
+    readonly rowState: boolean
     readonly searchValue: boolean
     readonly selectedRowIds: boolean
   }
@@ -65,12 +66,11 @@ export const getReadyControls = ({
   if (state.kind !== 'ready') {
     return {
       activeFilterIds: [],
-      activeRowId: undefined,
-      drawerOpenRowId: undefined,
       group: 'none',
       hoveredRowId: undefined,
       page: 1,
       pageSize: defaultPageSize,
+      rowState: { kind: 'idle' },
       searchValue: '',
       selectedRowIds: [],
       sort: undefined,
@@ -84,12 +84,11 @@ export const getReadyControls = ({
       state.activeFilterIds,
       local.activeFilterIds,
     ),
-    activeRowId: state.activeRowId ?? local.activeRowId,
-    drawerOpenRowId: state.drawerOpenRowId ?? local.drawerOpenRowId,
     group: state.group ?? local.group,
     hoveredRowId: state.hoveredRowId,
     page: getControlValue(controlled.page, state.pagination?.page, local.page),
     pageSize: getControlValue(controlled.pageSize, state.pagination?.pageSize, local.pageSize),
+    rowState: getControlValue(controlled.rowState, state.rowState, local.rowState),
     searchValue: getControlValue(controlled.searchValue, state.searchValue, local.searchValue),
     selectedRowIds: getControlValue(
       controlled.selectedRowIds,
@@ -112,9 +111,7 @@ export const getCommitmentTableModel = (
   controls: ReadyControls,
 ): CommitmentTableModel => {
   const rowIndexById = new Map(rows.map((row, rowIndex) => [row.id, rowIndex] as const))
-  const validDrawerOpenRowId = getValidOpenRowId(rows, controls.drawerOpenRowId)
-  const validActiveRowId =
-    validDrawerOpenRowId ?? getValidOpenRowId(rows, controls.activeRowId) ?? undefined
+  const validRowState = getValidRowState(rows, controls.rowState)
   const searchFilteredRows = filterRowsBySearch(rows, controls.searchValue)
   const viewFilteredRows = filterRowsByView(searchFilteredRows, controls.view)
   const filteredRows = filterRowsByFilters(viewFilteredRows, controls.activeFilterIds)
@@ -129,8 +126,9 @@ export const getCommitmentTableModel = (
   )
 
   return {
-    activeRowId: validActiveRowId,
-    drawerOpenRowId: validDrawerOpenRowId,
+    activeRowId: validRowState.kind === 'active' ? validRowState.rowId : undefined,
+    drawerOpenRowId:
+      validRowState.kind === 'active' && validRowState.drawerOpen ? validRowState.rowId : undefined,
     filteredRows: sortedRows,
     groupedItems: getGroupedItems(visibleRows, controls.group, rowIndexById),
     hasSourceRows: rows.length > 0,
@@ -148,6 +146,19 @@ export const getCommitmentTableModel = (
     visibleExportRowIds: selectableVisibleRowIds,
     visibleRows,
   }
+}
+
+export const getValidRowState = (
+  rows: readonly CommitmentInvestorRow[],
+  rowState: CommitmentTableRowState,
+): CommitmentTableRowState => {
+  if (rowState.kind === 'idle') {
+    return rowState
+  }
+
+  const rowId = getValidOpenRowId(rows, rowState.rowId)
+
+  return rowId ? { ...rowState, rowId } : { kind: 'idle' }
 }
 
 export const getValidOpenRowId = (
@@ -181,13 +192,16 @@ export const filterRowsBySearch = (
 export const filterRowsByView = (
   rows: readonly CommitmentInvestorRow[],
   view: CommitmentTableViewValue,
-): readonly CommitmentInvestorRow[] =>
-  match(view)
-    .returnType<readonly CommitmentInvestorRow[]>()
-    .with('default', () => rows)
-    .with('attention', () => rows.filter(rowNeedsAttention))
-    .with('ready', () => rows.filter((row) => row.status.tone === 'complete' && !row.dataIssue))
-    .exhaustive()
+): readonly CommitmentInvestorRow[] => {
+  switch (view) {
+    case 'default':
+      return rows
+    case 'attention':
+      return rows.filter(rowNeedsAttention)
+    case 'ready':
+      return rows.filter((row) => row.status.tone === 'complete' && !row.dataIssue)
+  }
+}
 
 export const filterRowsByFilters = (
   rows: readonly CommitmentInvestorRow[],
@@ -286,20 +300,13 @@ export const compareRows = (
   first: CommitmentInvestorRow,
   second: CommitmentInvestorRow,
   key: CommitmentTableSortKey,
-) =>
-  match(key)
-    .returnType<number>()
-    .with('investor', () => compareText(first.investorName, second.investorName))
-    .with('entity', () => compareText(first.entityName, second.entityName))
-    .with('commitment', () => compareNumber(first.commitmentSortValue, second.commitmentSortValue))
-    .with('status', () => compareStatus(first, second))
-    .exhaustive()
+) => rowComparatorBySortKey[key](first, second)
 
 export const rowNeedsAttention = (row: CommitmentInvestorRow) =>
   row.attention === true ||
   row.dataIssue !== undefined ||
   row.status.tone === 'attention' ||
-  readinessKeys.some((key) => readinessNeedsAttention(row.readiness[key]))
+  readinessKeys.some((key) => commitmentReadinessNeedsAttention(row.readiness[key]))
 
 export const toggleFilterId = (
   activeFilterIds: readonly CommitmentTableFilterId[],
@@ -331,78 +338,24 @@ const getRowSearchText = (row: CommitmentInvestorRow) =>
 
 const normalizeSearchValue = (value: string) => value.trim().toLocaleLowerCase()
 
+const rowFilterPredicateById = {
+  completedKycKyb: (row) => row.readiness.kycKyb.variant === 'verified',
+  needsAttention: rowNeedsAttention,
+  pendingKycKyb: (row) => row.readiness.kycKyb.variant !== 'verified',
+  readyForClosing: (row) =>
+    row.readiness.kycKyb.variant === 'verified' &&
+    row.readiness.signature.variant === 'signed' &&
+    row.readiness.wire.variant === 'received' &&
+    row.readiness.reconciliation.variant === 'reconciled' &&
+    !row.dataIssue &&
+    !row.disabled,
+  signaturePending: (row) => row.readiness.signature.variant === 'pending',
+  wirePending: (row) =>
+    row.readiness.wire.variant === 'pending' || row.readiness.wire.variant === 'notReceived',
+} as const satisfies Record<CommitmentTableFilterId, (row: CommitmentInvestorRow) => boolean>
+
 const rowMatchesFilter = (row: CommitmentInvestorRow, filterId: CommitmentTableFilterId) =>
-  match(filterId)
-    .returnType<boolean>()
-    .with('needsAttention', () => rowNeedsAttention(row))
-    .with('pendingKycKyb', () => row.readiness.kycKyb.variant !== 'verified')
-    .with('completedKycKyb', () => row.readiness.kycKyb.variant === 'verified')
-    .with('signaturePending', () => row.readiness.signature.variant === 'pending')
-    .with(
-      'wirePending',
-      () =>
-        row.readiness.wire.variant === 'pending' || row.readiness.wire.variant === 'notReceived',
-    )
-    .with(
-      'readyForClosing',
-      () =>
-        row.readiness.kycKyb.variant === 'verified' &&
-        row.readiness.signature.variant === 'signed' &&
-        row.readiness.wire.variant === 'received' &&
-        !row.dataIssue &&
-        !row.disabled,
-    )
-    .exhaustive()
-
-export const getCommitmentReadinessTone = (
-  state: CommitmentReadinessState,
-): CommitmentReadinessTone => {
-  switch (state.key) {
-    case 'kycKyb':
-      return match(state.variant)
-        .returnType<CommitmentReadinessTone>()
-        .with('verified', () => 'success')
-        .with('inReview', () => 'info')
-        .with('expired', () => 'danger')
-        .with('unavailable', () => 'neutral')
-        .exhaustive()
-    case 'signature':
-      return match(state.variant)
-        .returnType<CommitmentReadinessTone>()
-        .with('signed', () => 'success')
-        .with('pending', () => 'attention')
-        .with('unavailable', () => 'neutral')
-        .exhaustive()
-    case 'wire':
-      return match(state.variant)
-        .returnType<CommitmentReadinessTone>()
-        .with('received', () => 'success')
-        .with('pending', () => 'attention')
-        .with('notReceived', () => 'neutral')
-        .with('syncFailed', () => 'danger')
-        .exhaustive()
-    case 'reconciliation':
-      return match(state.variant)
-        .returnType<CommitmentReadinessTone>()
-        .with('reconciled', () => 'success')
-        .with('pending', () => 'attention')
-        .with('notStarted', () => 'neutral')
-        .with('reconciling', () => 'info')
-        .with('needsReview', () => 'danger')
-        .exhaustive()
-  }
-}
-
-const readinessNeedsAttention = (state: CommitmentReadinessState) =>
-  match(state)
-    .returnType<boolean>()
-    .with({ key: 'kycKyb', variant: 'expired' }, () => true)
-    .with({ key: 'signature', variant: 'pending' }, () => true)
-    .with({ key: 'wire', variant: 'pending' }, () => true)
-    .with({ key: 'wire', variant: 'syncFailed' }, () => true)
-    .with({ key: 'reconciliation', variant: 'pending' }, () => true)
-    .with({ key: 'reconciliation', variant: 'needsReview' }, () => true)
-    .otherwise(() => false)
+  rowFilterPredicateById[filterId](row)
 
 const compareText = (first: string, second: string) =>
   first.localeCompare(second, undefined, { numeric: true, sensitivity: 'base' })
@@ -411,6 +364,17 @@ const compareNumber = (first: number, second: number) => first - second
 
 const compareStatus = (first: CommitmentInvestorRow, second: CommitmentInvestorRow) =>
   compareText(getStatusSortValue(first), getStatusSortValue(second))
+
+const rowComparatorBySortKey = {
+  commitment: (first, second) =>
+    compareNumber(first.commitmentSortValue, second.commitmentSortValue),
+  entity: (first, second) => compareText(first.entityName, second.entityName),
+  investor: (first, second) => compareText(first.investorName, second.investorName),
+  status: compareStatus,
+} as const satisfies Record<
+  CommitmentTableSortKey,
+  (first: CommitmentInvestorRow, second: CommitmentInvestorRow) => number
+>
 
 const getStatusSortValue = (row: CommitmentInvestorRow) =>
   String(row.status.sortValue ?? statusToneRank[row.status.tone])
@@ -455,12 +419,15 @@ const buildGroupedItems = (
   })
 }
 
-const getGroupLabel = (row: CommitmentInvestorRow, group: CommitmentTableGroupValue) =>
-  match(group)
-    .returnType<string>()
-    .with('status', () => row.status.label)
-    .with('readinessIssue', () => (rowNeedsAttention(row) ? 'Needs review' : 'Ready'))
-    .with('none', () => 'None')
-    .exhaustive()
+const getGroupLabel = (row: CommitmentInvestorRow, group: CommitmentTableGroupValue): string => {
+  switch (group) {
+    case 'status':
+      return row.status.label
+    case 'readinessIssue':
+      return rowNeedsAttention(row) ? 'Needs review' : 'Ready'
+    case 'none':
+      return 'None'
+  }
+}
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)

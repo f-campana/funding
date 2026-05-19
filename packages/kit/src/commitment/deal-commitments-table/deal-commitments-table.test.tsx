@@ -113,6 +113,13 @@ expectLifecycleState({
   selectedRowId: 'pine-point-capital',
 })
 
+expectLifecycleState({
+  kind: 'ready',
+  rows: lockedCommitmentRows,
+  // @ts-expect-error Ready row state is a single discriminated rowState union.
+  activeRowId: 'pine-point-capital',
+})
+
 expectCommitmentReadinessKey('kycKyb')
 
 const _incompleteReadinessRow: CommitmentInvestorRow = {
@@ -553,11 +560,10 @@ describe('DealCommitmentsTable', () => {
     expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-drawer-open', 'true')
   })
 
-  it('normalizes active and drawer-open impossible states deterministically', () => {
+  it('renders active drawer state from the single public rowState union', () => {
     const { container } = renderCommitmentsTable({
       state: readyTableState({
-        activeRowId: 'tailwind-partners',
-        drawerOpenRowId: 'pine-point-capital',
+        rowState: { drawerOpen: true, kind: 'active', rowId: 'pine-point-capital' },
       }),
     })
 
@@ -587,8 +593,7 @@ describe('DealCommitmentsTable', () => {
       onRowOpen,
       onSelectedRowIdsChange,
       state: readyTableState({
-        activeRowId: 'pine-point-capital',
-        drawerOpenRowId: 'pine-point-capital',
+        rowState: { drawerOpen: true, kind: 'active', rowId: 'pine-point-capital' },
         rows,
         selectedRowIds: ['pine-point-capital'],
       }),
@@ -1159,7 +1164,9 @@ describe('DealCommitmentsTable', () => {
     defaultRender.unmount()
 
     const drawerOpenRender = renderCommitmentsTable({
-      state: readyTableState({ drawerOpenRowId: 'pine-point-capital' }),
+      state: readyTableState({
+        rowState: { drawerOpen: true, kind: 'active', rowId: 'pine-point-capital' },
+      }),
     })
     expect((await axe(drawerOpenRender.container)).violations).toHaveLength(0)
     drawerOpenRender.unmount()
@@ -1250,7 +1257,9 @@ describe('DealCommitmentsTable', () => {
         <DealCommitmentsTable
           footer={dealCommitmentsTableLabels.footer}
           labels={dealCommitmentsTableLabels.labels}
-          state={readyTableState({ drawerOpenRowId: 'pine-point-capital' })}
+          state={readyTableState({
+            rowState: { drawerOpen: true, kind: 'active', rowId: 'pine-point-capital' },
+          })}
           subtitle={dealCommitmentsTableLabels.subtitle}
           title={dealCommitmentsTableLabels.title}
           toolbar={dealCommitmentsTableLabels.toolbar}

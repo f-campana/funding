@@ -1,6 +1,10 @@
 import { notFound } from 'next/navigation'
 
-import { getDealOperationsData } from '../data'
+import {
+  dealOperationsRouteDataError,
+  getDealOperationsData,
+  isDealOperationsRouteNotFoundError,
+} from '../data'
 import { mapDealCommitmentInspectorViewModel } from '../deal-commitment-inspector-adapter'
 import { mapDealCommitmentsTableViewModel } from '../deal-commitments-table-adapter'
 import { CommitmentsWorkspace } from './commitments-workspace'
@@ -11,12 +15,17 @@ type DealCommitmentsPageProps = {
 
 export default async function DealCommitmentsPage({ params }: DealCommitmentsPageProps) {
   const { dealId } = await params
-  const data = getDealOperationsData(dealId)
+  const dataResult = getDealOperationsData(dealId)
 
-  if (!data) {
-    notFound()
+  if (dataResult.isError()) {
+    if (isDealOperationsRouteNotFoundError(dataResult.error)) {
+      notFound()
+    }
+
+    throw dealOperationsRouteDataError(dataResult.error)
   }
 
+  const data = dataResult.value
   return (
     <CommitmentsWorkspace
       inspector={mapDealCommitmentInspectorViewModel(data)}

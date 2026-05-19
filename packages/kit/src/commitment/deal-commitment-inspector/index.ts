@@ -3,6 +3,8 @@ export {
   type DealCommitmentBlocker,
   type DealCommitmentBlockerSeverity,
   type DealCommitmentEvidenceItem,
+  type DealCommitmentEvidenceStatus,
+  type DealCommitmentEvidenceStatusKind,
   DealCommitmentInspector,
   type DealCommitmentInspectorActionEvent,
   type DealCommitmentInspectorActionHandler,

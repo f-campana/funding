@@ -15,6 +15,7 @@ export type {
   CommitmentTableGroupValue,
   CommitmentTablePaginationState,
   CommitmentTableRetryAction,
+  CommitmentTableRowState,
   CommitmentTableSortDirection,
   CommitmentTableSortKey,
   CommitmentTableSortState,

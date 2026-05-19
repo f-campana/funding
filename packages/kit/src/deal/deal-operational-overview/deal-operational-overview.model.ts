@@ -1,4 +1,3 @@
-import { match } from 'ts-pattern'
 import type {
   DealOperationalBlockerCount,
   DealOperationalOverviewState,
@@ -25,10 +24,4 @@ export const getOperationalBlockerTotal = (blockerCounts: readonly DealOperation
 export const getOperationalReadinessState = (
   state: DealOperationalOverviewState,
 ): DealOperationalReadinessState | undefined =>
-  match(state)
-    .returnType<DealOperationalReadinessState | undefined>()
-    .with({ kind: 'ready' }, ({ readiness }) => readiness.state)
-    .with({ kind: 'loading' }, () => undefined)
-    .with({ kind: 'error' }, () => undefined)
-    .with({ kind: 'empty' }, () => undefined)
-    .exhaustive()
+  state.kind === 'ready' ? state.readiness.state : undefined

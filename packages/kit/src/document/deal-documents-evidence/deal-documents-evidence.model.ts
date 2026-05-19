@@ -1,30 +1,20 @@
+import { isDocumentEvidenceIssueStatus } from '../../status/document-status'
+import { statusToneClasses } from '../../status/status-tone'
 import type {
   DealDocumentsEvidenceGroup,
   DealDocumentsEvidenceState,
-  DealDocumentsEvidenceStatusKind,
   DealDocumentsEvidenceTone,
 } from './deal-documents-evidence.types'
 
-export const documentEvidenceToneBadgeClasses = {
-  attention: 'border-status-attention-border bg-status-attention-muted text-status-attention',
-  danger: 'border-status-danger-border bg-status-danger-muted text-status-danger',
-  info: 'border-status-info-border bg-status-info-muted text-status-info',
-  neutral: 'border-border bg-muted text-muted-foreground',
-  pending: 'border-status-pending-border bg-status-pending-muted text-status-pending',
-  success: 'border-status-success-border bg-status-success-muted text-status-success',
-} as const satisfies Record<DealDocumentsEvidenceTone, string>
+export {
+  getDocumentEvidenceStatusTone,
+  isDocumentEvidenceIssueStatus,
+} from '../../status/document-status'
 
-export const documentEvidenceStatusDefaultTone = {
-  approved: 'success',
-  expired: 'attention',
-  missing: 'danger',
-  rejected: 'danger',
-  under_review: 'pending',
-  uploaded: 'info',
-} as const satisfies Record<DealDocumentsEvidenceStatusKind, DealDocumentsEvidenceTone>
-
-export const isDocumentEvidenceIssueStatus = (status: DealDocumentsEvidenceStatusKind) =>
-  status === 'missing' || status === 'rejected' || status === 'expired' || status === 'under_review'
+export const documentEvidenceToneBadgeClasses = statusToneClasses satisfies Record<
+  DealDocumentsEvidenceTone,
+  string
+>
 
 export const getDocumentsEvidenceTotals = (groups: readonly DealDocumentsEvidenceGroup[]) =>
   groups.reduce(

@@ -1,5 +1,3 @@
-import { match } from 'ts-pattern'
-
 import type {
   DealProgressAction,
   DealProgressPanelState,
@@ -33,11 +31,7 @@ export const clampBasisPoints = (basisPoints: number) => {
 }
 
 export const getProgressBarValue = (progress: DealProgressVisualProgress): number | null =>
-  match(progress)
-    .returnType<number | null>()
-    .with({ kind: 'knownTarget' }, ({ basisPoints }) => clampBasisPoints(basisPoints) / 100)
-    .with({ kind: 'noTarget' }, () => null)
-    .exhaustive()
+  progress.kind === 'knownTarget' ? clampBasisPoints(progress.basisPoints) / 100 : null
 
 export const getProgressAriaValueText = ({
   cappedLabel,
@@ -47,19 +41,20 @@ export const getProgressAriaValueText = ({
   readonly progress: DealProgressVisualProgress
   readonly cappedLabel: string
   readonly locale?: string | undefined
-}) =>
-  match(progress)
-    .returnType<string>()
-    .with({ kind: 'knownTarget' }, ({ basisPoints, capped, label }) => {
-      const percentage = new Intl.NumberFormat(locale, {
-        maximumFractionDigits: 1,
-        minimumFractionDigits: 0,
-      }).format(clampBasisPoints(basisPoints) / 100)
+}) => {
+  if (progress.kind === 'noTarget') {
+    return progress.label
+  }
 
-      return capped ? `${label}: ${percentage}% ${cappedLabel}` : `${label}: ${percentage}%`
-    })
-    .with({ kind: 'noTarget' }, ({ label }) => label)
-    .exhaustive()
+  const percentage = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 0,
+  }).format(clampBasisPoints(progress.basisPoints) / 100)
+
+  return progress.capped
+    ? `${progress.label}: ${percentage}% ${cappedLabel}`
+    : `${progress.label}: ${percentage}%`
+}
 
 export const normalizeSegments = (
   segments: readonly DealProgressSegment[] | undefined,
@@ -170,16 +165,33 @@ export const getSecondaryActions = (
   return (state.actions.secondary ?? []).filter((action) => isActionVisibleForState(action, state))
 }
 
-export const getPanelVisualState = (state: DealProgressPanelState) =>
-  match(state)
-    .returnType<'loading' | 'error' | 'ready' | 'stale' | 'issue' | 'unavailable'>()
-    .with({ kind: 'loading' }, () => 'loading')
-    .with({ kind: 'error' }, () => 'error')
-    .with({ kind: 'ready', dataQuality: { kind: 'fresh' } }, () => 'ready')
-    .with({ kind: 'ready', dataQuality: { kind: 'stale' } }, () => 'stale')
-    .with({ kind: 'ready', dataQuality: { kind: 'issue' } }, () => 'issue')
-    .with({ kind: 'ready', dataQuality: { kind: 'unavailable' } }, () => 'unavailable')
-    .exhaustive()
+type DealProgressPanelVisualState =
+  | 'loading'
+  | 'error'
+  | 'ready'
+  | 'stale'
+  | 'issue'
+  | 'unavailable'
+
+const panelVisualStateByDataQuality = {
+  fresh: 'ready',
+  issue: 'issue',
+  stale: 'stale',
+  unavailable: 'unavailable',
+} as const satisfies Record<
+  DealProgressReadyState['dataQuality']['kind'],
+  DealProgressPanelVisualState
+>
+
+export const getPanelVisualState = (
+  state: DealProgressPanelState,
+): DealProgressPanelVisualState => {
+  if (state.kind !== 'ready') {
+    return state.kind
+  }
+
+  return panelVisualStateByDataQuality[state.dataQuality.kind]
+}
 
 const isActionVisibleForState = (action: DealProgressAction, state: DealProgressReadyState) => {
   if ((terminalStages as readonly string[]).includes(state.stage) || state.mode === 'closed') {
