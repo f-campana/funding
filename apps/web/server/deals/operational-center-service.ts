@@ -19,13 +19,16 @@ import type {
   CapitalReconciliationErrorDTO,
   ClosingReadinessDTO,
   DealOperationalCenterDTO,
+  DealOperationalCenterValidationErrorDTO,
   DocumentCenterDTO,
   GetOperationalCenterInputDTO,
   MoneySerializationErrorDTO,
 } from './operational-center-dto'
+import { GetOperationalCenterInputSchema } from './operational-center-dto'
 import { mapInvestor } from './operational-center-investor-mapper'
 import { firstError } from './operational-center-money'
 import { deriveClosingReadiness } from './operational-center-readiness'
+import { validateDealOperationalCenter } from './operational-center-validation'
 
 export { deriveClosingReadiness } from './operational-center-readiness'
 
@@ -46,11 +49,21 @@ export type GetDealOperationalCenterError =
       readonly _tag: 'MoneySerializationError'
       readonly error: MoneySerializationErrorDTO
     }
+  | {
+      readonly _tag: 'ValidationError'
+      readonly error: DealOperationalCenterValidationErrorDTO
+    }
 
 export const getDealOperationalCenter = (
   input: GetOperationalCenterInputDTO,
 ): Result<DealOperationalCenterDTO, GetDealOperationalCenterError> => {
-  const dealId = dealSlugFromInput(input.dealId)
+  const parsedInput = GetOperationalCenterInputSchema.safeParse(input)
+
+  if (!parsedInput.success) {
+    return Result.Error({ _tag: 'UnsupportedDeal', dealId: input.dealId.trim() })
+  }
+
+  const dealId = dealSlugFromInput(parsedInput.data.dealId)
 
   if (dealId !== NORTHSTAR_DEAL_SLUG) {
     return Result.Error({ _tag: 'UnsupportedDeal', dealId })
@@ -100,7 +113,7 @@ export const getDealOperationalCenter = (
     return Result.Error({ _tag: 'MoneySerializationError', error: investorsResult.error })
   }
 
-  return Result.Ok({
+  const dto = {
     _tag: 'DealOperationalCenter',
     activity: northstarOperationalFixture.activity,
     blockers,
@@ -113,5 +126,10 @@ export const getDealOperationalCenter = (
     generatedAt: northstarOperationalFixture.generatedAt,
     investors: investorsResult.value,
     readiness,
-  })
+  } satisfies DealOperationalCenterDTO
+
+  return validateDealOperationalCenter(dto).mapError((error) => ({
+    _tag: 'ValidationError' as const,
+    error,
+  }))
 }

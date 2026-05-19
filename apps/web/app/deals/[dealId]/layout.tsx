@@ -20,23 +20,24 @@ export default async function DealLayout({ children, params }: DealLayoutProps) 
     notFound()
   }
 
+  const routeDealId = data.deal.slug
   const t = await getTranslations('DealLayout')
   const tabs = [
     {
       glyph: 'overview',
-      href: `/deals/${dealId}/overview`,
+      href: `/deals/${routeDealId}/overview`,
       label: t('tabs.overview'),
       segment: 'overview',
     },
     {
       glyph: 'commitments',
-      href: `/deals/${dealId}/commitments`,
+      href: `/deals/${routeDealId}/commitments`,
       label: t('tabs.commitments'),
       segment: 'commitments',
     },
     {
       glyph: 'documents',
-      href: `/deals/${dealId}/documents`,
+      href: `/deals/${routeDealId}/documents`,
       label: t('tabs.documents'),
       segment: 'documents',
     },
@@ -44,7 +45,7 @@ export default async function DealLayout({ children, params }: DealLayoutProps) 
 
   return (
     <DealAppShell
-      dealId={dealId}
+      dealId={routeDealId}
       header={
         <DealEntityHeader
           deal={data.deal}

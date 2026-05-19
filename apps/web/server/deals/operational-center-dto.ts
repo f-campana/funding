@@ -17,8 +17,14 @@ import type {
 } from '@repo/domain'
 import { z } from 'zod'
 
+export const DealSlugSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+
 export const GetOperationalCenterInputSchema = z.object({
-  dealId: z.string().trim().min(1),
+  dealId: DealSlugSchema,
 })
 
 export type GetOperationalCenterInputDTO = z.infer<typeof GetOperationalCenterInputSchema>
@@ -281,6 +287,25 @@ export type MoneySerializationErrorDTO = {
   readonly amountMinor: string
 }
 
+export type DealOperationalCenterValidationErrorDTO =
+  | {
+      readonly _tag: 'InvalidMoney'
+      readonly path: string
+    }
+  | {
+      readonly _tag: 'InvalidDateTime'
+      readonly path: string
+    }
+  | {
+      readonly _tag: 'CapitalInvariantViolation'
+      readonly message: string
+    }
+  | {
+      readonly _tag: 'DanglingReference'
+      readonly path: string
+      readonly target: string
+    }
+
 export type GetDealOperationalCenterOutputDTO =
   | {
       readonly _tag: 'Ok'
@@ -297,4 +322,8 @@ export type GetDealOperationalCenterOutputDTO =
   | {
       readonly _tag: 'MoneySerializationError'
       readonly error: MoneySerializationErrorDTO
+    }
+  | {
+      readonly _tag: 'ValidationError'
+      readonly error: DealOperationalCenterValidationErrorDTO
     }

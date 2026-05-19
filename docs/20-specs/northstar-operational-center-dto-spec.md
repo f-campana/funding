@@ -9,6 +9,12 @@ the app service directly through `getDealOperationsData()`. tRPC remains an
 adapter for client/API and future mutation boundaries over the same service
 layer; do not refactor RSC routes to tRPC server callers for symmetry.
 
+Current runtime validation note, 2026-05-19: route params are normalized through
+a slug schema, `DealOperationalCenterDTO` output is validated at the app service
+boundary, and tRPC maps service validation failures into the serializable output
+union. TypeScript remains the internal component contract; Zod is used only at
+trust boundaries.
+
 ## 1. Purpose
 
 This spec defines the app-owned operational data spine for the one-vertical-done-right pass.
@@ -400,6 +406,10 @@ export type GetDealOperationalCenterOutputDTO =
       readonly _tag: 'MoneySerializationError'
       readonly error: MoneySerializationErrorDTO
     }
+  | {
+      readonly _tag: 'ValidationError'
+      readonly error: DealOperationalCenterValidationErrorDTO
+    }
 ```
 
 Rules:
@@ -431,6 +441,9 @@ Rules:
 - `generatedAt` is an ISO string.
 - The DTO is route-ready, not database-shaped.
 - It should contain enough data for all three target routes without requiring each route to reassemble core facts.
+- Runtime validation covers JSON-safe EUR money DTOs, ISO date-time strings,
+  graph references, and capital invariants where the DTO crosses the app
+  service/API boundary.
 
 ### Deal Summary
 
@@ -797,7 +810,7 @@ Create input schema:
 
 ```ts
 export const GetOperationalCenterInputSchema = z.object({
-  dealId: z.string().trim().min(1),
+  dealId: z.string().trim().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
 })
 ```
 
@@ -835,6 +848,9 @@ Result.Error({ _tag: 'ReconciliationError', error })
 
 Result.Error({ _tag: 'MoneySerializationError', error })
   -> { _tag: 'MoneySerializationError', error }
+
+Result.Error({ _tag: 'ValidationError', error })
+  -> { _tag: 'ValidationError', error }
 ```
 
 Rules:
@@ -905,6 +921,21 @@ Assert:
 - tRPC caller returns `Ok` for `northstar-energy`.
 - tRPC caller returns `UnsupportedDeal` for another id.
 - invalid empty `dealId` rejects through input validation.
+- validation errors map to the serializable tRPC output union.
+
+### Runtime Validation Tests
+
+Create `apps/web/server/deals/operational-center-validation.test.ts`.
+
+Assert:
+
+- the Northstar DTO validates.
+- unsafe money amounts, non-EUR money, and invalid date strings fail.
+- committed economics and matched-vs-received capital invariants fail when
+  deliberately mutated.
+- dangling investor, document group, and activity references fail.
+- finance-accepted/deployable/reconciled aggregate capital fields are not
+  exposed unless the source model proves those semantics.
 
 ### Typecheck
 

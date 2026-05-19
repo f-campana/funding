@@ -1,7 +1,11 @@
+import { Result } from '@repo/core'
 import { describe, expect, it } from 'vitest'
+
+import type { DealOperationalCenterDTO, GetDealOperationalCenterError } from '../../deals'
 
 import { createTrpcContext } from '../context'
 import { createCaller } from '../root'
+import { mapGetDealOperationalCenterResult } from './deal-router'
 
 describe('dealRouter', () => {
   it('returns the operational center DTO through the server caller', async () => {
@@ -34,5 +38,30 @@ describe('dealRouter', () => {
     const caller = createCaller(await createTrpcContext())
 
     await expect(caller.deal.getOperationalCenter({ dealId: '   ' })).rejects.toThrow()
+    await expect(caller.deal.getOperationalCenter({ dealId: 'Northstar Energy' })).rejects.toThrow()
+  })
+
+  it('maps validation errors to the output union', () => {
+    const error = {
+      _tag: 'ValidationError',
+      error: {
+        _tag: 'DanglingReference',
+        path: 'activity.act-001.relatedBlockerId',
+        target: 'blockers.blk-missing',
+      },
+    } satisfies GetDealOperationalCenterError
+
+    const output = mapGetDealOperationalCenterResult(
+      Result.Error<DealOperationalCenterDTO, GetDealOperationalCenterError>(error),
+    )
+
+    expect(output).toEqual({
+      _tag: 'ValidationError',
+      error: {
+        _tag: 'DanglingReference',
+        path: 'activity.act-001.relatedBlockerId',
+        target: 'blockers.blk-missing',
+      },
+    })
   })
 })

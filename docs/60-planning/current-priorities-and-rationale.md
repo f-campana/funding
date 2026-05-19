@@ -28,6 +28,9 @@ The repository has:
 - server-side App Router route loaders that call the app service directly
 - a narrow fixture-backed tRPC adapter seam in `apps/web/server/trpc` and
   `apps/web/app/api/trpc/[trpc]/route.ts`
+- runtime validation at the app data boundary for route slugs, JSON-safe EUR
+  money DTOs, ISO date-time strings, DTO graph references, and Northstar capital
+  invariants
 - DTO-backed overview, commitments, and documents routes under
   `/deals/northstar-energy`
 
@@ -40,44 +43,45 @@ state proves that status.
 Deleted kit surfaces from earlier passes are historical and are not current
 public API.
 
-## Priority 1 — T5F-B0 Route Data Boundary Clarification
+## Priority 1 — T5F-D Runtime Validation And DTO Boundary Hardening
 
 Status: current pass.
 
 Goal:
 
-- document that React Server Components and route loaders call app services
-  directly
-- document that tRPC is a transport/API adapter for client-facing queries and
-  future mutations over those same services
-- mark the current tRPC deal read as fixture-backed demo/internal access, not
-  production-private-data safe
-- add `server-only` guardrails to route loaders and server deal entrypoints
+- validate route params before service loading
+- validate `DealOperationalCenterDTO` output before returning service `Ok`
+- map service validation errors through the tRPC output union
+- keep TypeScript as the internal app/adapter/component contract and use Zod
+  only at route/service/API trust boundaries
+- preserve the direct route-loader service boundary
 - avoid investor `/about`, fake auth, backend/database work, mutations,
   uploads, reminders, approvals, and persistence
 
 Why this is first:
 
-- the bundle/RSC pass needs a settled data-loading boundary first
-- the operator vertical should not gain internal tRPC server-caller indirection
-  only for architectural symmetry
-- production-private deal data must not be implied by the current public
+- backend/repository planning needs explicit DTO validation before fixture data
+  is replaced
+- investor `/about` planning needs confidence that current operator DTO
+  semantics do not expose fake finance-accepted/deployable capital
+- production-private deal data must still not be implied by the current
   fixture-backed tRPC read
 
-## Priority 2 — Bundle/RSC Boundary Hardening
+## Priority 2 — Observability/Web Vitals Baseline
 
-Status: next after the route data boundary is validated.
+Status: recommended next technical hardening pass.
 
 Goal:
 
-- reduce route client bundles without changing operator behavior
-- keep read-only route data on the server side
-- preserve the direct service-call route boundary
+- capture the current route-complete operator vertical baseline before more
+  product or backend work
+- keep route behavior unchanged
 - avoid starting backend, auth, mutations, persistence, or investor `/about`
 
 ## Priority 3 — Investor `/about` Lens Planning
 
-Status: deferred until the operator vertical is review-ready.
+Status: unblocked after runtime hardening validation, still a separate product
+planning pass.
 
 Goal:
 
@@ -88,7 +92,8 @@ Goal:
 
 ## Priority 4 — Backend/Repository/Prisma Planning
 
-Status: deferred.
+Status: unblocked after runtime hardening validation, still a separate
+architecture planning pass.
 
 Goal:
 

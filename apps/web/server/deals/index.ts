@@ -13,6 +13,7 @@ export type {
   DealClosingModeDTO,
   DealEconomicsDTO,
   DealOperationalCenterDTO,
+  DealOperationalCenterValidationErrorDTO,
   DealSummaryDTO,
   DealVehicleDTO,
   DocumentCenterDTO,
@@ -26,8 +27,13 @@ export type {
   ReadinessDimensionStateDTO,
   StatusToneDTO,
 } from './operational-center-dto'
-export { GetOperationalCenterInputSchema } from './operational-center-dto'
+export { DealSlugSchema, GetOperationalCenterInputSchema } from './operational-center-dto'
 export {
   type GetDealOperationalCenterError,
   getDealOperationalCenter,
 } from './operational-center-service'
+export {
+  IsoDateTimeStringSchema,
+  MoneyMinorUnitsSchema,
+  validateDealOperationalCenter,
+} from './operational-center-validation'
