@@ -115,6 +115,13 @@ docs/
 - [Investor records and mobile/narrow QA](./60-planning/investor-records-mobile-v2.md) —
   current scope guard for the next investor-record and narrow-dashboard pass,
   including deferred findings outside that loop.
+- [React composition audit](./60-planning/react-composition-audit.md) —
+  composition-over-configuration findings for the current React surfaces and a
+  proposed agent guardrail to prevent future API drift.
+- [Backend migration readiness](./60-planning/backend-migration-readiness.md) —
+  repo-specific migration guidance for introducing repositories, Prisma, auth,
+  permissions, route-specific DTOs, and mutations after the read-only Northstar
+  vertical is complete.
 - [Private markets domain roadmap](./60-planning/private-markets-domain-roadmap.md) —
   practical implementation sequence for SPV, compliance, payment, commitment,
   club, and fund domain expansion.
