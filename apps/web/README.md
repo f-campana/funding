@@ -53,6 +53,11 @@ Implemented:
 - route data loader at `app/deals/[dealId]` that calls the service directly
 - fixture-backed tRPC adapter seam under `server/trpc` and
   `app/api/trpc/[trpc]/route.ts`
+- app-owned Web Vitals and route-interaction telemetry event shaping under
+  `observability`
+- root-mounted `WebVitalsReporter` using Next.js `useReportWebVitals`
+- no-op production telemetry transport and explicit local console transport
+  flag for development inspection
 - Playwright e2e tests for homepage navigation, the DTO-backed overview,
   commitments, and documents routes, the commitment inspector Sheet, the
   legacy `/about` redirect, active tabs, row-open keyboard behavior, selection
@@ -69,6 +74,19 @@ Not implemented yet:
 - protected tRPC procedures for production-private deal data
 - database or live data fetching
 - server actions or route handlers
+
+## Observability Boundary
+
+The current observability layer is intentionally frontend-only and
+privacy-safe. Web Vitals and route interaction events use stable route patterns
+such as `/deals/[dealId]/commitments`; event metadata avoids investor emails,
+investor/legal names, document labels, raw blocker descriptions, and sensitive
+financial values.
+
+Production Datadog/PostHog wiring would attach at the telemetry transport
+boundary in `observability/telemetry-transport.ts`. This repository does not
+include vendor SDKs, credentials, tokens, endpoints, or production telemetry
+environment variables.
 
 ## Commands
 

@@ -17,6 +17,8 @@ import {
 } from '@repo/ui/components/sheet'
 import { useMemo, useState } from 'react'
 
+import { createRouteInteractionTelemetryEvent } from '@/observability/telemetry-events'
+import { emitTelemetryEvent } from '@/observability/telemetry-transport'
 import type { DealCommitmentInspectorViewModel } from '../deal-commitment-inspector-adapter'
 import type { DealCommitmentsTableViewModel } from '../deal-commitments-table-adapter'
 
@@ -26,6 +28,11 @@ type CommitmentsWorkspaceProps = {
 }
 
 const closedInspectorRowId = '__commitment_inspector_closed__'
+const commitmentsRoutePattern = '/deals/[dealId]/commitments'
+const inspectorTelemetryMetadata = {
+  routeKind: 'commitments',
+  surface: 'commitment_inspector',
+} as const
 
 const commitmentsTableLabels = {
   columns: {
@@ -88,11 +95,28 @@ export function CommitmentsWorkspace({ inspector, table }: CommitmentsWorkspaceP
   const openInspector = (rowId: string) => {
     setActiveRowId(rowId)
     setDrawerOpenRowId(rowId)
+    emitTelemetryEvent(
+      createRouteInteractionTelemetryEvent({
+        metadata: inspectorTelemetryMetadata,
+        name: 'commitment_inspector_opened',
+        route: commitmentsRoutePattern,
+      }),
+    )
   }
 
   const handleInspectorOpenChange = (open: boolean) => {
     if (open) {
       return
+    }
+
+    if (drawerOpenRowId) {
+      emitTelemetryEvent(
+        createRouteInteractionTelemetryEvent({
+          metadata: inspectorTelemetryMetadata,
+          name: 'commitment_inspector_closed',
+          route: commitmentsRoutePattern,
+        }),
+      )
     }
 
     setDrawerOpenRowId(undefined)

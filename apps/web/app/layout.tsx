@@ -6,6 +6,8 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import type { ReactNode } from 'react'
 
+import { WebVitalsReporter } from '@/observability/web-vitals-reporter'
+
 export const metadata: Metadata = {
   description: 'Private-markets frontend case study built on the Funding workspace.',
   title: 'Funding',
@@ -41,6 +43,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       lang={locale}
     >
       <body className="bg-background font-sans text-foreground antialiased">
+        <WebVitalsReporter />
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
         </NextIntlClientProvider>

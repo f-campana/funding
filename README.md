@@ -54,9 +54,10 @@ Implemented:
 - `apps/web` — Next.js App Router shell with `next-intl`, token font/theme
   wiring, translated homepage, an app-owned Northstar operational service/DTO
   spine used directly by server routes, a fixture-backed tRPC API adapter seam,
-  route boundaries, runtime validation for the Northstar DTO trust boundary,
-  and DTO-backed overview, commitments, and documents routes under
-  `/deals/northstar-energy`.
+  route boundaries, runtime validation for the Northstar DTO trust boundary, a
+  no-op/dev-only frontend telemetry boundary for Web Vitals and route
+  interaction events, and DTO-backed overview, commitments, and documents routes
+  under `/deals/northstar-energy`.
 - `apps/storybook` — standalone component preview workspace consuming `ui` and `kit`
   stories, with locale and light/dark preview toolbar controls.
 
@@ -151,12 +152,15 @@ Current high-authority docs:
 
 The route-complete operator vertical now has an app-owned Northstar
 service/DTO spine with runtime validation at the route/service/API trust
-boundary. App Router server routes call app services directly. tRPC remains a
-transport adapter for client/API and future mutation boundaries over those same
-services. The current deal tRPC read is fixture-backed demo access and is not
+boundary plus a lightweight Web Vitals and route-interaction telemetry model.
+App Router server routes call app services directly. tRPC remains a transport
+adapter for client/API and future mutation boundaries over those same services.
+The current deal tRPC read is fixture-backed demo access and is not
 production-private-data safe until real auth and protected procedures exist.
-`/about` remains reserved for a future investor lens, persona toggle work is
-still deferred, and backend/database work remains future scope.
+Production observability should wire Datadog/PostHog or another provider at the
+app-owned telemetry transport boundary; no vendor SDKs or credentials are
+included. `/about` remains reserved for a future investor lens, persona toggle
+work is still deferred, and backend/database work remains future scope.
 
 Relevant docs:
 

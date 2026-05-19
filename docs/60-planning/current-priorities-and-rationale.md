@@ -33,6 +33,8 @@ The repository has:
   invariants
 - DTO-backed overview, commitments, and documents routes under
   `/deals/northstar-energy`
+- a lightweight Web Vitals and route-interaction telemetry boundary in
+  `apps/web/observability`, with no production vendor SDK or credentials
 
 Northstar capital semantics are explicit for the current operator vertical:
 gross committed equals net investable amount plus entry fees plus SPV fees.
@@ -45,7 +47,7 @@ public API.
 
 ## Priority 1 — T5F-D Runtime Validation And DTO Boundary Hardening
 
-Status: current pass.
+Status: complete.
 
 Goal:
 
@@ -67,14 +69,20 @@ Why this is first:
 - production-private deal data must still not be implied by the current
   fixture-backed tRPC read
 
-## Priority 2 — Observability/Web Vitals Baseline
+## Priority 2 — T5F-E Observability/Web Vitals Baseline
 
-Status: recommended next technical hardening pass.
+Status: current pass.
 
 Goal:
 
 - capture the current route-complete operator vertical baseline before more
   product or backend work
+- add typed frontend telemetry events for Web Vitals and safe route-level
+  interactions
+- mount a Next.js `useReportWebVitals` reporter once at the app root
+- keep default production transport no-op and local console telemetry gated by
+  an explicit browser flag
+- document where Datadog/PostHog production wiring would attach later
 - keep route behavior unchanged
 - avoid starting backend, auth, mutations, persistence, or investor `/about`
 

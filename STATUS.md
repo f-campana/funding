@@ -1,13 +1,14 @@
-# T5F-D Runtime Validation And DTO Boundary Status
+# T5F-E Web Vitals And Observability Baseline Status
 
 ## Objective
 
-Add targeted runtime validation around the Northstar app data boundary while
-preserving the direct App Router service-loading architecture.
+Add a lightweight Web Vitals and frontend observability baseline around the
+route-complete Northstar operator vertical.
 
-This pass does not build the investor `/about` lens, does not add a persona
-toggle, and does not start backend, Prisma, auth, database, mutation, action,
-upload, reminder, approval, or persistence behavior.
+This pass does not add Datadog, PostHog, Sentry, vendor SDKs, credentials,
+backend, Prisma, auth, database, live data, mutations, investor `/about`,
+persona toggles, route-loader tRPC refactors, kit API changes, or additional
+bundle/RSC optimization.
 
 ## Current Truth
 
@@ -39,6 +40,13 @@ upload, reminder, approval, or persistence behavior.
 - Matched funds are a payment-matching stage. They are not presented as
   finance-accepted, reconciled, or deployable capital unless the source model
   explicitly proves finance acceptance.
+- `apps/web/observability` owns typed frontend telemetry events, route
+  sanitization, Web Vitals event mapping, and local transport behavior.
+- `WebVitalsReporter` is mounted once in the root app layout and uses Next.js
+  `useReportWebVitals`.
+- Telemetry routes are stored as stable patterns such as
+  `/deals/[dealId]/commitments`, not raw deal URLs.
+- The commitment inspector emits only safe open/close route interaction events.
 
 ## Implementation Notes
 
@@ -74,10 +82,21 @@ upload, reminder, approval, or persistence behavior.
 - The documents surface is read-only: no upload, review, approval, request,
   mutation, or persistence actions are wired.
 - The app does not import kit fixtures or component-preview fixtures.
+- The telemetry model currently covers `web_vital` and `route_interaction`
+  events.
+- Production observability should wire Datadog, PostHog, or another provider by
+  replacing or composing the telemetry transport boundary, not by changing route
+  components.
+- The default production transport is no-op. Local browser console telemetry is
+  available only when explicitly enabled with the
+  `funding.telemetry.console` localStorage flag.
+- Telemetry metadata intentionally excludes investor email, investor/legal
+  names, document labels, raw descriptions, blocker descriptions, sensitive
+  financial details, and other private deal content.
 
 ## Validation
 
-Current hardening validation target:
+Current observability validation target:
 
 - `pnpm --filter @repo/web test`
 - `pnpm --filter @repo/web typecheck`
@@ -90,13 +109,14 @@ Current hardening validation target:
 - `pnpm storybook:build`
 - `pnpm lint`
 - `git diff --check`
-- fixture/copy/current-route searches for `apps/web`
-- Browser screenshot QA under
-  `/tmp/t5f-a-review-harden-route-complete-operator-vertical/`
+- `pnpm --filter @repo/web bundle:report`
+- observability privacy/vendor/server-import guardrail searches
+- browser smoke under `/tmp/t5f-e-web-vitals-observability-baseline/`
 
 ## Next Work
 
-The operator vertical is route-complete for the current operator IA: overview,
-commitments, and documents are all wired to accepted kit surfaces and guarded by
-runtime validation at the app data boundary. The investor `/about` lens, persona
-toggle, backend/database work, and document mutations remain future scope.
+The operator vertical is route-complete for the current operator IA and now has
+a lightweight, privacy-safe frontend telemetry boundary. Investor `/about`
+planning and backend/repository planning are unblocked as separate future
+planning passes. Persona toggles, database work, auth, mutations, uploads, and
+document workflow actions remain out of scope.
