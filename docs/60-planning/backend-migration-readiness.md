@@ -2,6 +2,7 @@
 
 **Status:** Reference planning  
 **Created:** 2026-05-18  
+**Last audited:** 2026-05-19 by four read-only audit agents
 **Scope:** future backend, database, auth, and mutation migration path for the
 Northstar Energy Deal Operations vertical
 
@@ -26,6 +27,84 @@ still intentionally avoids real auth, database persistence, uploads, provider
 integrations, and fake persisted mutations. This note exists so future backend
 work has a clear migration path and does not accidentally undo the boundaries
 already created.
+
+## 2026-05-19 Agent Audit Snapshot
+
+Four read-only audit lanes reviewed the backend migration readiness from
+different angles:
+
+- server data spine, DTOs, service assembly, mappers, fixture shape, and tests
+- route loading, tRPC usage, route adapters, client/server boundaries, and kit
+  isolation
+- docs/spec consistency around the backend migration path
+- tests, fixtures, auth/visibility, mutation readiness, and activity/audit
+  boundaries
+
+The consolidated finding:
+
+```text
+Frontend/DTO boundary readiness: strong for a read-only demo vertical
+Backend migration readiness: partially prepared, not yet safe for live private data
+Production data exposure readiness: not ready until auth, protected procedures,
+permission filtering, and client-serialization boundaries are added
+```
+
+What is ready:
+
+- The operator vertical is route-complete for the current read-only IA:
+  overview, commitments, and documents are DTO-backed.
+- `DealOperationalCenterDTO` is a useful app-owned read model and is not a
+  Prisma model or kit prop shape.
+- `getDealOperationalCenter()` returns a typed `Result` and maps recoverable
+  business failures into explicit error variants.
+- Runtime validation now exists at the app service boundary for JSON-safe EUR
+  money, ISO date-time strings, selected capital invariants, forbidden
+  finance-accepted capital fields, and dangling references.
+- The App Router data boundary is explicit: RSC routes call app services
+  directly; tRPC is a typed transport adapter over the same services.
+- Route adapters keep `@repo/kit` backend-agnostic.
+- The current tRPC read is documented as fixture-backed demo/internal access,
+  not production-private-data-safe behavior.
+
+What is not ready:
+
+- There is no repository/source abstraction yet. The service imports the
+  Northstar fixture directly and rejects every non-Northstar slug.
+- The service and route loader are synchronous. Prisma or any remote data
+  source will force async boundaries.
+- Mapper inputs are still tied to `Northstar*` fixture types in several places,
+  so a Prisma migration would touch mapper signatures unless a source record
+  layer is introduced first.
+- The fixture partially mixes source data with DTO-ready data, especially
+  activity, access, vehicle, document group, and closing-mode fields.
+- The public tRPC read has empty context and uses `publicProcedure`. Live
+  private deal data must not be exposed through this seam before auth and
+  protected procedures exist.
+- The layout and child routes each load the broad DTO. With fixture data this
+  is harmless; with a database it can duplicate query work and create
+  inconsistent shell/page snapshots.
+- The full operator DTO currently crosses a client boundary through the
+  operational rail. That can serialize investor emails, document metadata,
+  blockers, and activity to the browser even when the rail only needs
+  aggregates.
+- Runtime validation is meaningful but partial. It does not yet validate a full
+  strict DTO output schema, duplicate ids, or all bidirectional graph
+  consistency rules.
+- Visibility fields are presentation metadata, not access control.
+- Domain `Record` types are lightweight operational records, not persistence or
+  mutation records. They lack tenant/deal scope, versioning, timestamps, and
+  actor/source metadata.
+- Several docs/specs are stale against the route-complete implementation and
+  should not be treated as migration source of truth without refresh.
+
+Hard rule for backend work:
+
+```text
+No live/private Prisma-backed deal data may be reachable through
+deal.getOperationalCenter, route loaders, or any future query until auth,
+request context, protected procedures, per-deal authorization, permission
+filtering, private caching/no-store policy, and output validation are resolved.
+```
 
 ## Current Repo Truth
 
@@ -54,7 +133,11 @@ Current implementation points:
 - [DealOperationalCenterDTO](../../apps/web/server/deals/operational-center-dto.ts)
   is the app-owned, serializable read model for the operator vertical.
 - [getDealOperationalCenter](../../apps/web/server/deals/operational-center-service.ts)
-  assembles the DTO from the canonical Northstar fixture.
+  assembles the DTO from the canonical Northstar fixture and validates the
+  assembled DTO before returning `Result.Ok`.
+- [operational-center-validation.ts](../../apps/web/server/deals/operational-center-validation.ts)
+  validates selected DTO trust-boundary invariants, including money, dates,
+  capital semantics, and dangling references.
 - [northstar-energy.fixture.ts](../../apps/web/server/deals/fixtures/northstar-energy.fixture.ts)
   stores the current product facts for one deal.
 - [deal-router.ts](../../apps/web/server/trpc/routers/deal-router.ts)
@@ -66,6 +149,7 @@ Current implementation points:
 - Route adapters such as
   [deal-operational-overview-adapter.ts](../../apps/web/app/deals/[dealId]/deal-operational-overview-adapter.ts),
   [deal-commitments-table-adapter.ts](../../apps/web/app/deals/[dealId]/deal-commitments-table-adapter.ts),
+  [deal-documents-evidence-adapter.ts](../../apps/web/app/deals/[dealId]/deal-documents-evidence-adapter.ts),
   and
   [deal-commitment-inspector-adapter.ts](../../apps/web/app/deals/[dealId]/deal-commitment-inspector-adapter.ts)
   map the app DTO into kit props and route-owned view models.
@@ -189,6 +273,27 @@ CRUD abstraction. Start with the exact read side the current service needs:
 - document requirements and groups
 - activity feed items
 
+The recommended shape is:
+
+```text
+DealOperationalCenterSource
+  -> source records for app service assembly
+
+DealOperationalCenterRepository
+  -> findOperationalCenterBySlug(slug)
+
+buildDealOperationalCenter(source)
+  -> pure DTO assembly and validation
+```
+
+Rationale:
+
+- The Northstar fixture can become one `DealOperationalCenterSource`.
+- Prisma can later normalize database rows into the same source shape.
+- Mapper signatures can depend on generic source subtypes instead of
+  `Northstar*` fixture types.
+- The DTO builder can stay mostly stable when persistence changes.
+
 ### 2. Preserve The Route Data Boundary
 
 The repo has chosen the service-first RSC path:
@@ -210,6 +315,12 @@ Rationale:
   consumers, and future write workflows.
 - Both paths must use the same app service layer so behavior does not fork.
 - Production private deal data must not remain public-readable through tRPC.
+- Auth, tenancy, and permission checks must live below both route loading and
+  tRPC, or route loading must deliberately move to the tRPC server caller.
+
+Do not add auth only inside tRPC while App Router routes keep direct service
+access. That would create two security paths and let server routes bypass the
+policy layer.
 
 ### 3. Keep DTOs Stable, But Do Not Let One DTO Grow Forever
 
@@ -357,7 +468,8 @@ until there are multiple real consumers.
 
 The current deal layout and child pages can both load the broad operational
 DTO. With fixture data this is cheap. With a database, it could become
-duplicated query work.
+duplicated query work and can create inconsistent snapshots between the shell
+and the page content.
 
 Possible future fixes:
 
@@ -365,6 +477,8 @@ Possible future fixes:
 - load only header/rail data in layout and route-specific data in children
 - keep route loaders on direct app service calls with request-level caching
 - split DTOs by route as described above
+- make the service async while it is still fixture-backed, so the future Prisma
+  diff does not combine async migration with persistence migration
 
 Rationale:
 
@@ -374,7 +488,29 @@ Rationale:
 - Avoiding duplicate broad reads matters once the data source is remote or
   transactional.
 
-### 8. Preserve The Activity Versus Audit Boundary
+### 8. Stop Passing The Full Operator DTO To Client-Only Chrome
+
+The operational rail is client-rendered route chrome, but it only needs
+aggregate rail/progress props and navigation metadata. Passing the full
+operator DTO to client components can serialize private deal data to the
+browser before a user workflow actually needs it.
+
+Future direction:
+
+```text
+server layout
+  -> compute rail/progress view models
+  -> pass minimal client-safe props to rail/chrome components
+```
+
+Rationale:
+
+- Investor emails, document groups, blockers, and activity should not cross a
+  client boundary just because the rail needs aggregate counts.
+- This will matter more once visibility filtering and investor lenses exist.
+- It also reduces payload size for every nested deal route.
+
+### 9. Preserve The Activity Versus Audit Boundary
 
 The current activity feed is operational context. It is useful for UI:
 
@@ -402,7 +538,36 @@ Rationale:
 - UI activity feeds often omit details, aggregate events, or change wording.
 - Audit events should be durable facts, not display summaries.
 
-### 9. Avoid Fake Mutations
+Add future tests that make this distinction explicit:
+
+- activity can be redacted or derived from audit
+- activity is not accepted as immutable audit evidence
+- audit records include actor id, source system, request id, payload, and
+  append-only semantics
+
+### 10. Tighten DTO Validation Before External Data Enters
+
+The current validation is a useful boundary, not a full schema. Before Prisma,
+provider payloads, uploads, or external API data feed the service, add stricter
+validation around:
+
+- full DTO output shape or a full source-record schema
+- duplicate ids in investors, blockers, documents, groups, and activity
+- document/group bidirectional consistency
+- duplicate group membership
+- blocker/investor/document relationship symmetry where required
+- enum values before adapter map indexing
+- route-handler HTTP serialization and cache headers
+
+Rationale:
+
+- The current fixture is trusted source code. A database or provider payload is
+  runtime data.
+- Adapter `Record<Enum, Label>` maps assume valid enum values.
+- `Set`-based reference checks catch dangling references but can hide
+  duplicate ids.
+
+### 11. Avoid Fake Mutations
 
 The current route should keep non-persistent actions disabled, navigational, or
 clearly local until the backend boundary exists.
@@ -428,7 +593,7 @@ Rationale:
 - Fake persisted UI actions are easy to demo and hard to unwind.
 - A clear read-only vertical is more honest than simulated backend behavior.
 
-### 10. Name Records, DTOs, And Props Separately
+### 12. Name Records, DTOs, And Props Separately
 
 Use naming to protect boundaries:
 
@@ -462,37 +627,60 @@ consistently.
 
 ## Suggested Backend Migration Phases
 
-### Phase 0: Finish The Read-Only Vertical
+### Phase 0: Preserve The Route-Complete Read-Only Vertical
 
-Complete the current operator vertical without adding persistence:
+The operator vertical is now route-complete for the current IA. Preserve that
+state while backend work is planned:
 
 - overview remains DTO-backed
 - commitments table and inspector remain DTO-backed
-- documents route gets its own accepted kit baseline and route adapter
+- documents remains DTO-backed through `DealDocumentsEvidence`
 - unsupported deal behavior remains explicit
 - no fake persisted mutations
+- tRPC remains fixture-backed demo/internal access only
 
 Rationale:
 
 - The frontend contract should be clear before persistence enters.
-- Backend work should not compensate for unfinished route composition.
+- Backend work should not compensate for route composition.
 
-### Phase 1: Add Repository Ports, Still Fixture-Backed
+### Phase 1: Add Source Records, Repository Ports, Async Service, And Request Memoization
 
-Introduce minimal app/server repository interfaces and implement them with the
-existing Northstar fixture.
+Introduce minimal app/server source records and repository interfaces. Implement
+them with the existing Northstar fixture first.
 
-The service still returns the same DTO.
+At the same time, make the service and route loader async and request-memoized
+while the data is still fixture-backed.
 
 Rationale:
 
 - This creates the persistence replacement point without changing UI behavior.
 - Tests should still pass without a database.
 - This is the safest moment to clarify `Record` versus `DTO` naming.
+- Async and caching changes are easier to review before Prisma enters.
 
-### Phase 2: Add Prisma Schema And Seed Northstar
+### Phase 2: Add Auth/API Safety Gate Before Live Data
 
-Add Prisma models for business entities:
+Before any live/private data is reachable, add or explicitly design:
+
+- authenticated request context
+- protected tRPC procedures
+- per-deal authorization checks below both RSC service calls and tRPC
+- viewer role/scope modeling
+- permission-filtered DTO/source output
+- private caching or no-store policy
+- tRPC HTTP/route-handler integration tests
+- output validation policy for the transport boundary
+
+Rationale:
+
+- The current `publicProcedure` is acceptable only for fixture-backed demo data.
+- Auth only inside tRPC would not protect direct RSC service calls.
+- Visibility labels are not authorization.
+
+### Phase 3: Add Prisma Schema And Seed Northstar Locally
+
+Add Prisma models for business entities, initially for local/demo seed parity:
 
 - Deal
 - DealVehicle
@@ -512,16 +700,22 @@ Add Prisma models for business entities:
 
 Seed Northstar into the database.
 
+This phase must stay local/demo-only unless Phase 2 has been implemented.
+
 Rationale:
 
 - The fixture remains useful as the source scenario.
 - The UI should not change in this phase.
 - A seeded Northstar case keeps demo/e2e behavior deterministic.
 
-### Phase 3: Swap Fixture Repositories For Prisma Repositories
+### Phase 4: Swap Fixture Repositories For Prisma Repositories
 
 Keep service and DTO outputs stable while the repository implementation changes
 from fixture reads to Prisma reads.
+
+Do not expose the Prisma-backed read through public tRPC or unauthenticated
+routes. If Phase 2 is not done, keep this swap behind local-only/demo-only
+execution.
 
 Rationale:
 
@@ -530,15 +724,19 @@ Rationale:
 - Service tests can compare fixture-backed and Prisma-backed outputs for the
   seeded case.
 
-### Phase 4: Add Auth, Identity, And Permission Filtering
+### Phase 5: Split Permission-Filtered Read Models
 
-Introduce:
+Split the broad operational DTO into route/workflow/persona read models when
+justified by performance, permissions, or mutation revalidation.
 
-- current user
-- organization/workspace
-- deal access
-- roles such as operator, deal lead, investor, finance, legal, admin
-- field/workflow-level visibility
+Examples:
+
+- operator overview
+- operator commitments workspace
+- operator commitment inspector
+- operator documents workspace
+- investor deal about
+- finance reconciliation detail
 
 Rationale:
 
@@ -546,14 +744,6 @@ Rationale:
   DTO.
 - Permissions should affect what the service returns, not only what the UI
   hides.
-
-### Phase 5: Split Route Queries Where Needed
-
-Split the broad operational DTO into route/workflow read models when justified
-by performance, permissions, or mutation revalidation.
-
-Rationale:
-
 - Smaller read models reduce overfetching.
 - They make route-specific tests easier.
 - They align backend query cost with user workflows.
@@ -646,6 +836,39 @@ Rationale:
 - Backend services should return only what the current actor may see.
 - UI hiding is not access control.
 
+### Public Transport Before Auth
+
+The current tRPC read is public and has empty context. That is acceptable only
+while it returns synthetic fixture data. It becomes a production blocker the
+moment live private data is attached.
+
+Rationale:
+
+- Private deal data includes investor contact, document, blocker, activity, and
+  financial state.
+- GET/POST route-handler behavior, cache headers, auth headers, and HTTP
+  serialization are not covered by current caller-only tRPC tests.
+
+### Client Serialization Of Private DTOs
+
+Client components should not receive broad operator DTOs when they only need
+aggregates or display props.
+
+Rationale:
+
+- Server/client boundaries are data exposure boundaries.
+- Payload minimization matters for privacy and performance.
+
+### Duplicate Reads And Snapshot Drift
+
+The layout and nested pages can load the DTO independently.
+
+Rationale:
+
+- With a database, duplicate reads increase query cost.
+- Without request memoization, shell and page content could observe different
+  snapshots after mutations or revalidation.
+
 ### Accidental DTO Churn
 
 As each route grows, contributors may keep adding screen-specific fields to
@@ -667,6 +890,20 @@ Rationale:
 - The current project is stronger when it is honest about read-only scope.
 - Real writes require backend guarantees.
 
+### Stale Planning Docs
+
+Some older planning/spec documents still describe pre-route-complete behavior
+or stale DTO shapes. Treat the implemented code, current status, and this
+backend migration snapshot as the migration path until those specs are
+refreshed.
+
+Rationale:
+
+- Stale specs can send backend work toward removed fields such as route/rail
+  DTO members or old `/about` operator routing.
+- Kit docs should include `DealDocumentsEvidence` so documents are not treated
+  as unfinished app-only work.
+
 ## Recommended Near-Term Actions
 
 Do not start all of this immediately. The highest-value sequence is:
@@ -675,11 +912,20 @@ Do not start all of this immediately. The highest-value sequence is:
    directly, and tRPC adapts those services for client/API/future mutation
    boundaries.
 2. Keep the current tRPC deal read fixture-backed/demo-only until real auth,
-   protected procedures, and output validation exist.
-3. Add lightweight repository ports once the read-only vertical is stable.
-4. Add focused test factories for service scenarios.
-5. Annotate operator-only and future investor-visible data before building the
-   investor `/about` lens.
+   protected procedures, authorization checks, private caching policy, and
+   transport output validation policy exist.
+3. Introduce `DealOperationalCenterSource` and a fixture-backed repository
+   before Prisma.
+4. Make the service and route loader async and request-memoized before Prisma.
+5. Stop passing the full operator DTO into client-only rail/chrome components.
+6. Add duplicate-id and graph-consistency validation tests.
+7. Add focused test factories for service and visibility scenarios.
+8. Add a future auth matrix for unauthenticated, unauthorized, operator/admin,
+   finance/legal, and investor-scoped callers.
+9. Split demo-public e2e assumptions from future private-auth e2e coverage.
+10. Clean up stale docs/spec references: Northstar DTO spec, kit docs for
+    `DealDocumentsEvidence`, route-handler wording, and older active planning
+    files that still describe `/about` as the operator route.
 
 This order protects current momentum while making the future backend migration
 natural instead of disruptive.

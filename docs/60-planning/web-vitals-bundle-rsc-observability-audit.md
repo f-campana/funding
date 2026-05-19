@@ -1,59 +1,115 @@
 # Web Vitals, Bundle, RSC, Caching, And Observability Audit
 
-Status: Audit findings
+Status: Updated audit snapshot
 Created: 2026-05-18
+Updated: 2026-05-19
 Scope: `apps/web`, `packages/ui`, `packages/kit`, App Router route behavior, production feedback loops
 
 ## Executive Summary
 
-The current app is functionally healthy but performance and production
-operability have started to drift. The highest-risk issues are not images,
-third-party scripts, or obvious layout instability. They are:
+The 2026-05-19 audit shows real progress since the first snapshot, but the app
+is not yet protected against performance or production-diagnostics drift.
 
-- client JavaScript pulled into every route through root package barrels,
-- read-only product surfaces implemented as broad client components,
-- fixture-backed routes rendered dynamically with private no-store headers,
-- a fixture-backed public tRPC demo seam that is not production-private-data safe,
-- no production telemetry or Web Vitals feedback loop.
+The biggest improvement is bundle size. The prior Recharts route tax has been
+removed from emitted app chunks, `@repo/kit` now exposes subpath exports, app
+routes use those subpaths, and server-only guards now protect the main deal data
+path. Fresh first-load JS dropped materially:
 
-Fresh local verification passed:
+- `/`: 928.9 KiB -> 591.0 KiB.
+- `/deals/[dealId]/overview`: 1040.9 KiB -> 753.9 KiB.
+- `/deals/[dealId]/documents`: 1040.9 KiB -> 748.9 KiB.
+- `/deals/[dealId]/commitments`: 1043.9 KiB -> 784.5 KiB.
+
+The remaining highest-risk issues are now different:
+
+- Web Vitals are shaped and collected in the browser, but production transport
+  is explicitly a no-op.
+- Runtime errors render recovery UI but are not reported.
+- tRPC remains publicly reachable for fixture-backed deal operations data.
+- Deal routes still render dynamically even though the current data source is a
+  single deterministic fixture.
+- Read-only deal surfaces and the shared deal shell still hydrate broad client
+  UI.
+- Commitments still serializes all inspector detail before any row is opened.
+- Bundle and Web Vitals checks are diagnostic-only; no CI budget fails on drift.
+
+No P0 issue was found in the new audit. The app remains functionally healthy:
 
 ```text
 pnpm --filter @repo/web build
+pnpm --filter @repo/web bundle:report
+pnpm --filter @repo/web test
 pnpm --filter @repo/web e2e
 ```
 
-The production build passed, and the Playwright suite passed 13/13 tests.
-That is good coverage for route behavior and overflow regressions, but it does
-not currently protect Core Web Vitals, route bundle budgets, caching behavior,
-or production diagnostics.
+All four commands passed during the 2026-05-19 local verification. `@repo/web`
+unit tests passed 39/39, and the Playwright suite passed 13/13.
 
-The fresh build produced this route JavaScript baseline from
-`.next/diagnostics/route-bundle-stats.json`:
+## Current Route Bundle Snapshot
 
-| Route | First-load uncompressed JS | Chunks |
-| --- | ---: | ---: |
-| `/` | 928.9 KiB | 12 |
-| `/_not-found` | 928.9 KiB | 12 |
-| `/deals/[dealId]` | 1040.9 KiB | 16 |
-| `/deals/[dealId]/about` | 1040.9 KiB | 16 |
-| `/deals/[dealId]/overview` | 1040.9 KiB | 16 |
-| `/deals/[dealId]/documents` | 1040.9 KiB | 16 |
-| `/deals/[dealId]/commitments` | 1043.9 KiB | 17 |
+Source: fresh `pnpm --filter @repo/web bundle:report` on 2026-05-19.
 
-The largest single cause is unused `recharts` reaching every route through the
-root `@repo/ui` export. The Recharts chunk is about 378.6 KiB raw. Every route,
-including `/`, currently includes it even though no production app path renders
-a chart.
+| Route | First-load uncompressed JS | Chunks | Current Budget Status |
+| --- | ---: | ---: | --- |
+| `/deals/[dealId]/commitments` | 784.5 KiB | 19 | Under initial 800 KiB budget |
+| `/deals/[dealId]/overview` | 753.9 KiB | 18 | Over initial 650 KiB budget |
+| `/deals/[dealId]/documents` | 748.9 KiB | 18 | Over initial 650 KiB budget |
+| `/deals/[dealId]` | 735.6 KiB | 17 | No route-specific budget yet |
+| `/deals/[dealId]/about` | 735.6 KiB | 17 | No route-specific budget yet |
+| `/` | 591.0 KiB | 13 | Over initial 500 KiB budget |
+| `/_not-found` | 591.0 KiB | 13 | No route-specific budget yet |
+
+Important supporting measurements:
+
+- `.next/static`: 1.3 MiB.
+- `.next/server`: 12 MiB.
+- No emitted `.next/static` client chunk currently contains `recharts`.
+- The largest matched feature chunks include:
+  - `0j63d239kv_bn.js`: 108.1 KiB, contains `lucide`.
+  - `07lsw45ctzzx7.js`: 18.4 KiB, contains `DealOperationalOverview`.
+  - `0rzevb34ov9g5.js`: 13.3 KiB, contains `DealDocumentsEvidence`.
+  - `15xs8u-6if43s.js`: 13.5 KiB, contains `useReportWebVitals` and
+    `web_vital`.
+- All audited routes preload three font files totaling 95,820 bytes over the
+  local production server response.
+
+## Current Runtime And Cache Snapshot
+
+Local production header probes from `next start` on 2026-05-19:
+
+| URL | Response | Cache Behavior | HTML Size |
+| --- | --- | --- | ---: |
+| `/` | `200 OK` | `x-nextjs-cache: HIT`, `Cache-Control: s-maxage=31536000` | 14,678 bytes |
+| `/deals/northstar-energy/overview` | `200 OK` | `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate` | 93,854 bytes |
+| `/deals/northstar-energy/commitments` | `200 OK` | `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate` | 125,206 bytes |
+
+The current build prerenders only:
+
+- `/`
+- `/_global-error`
+- `/_not-found`
+
+All deal routes remain dynamic at runtime.
+
+The public tRPC read can return the fixture-backed operational center over GET
+when called with the accepted input shape:
+
+```text
+/api/trpc/deal.getOperationalCenter?input={"dealId":"northstar-energy"}
+```
+
+The response is about 11.2 KiB locally and includes fixture investor contact
+data such as `closing@meridian.example`. That is acceptable only as a clearly
+fixture-backed demo seam; it is not production-private-data safe.
 
 ## Reference Standards
 
-This audit uses the current Core Web Vitals model from web.dev:
+This audit uses the Core Web Vitals model from web.dev:
 
 - LCP: good at or below 2500 ms, poor above 4000 ms.
 - INP: good at or below 200 ms, poor above 500 ms.
 - CLS: good at or below 0.1, poor above 0.25.
-- Classification should be based on the 75th percentile of page views.
+- Classification should use the 75th percentile of page views.
 
 Sources:
 
@@ -65,313 +121,217 @@ Sources:
 
 ## Audit Method
 
-The work was split across four review lanes, then consolidated with a local
-verification pass:
+The 2026-05-19 pass used five read-only specialist lanes plus local verification:
 
-1. Web Vitals and frontend runtime performance.
-2. Bundle size and dependency footprint.
-3. App Router, RSC tradeoffs, data fetching, and caching.
-4. Observability, diagnostics, CI, and measurement.
+1. Web Vitals and runtime frontend performance.
+2. Bundle size, dependency graph, and package exports.
+3. App Router, RSC tradeoffs, tRPC exposure, and caching.
+4. Observability, diagnostics, logs, and CI feedback loops.
+5. Interactive performance and INP scalability in commitments workflows.
 
 Local verification included:
 
-- reading App Router files, package exports, shared package code, and tests,
-- running a fresh `@repo/web` production build,
-- reading `.next/diagnostics/route-bundle-stats.json`,
+- reading App Router files, package exports, shared package code, tests, and
+  the previous audit doc,
+- running `pnpm --filter @repo/web build`,
+- running `pnpm --filter @repo/web bundle:report`,
+- running `pnpm --filter @repo/web test`,
+- running `pnpm --filter @repo/web e2e`,
+- inspecting `.next/diagnostics/route-bundle-stats.json`,
 - inspecting `.next/static/chunks`,
 - probing production response headers from `next start`,
-- running the production Playwright suite.
-
-No source files were changed during the audit before this document was written.
+- sampling Playwright resource timing in a local production browser session.
 
 ## Severity Definitions
 
-- P1: high user or production risk; should be addressed before adding more
-  feature surface on top of the current architecture.
+- P1: high user, data, or production feedback-loop risk; should be addressed
+  before adding more feature surface on top of the current architecture.
 - P2: meaningful performance, scalability, or maintainability risk; should be
   scheduled deliberately.
 - P3: smaller drift or hygiene issue; fix when touching adjacent code or when
-  the larger bundle/RSC work is underway.
+  larger bundle/RSC work is underway.
+
+## Status Changes Since 2026-05-18
+
+### Resolved Or Mostly Resolved
+
+1. Recharts is no longer shipped in emitted app route chunks.
+   - `packages/ui/src/index.ts` no longer re-exports chart components.
+   - Chart support remains available by subpath.
+   - Static chunk search found no `recharts`.
+
+2. App route imports now use granular `@repo/kit` subpaths.
+   - `packages/kit/package.json` exposes production surface subpaths.
+   - App pages import examples:
+     - `@repo/kit/deal-operational-overview`
+     - `@repo/kit/deal-documents-evidence`
+     - `@repo/kit/deal-progress-panel`
+     - `@repo/kit/deal-commitments-table`
+     - `@repo/kit/deal-commitment-inspector`
+
+3. App-level UI imports are narrower.
+   - Loading and error boundaries now use direct UI subpaths.
+   - Deal shell and tabs use `@repo/ui/lib/utils`.
+
+4. Server-only guards exist on the primary deal data path.
+   - `apps/web/app/deals/[dealId]/data.ts` imports `server-only`.
+   - `apps/web/server/deals/*` entrypoints and services import `server-only`.
+
+5. Telemetry scaffolding now exists.
+   - `WebVitalsReporter` is mounted in the root layout.
+   - Web Vitals are normalized to typed telemetry events.
+   - Route names are sanitized to route templates.
+   - Metadata redaction tests exist.
+
+6. Bundle diagnostics now exist as a script.
+   - `apps/web/package.json` has `bundle:report`.
+   - `apps/web/scripts/report-route-bundles.mjs` prints route JS sizes.
+
+### Still Open
+
+1. Production telemetry still drops events by default.
+2. Runtime errors are not reported.
+3. tRPC is public and context-free.
+4. Deal routes remain dynamic despite fixture-backed data.
+5. Deal data has no request memoization or invalidation model.
+6. Read-only product surfaces still hydrate as client components.
+7. Commitments still serializes all inspector detail up front.
+8. Search/filter work is synchronous on the input path.
+9. Route bundle and Web Vitals budgets do not fail CI.
+10. Fonts remain globally over-provisioned.
 
 ## P1 Findings
 
-### 1. Unused Recharts Ships On Every Route Through `@repo/ui`
+### 1. Web Vitals Are Collected But Dropped In Production
 
 Evidence:
 
-- `packages/ui/src/index.ts` re-exports chart components from the root package
-  export.
-- `packages/ui/src/components/chart.tsx` imports `recharts`.
-- App files that only need simple UI helpers import from the root barrel:
-  - `apps/web/app/loading.tsx`
-  - `apps/web/app/error.tsx`
-  - `apps/web/app/deals/[dealId]/deal-app-shell.tsx`
-  - `apps/web/app/deals/[dealId]/deal-tabs.tsx`
-  - `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx`
-- Production chunk inspection found
-  `.next/static/chunks/16aod5l2.bkf_.js` at about 378.6 KiB raw, containing
-  Recharts.
-- Every route includes that chunk.
+- `apps/web/app/layout.tsx` mounts `WebVitalsReporter`.
+- `apps/web/observability/web-vitals-reporter.tsx` uses
+  `useReportWebVitals`.
+- `apps/web/observability/web-vitals.ts` maps metrics into sanitized telemetry
+  events.
+- `apps/web/observability/telemetry-events.ts` sanitizes route templates and
+  redacts sensitive metadata.
+- `apps/web/observability/telemetry-transport.ts` returns
+  `noopTelemetryTransport` in production.
 
 Rationale:
 
-This is the largest concrete bundle problem found. It hurts all three user
-experience axes that matter for this app:
+This is better than the first snapshot because the event model is now in place.
+However, the production feedback loop is still absent. The app cannot answer:
 
-- LCP: extra JavaScript competes with CSS, fonts, and main content parsing.
-- INP: hydration and script evaluation consume main-thread time before and
-  during early interaction.
-- Operational confidence: future changes can silently import heavier UI code
-  through the same root barrel without a visible diff in app routes.
+- what the p75 LCP/INP/CLS is in production,
+- which route family regressed,
+- which release introduced the regression,
+- whether mobile users see worse interaction latency,
+- whether the commitments workflow is causing INP pressure.
 
-This is especially costly because charts are not currently used in production
-app paths. The app pays the cost for a capability it does not display.
+The current implementation shapes the data but intentionally does not send it
+anywhere in production.
 
 Recommendation:
 
-- Stop exporting chart components from the root `@repo/ui` barrel, or stop
-  importing root `@repo/ui` from client files.
-- Use direct subpath imports for client files:
-  - `@repo/ui/components/button`
-  - `@repo/ui/components/skeleton`
-  - `@repo/ui/components/sheet`
-  - `@repo/ui/lib/utils`
-- Keep chart components available only through an explicit chart entrypoint.
-- If charts become route-visible later, lazy-load them or isolate them to the
-  route that actually needs them.
+- Wire the existing transport boundary to a real sink:
+  - Vercel Speed Insights,
+  - Datadog RUM,
+  - PostHog,
+  - Sentry performance,
+  - or an internal `/telemetry` route using `sendBeacon` or `fetch` with
+    `keepalive`.
+- Include release and environment on every event.
+- Keep route cardinality bounded by sanitized route templates.
+- Preserve the existing redaction behavior for investor, deal, document, and
+  blocker metadata.
 
 Acceptance criteria:
 
-- `/` no longer includes the Recharts chunk.
-- Route bundle stats drop by at least the raw Recharts chunk amount or an
-  equivalent measured amount.
-- CI has a route bundle budget that would catch this regression.
+- Preview or production dashboards show p75 LCP, INP, CLS, FCP, and TTFB by
+  route template.
+- A production smoke proves at least one metric leaves the browser.
+- No raw deal ids, investor names, emails, document labels, or financial
+  payloads appear in telemetry.
 
-### 2. The `@repo/kit` Root Barrel Collapses Deal Widgets Into Shared Client JS
+### 2. Runtime Errors Are Rendered But Not Reported
 
 Evidence:
 
-- `packages/kit/package.json` exposes only `"."`.
-- `packages/kit/src/index.ts` re-exports commitments, deal overview, progress
-  panel, and document evidence together.
-- App routes import from `@repo/kit` at:
-  - `apps/web/app/deals/[dealId]/overview/page.tsx`
-  - `apps/web/app/deals/[dealId]/documents/page.tsx`
-  - `apps/web/app/deals/[dealId]/deal-operational-rail.tsx`
-  - `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx`
-- All non-commitment deal routes report the same first-load JS size, about
-  1040.9 KiB uncompressed.
-- Client manifests map commitments table, commitment inspector, operational
-  overview, progress panel, and document evidence into the same route client
-  graph.
+- `apps/web/app/error.tsx` accepts an `error` prop type but only uses `reset`.
+- `apps/web/app/deals/[dealId]/error.tsx` accepts an `error` prop type but only
+  uses `reset`.
+- `apps/web/app/deals/[dealId]/data.ts` throws on non-unsupported service
+  failures.
+- There is no tracked `instrumentation.ts`.
+- There is no tracked `global-error.tsx`.
+- No Sentry, Datadog, OpenTelemetry, or equivalent server/browser error
+  provider is configured.
 
 Rationale:
 
-The deal routes should not all pay for every deal widget. Overview, documents,
-commitments, progress rail, and inspector surfaces have different interaction
-needs and different route visibility. The root barrel makes those boundaries
-hard for the bundler to preserve once any client component crosses the package
-boundary.
-
-This also weakens RSC. The App Router pages are server components, but the
-moment they import broad client package entrypoints, route-level static work
-turns into a large shared hydration surface.
+Error boundaries are useful for user recovery, but they do not create
+operational visibility. If an RSC render, client route, or tRPC call starts
+failing in production, the repo currently lacks a durable capture path with
+digest, request id, release, environment, and route template.
 
 Recommendation:
 
-- Add kit subpath exports for production surfaces, for example:
-  - `@repo/kit/deal-progress-panel`
-  - `@repo/kit/deal-operational-overview`
-  - `@repo/kit/deal-documents-evidence`
-  - `@repo/kit/deal-commitments-table`
-  - `@repo/kit/deal-commitment-inspector`
-- Update app imports to use only the specific surface required by each route.
-- Consider dynamically loading the commitment inspector drawer because it is
-  only needed after a row-open interaction.
+- Report client boundary errors from `error.tsx` with digest and route
+  template.
+- Add `global-error.tsx` for root-layout failures.
+- Add `instrumentation.ts` for server/provider startup.
+- Use the same redaction policy as telemetry events.
 
 Acceptance criteria:
 
-- `/deals/[dealId]/overview` does not include commitments table or inspector
-  modules in its client graph.
-- `/deals/[dealId]/documents` does not include commitments table or overview
-  modules unless explicitly needed.
-- Route-level bundle stats differ according to actual route surface area.
+- Forced client, RSC, and route-handler failures appear in the chosen error
+  system.
+- Error records include digest or sanitized error tag, route template, release,
+  environment, and request id when available.
+- Sensitive operational payloads are not captured.
 
-### 3. The Public tRPC Demo Seam Must Not Become Production Private Data
+### 3. `deal.getOperationalCenter` Is Publicly Reachable And Returns Operational Data
 
 Evidence:
 
-- `apps/web/app/api/trpc/[trpc]/route.ts` exports both `GET` and `POST`.
-- `apps/web/server/trpc/context.ts` returns an empty context.
-- `apps/web/server/trpc/routers/deal-router.ts` uses `publicProcedure`.
-- The deal operational DTO includes investor and operational data.
-- The current fixture includes investor contact details.
+- `apps/web/app/api/trpc/[trpc]/route.ts` exports the tRPC handler for `GET`
+  and `POST`.
+- `apps/web/server/trpc/context.ts` creates an empty context.
+- `apps/web/server/trpc/init.ts` exposes `publicProcedure`.
+- `apps/web/server/trpc/routers/deal-router.ts` wires
+  `deal.getOperationalCenter` as public, with a comment noting fixture-backed
+  demo semantics.
+- The DTO includes investor email, KYC/KYB, signature, and wire status fields.
+- Local production GET returned the operational center and fixture email data.
 
 Rationale:
 
-This is a production-readiness issue and a caching issue. The RSC app path
-already reads server data directly, so tRPC is not needed for the current
-visible app route behavior. Keeping the fixture-backed procedure is acceptable
-only when it is clearly treated as demo/internal API access over synthetic data.
-
-Private deal operations data should not be publicly queryable, and API logs
-should be correlated and redacted before this becomes a production data path.
+The current data is a fixture, so this is not a live-data breach. The risk is
+that the route looks like a production API boundary while having no auth,
+tenant, request context, authorization, or logging. If production-private data
+is later attached to the same procedure without changing the boundary, the
+failure mode is severe.
 
 Recommendation:
 
-- Keep the RSC direct service read for route loading.
-- Treat `deal.getOperationalCenter` as fixture-backed demo/internal access.
-- Before exposing production-private deal data through tRPC, add real auth in
-  `createTrpcContext`, convert the deal procedure to a protected procedure,
-  attach request ids, validate outputs, and set explicit private/no-store
-  behavior.
+- If tRPC remains demo-only, document that explicitly and consider disabling it
+  outside local/demo environments.
+- If tRPC becomes production data access:
+  - resolve user/session/tenant in `createTrpcContext`,
+  - add `protectedProcedure`,
+  - enforce deal-level authorization before calling services,
+  - set explicit `Cache-Control: private, no-store`,
+  - remove public `GET` unless it is deliberately required,
+  - add request/procedure structured logs.
 
 Acceptance criteria:
 
-- Architecture docs state that RSC routes call app services directly and tRPC is
-  a client/API/future-mutation adapter over those services.
-- The current public deal tRPC read is documented as fixture-backed demo access,
-  not production-private-data safe.
-- Server logs include route/procedure, request id, duration, status, and
-  sanitized error metadata.
-- A future request to a production-private deal tRPC endpoint cannot read
-  operational data without authorization.
+- A production-private tRPC read cannot return deal operations data without
+  authorization.
+- Every API call logs request id, trace id when present, route/procedure,
+  method, status, duration, release, environment, and sanitized error tag.
+- The fixture/demo contract is explicit if public access remains.
 
-### 4. Production Observability Is Essentially Absent
-
-Evidence:
-
-- `apps/web/package.json` has no Sentry, Datadog, OpenTelemetry, Vercel
-  Analytics, Speed Insights, or `web-vitals` dependency.
-- There is no `instrumentation.ts`.
-- `apps/web/app/layout.tsx` renders fonts, `NextIntlClientProvider`, and
-  children, but no RUM or analytics component.
-- Error boundaries receive an `error` type but only use `reset`:
-  - `apps/web/app/error.tsx`
-  - `apps/web/app/deals/[dealId]/error.tsx`
-- `apps/web/app/api/trpc/[trpc]/route.ts` delegates directly to
-  `fetchRequestHandler` with no structured start/done/error logging.
-
-Rationale:
-
-The repo cannot currently answer basic production questions:
-
-- Which route regressed LCP or INP?
-- Which release introduced an error?
-- Which procedure failed and how long did it run?
-- Did an error happen in the browser, the RSC render, or the API route?
-- Are users seeing slow hydration on mobile?
-
-Without telemetry, performance and reliability problems will be found late,
-usually by manual testing or user reports. That is exactly the feedback loop
-the app should avoid before adding live private-market workflows.
-
-Recommendation:
-
-- Add a minimal observability baseline:
-  - `instrumentation.ts` for server-side startup instrumentation,
-  - browser error capture from error boundaries,
-  - route/procedure structured logs,
-  - release/environment tags,
-  - request ids from platform headers where available,
-  - PII redaction rules for deal, investor, and document data.
-- Add either Vercel Speed Insights/Web Analytics or an equivalent RUM provider.
-- Track Web Vitals by route template, not raw private ids.
-
-Acceptance criteria:
-
-- Browser and server errors are reported with release/environment and route
-  context.
-- tRPC or route-handler failures emit structured logs.
-- Web Vitals are visible per route family in preview and production.
-- Sensitive investor/deal payloads are not logged.
-
-## P2 Findings
-
-### 5. Fixture-Backed Deal Pages Render Dynamically Instead Of Being Statically Constrained
-
-Evidence:
-
-- `apps/web/server/deals/operational-center-service.ts` only supports
-  `northstar-energy`.
-- The route data path is synchronous and fixture-backed through
-  `apps/web/app/deals/[dealId]/data.ts`.
-- Fresh `next build` output marks deal routes as dynamic.
-- `.next/prerender-manifest.json` contains `/` and `/_not-found`, but no deal
-  routes.
-- Production header probe for `/deals/northstar-energy/overview` returned:
-  `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`.
-
-Rationale:
-
-For the current case-study app, the deal route has a known finite parameter
-set and deterministic data. Dynamic SSR adds avoidable TTFB and prevents full
-route cache use for the primary product surface. That matters for LCP because
-server response time is part of the user-visible load path.
-
-There is one important nuance: if these routes are about to become private and
-live, then dynamic rendering can be the right choice. The problem is ambiguity.
-The current implementation behaves like private live data, while the current
-data source behaves like static demo data.
-
-Recommendation:
-
-- For the current demo/case-study shape:
-  - add `generateStaticParams` for `{ dealId: 'northstar-energy' }`,
-  - add `dynamicParams = false`,
-  - keep unsupported deals as 404.
-- For the future private/live shape:
-  - explicitly set the route to dynamic,
-  - colocate auth checks,
-  - keep response caches private or no-store as appropriate.
-
-Acceptance criteria:
-
-- The route rendering mode matches the data classification.
-- Static demo routes show up in the prerender manifest.
-- Private live routes have explicit auth and no accidental public caching.
-
-### 6. Deal Data Is Loaded Repeatedly Without Request Memoization Or Invalidation Strategy
-
-Evidence:
-
-- `apps/web/app/deals/[dealId]/layout.tsx` calls `getDealOperationsData`.
-- Each page calls it again:
-  - `overview/page.tsx`
-  - `commitments/page.tsx`
-  - `documents/page.tsx`
-- `apps/web/app/deals/[dealId]/data.ts` calls the service directly.
-- No source file uses React `cache()`, `server-only`, `revalidateTag`,
-  `cacheTag`, or `cacheLife`.
-
-Rationale:
-
-Today this is cheap because the service reads a fixture. Once the same seam
-backs real persistence, repeated route/layout reads will duplicate database or
-service work unless request memoization is added. More importantly, the repo
-does not yet encode the intended invalidation model for live deal operations.
-
-There are three valid future strategies, but the code should choose one:
-
-1. Per-request memoization only, with private no-store SSR.
-2. Tagged server cache with explicit invalidation after mutations.
-3. Static/ISR route cache for public or demo data.
-
-Recommendation:
-
-- Add `import 'server-only'` to server loaders and services that must never
-  cross into client code.
-- Wrap `getDealOperationsData` in React `cache()` for request dedupe.
-- When mutations land, choose either no-store private SSR or tagged
-  invalidation with route-specific cache tags.
-
-Acceptance criteria:
-
-- Layout and page reads dedupe within one RSC render.
-- Server-only imports fail fast if a client component imports server code.
-- Cache behavior is documented next to the loader.
-
-### 7. Read-Only Product Surfaces Are Hydrated As Broad Client Components
+### 4. Read-Only Deal Surfaces Still Hydrate Broad Client UI And Miss JS Budgets
 
 Evidence:
 
@@ -381,290 +341,409 @@ Evidence:
   is a client component.
 - `packages/kit/src/deal/deal-progress-panel/deal-progress-panel.tsx` is a
   client component.
-- These surfaces are mostly deterministic rendering of props.
-- The commitments table genuinely needs client state, but overview,
-  documents, and much of the progress rail do not.
+- `apps/web/app/deals/[dealId]/deal-app-shell.tsx` is a client component.
+- `apps/web/app/deals/[dealId]/deal-operational-rail.tsx` is a client
+  component and receives the full route DTO.
+- Current route bundles still exceed the initial budgets for `/`,
+  `/overview`, and `/documents`.
 
 Rationale:
 
-RSC is currently helping at route boundaries: route pages load data on the
-server and pass props down. The underuse is inside the shared product surfaces.
-Large read-only views are hydrated even when their content could be rendered as
-server HTML with small client islands for the few interactive controls.
+The prior package-barrel issue is improved, but the RSC tradeoff is still
+unresolved. The route pages load data on the server, then hydrate large
+mostly-read-only product surfaces. That keeps the app above its initial JS
+budgets and consumes INP headroom.
 
-This has a direct Web Vitals effect. Less hydration generally means less
-main-thread work before interaction, better INP headroom, and fewer bundle
-dependencies in first-load JS.
+The shared deal shell and rail also mount on redirect/legacy routes where the
+full shell may not be useful.
 
 Recommendation:
 
 - Split static ready-state renderers into server-compatible components.
-- Keep client islands for:
-  - active tabs,
+- Keep small client islands for:
+  - selected nav state,
   - retry/action buttons,
   - table controls,
   - sheet/drawer behavior,
   - row selection/search/filter state.
-- Avoid package-root client imports from server components.
+- Compute a narrow rail view model on the server and pass only that to the
+  client rail action island.
+- Avoid mounting the full deal shell/rail for redirect-only routes.
 
 Acceptance criteria:
 
-- Overview and document evidence routes can render their static content
-  without hydrating the full surface.
-- Client boundaries are visible and intentionally small.
-- Route bundle stats drop for overview and documents.
+- `/` drops below 500 KiB first-load uncompressed JS.
+- `/deals/[dealId]/overview` and `/documents` drop below 650 KiB.
+- Overview and document ready-state content can render without hydrating the
+  full surface.
+- Deal shell client code is limited to active-nav/action concerns.
 
-### 8. Commitments Hydrates Inspector Detail Before Any Row Is Opened
+## P2 Findings
+
+### 5. Fixture-Backed Deal Routes Still Render Dynamically
 
 Evidence:
 
-- `apps/web/app/deals/[dealId]/commitments/page.tsx` builds table and
-  inspector view models up front.
-- `apps/web/app/deals/[dealId]/deal-commitment-inspector-adapter.ts` creates
+- The server deal service supports only `northstar-energy`.
+- The route data path is synchronous and fixture-backed.
+- No route source defines `generateStaticParams`, `dynamicParams`, `dynamic`,
+  or `revalidate`.
+- Fresh build output marks deal routes as dynamic.
+- `prerender-manifest.json` includes `/`, `/_global-error`, and
+  `/_not-found`, but no deal routes.
+- Local production responses for deal pages have
+  `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`.
+
+Rationale:
+
+For the current case-study shape, the route has a finite known parameter set
+and deterministic data. Dynamic SSR adds avoidable TTFB and prevents full route
+cache use for the primary product surface.
+
+For the future live/private product, dynamic rendering may be correct. The
+problem is that the route behavior and the data classification are ambiguous.
+
+Recommendation:
+
+- For static demo/case-study data:
+  - add `generateStaticParams` for `{ dealId: 'northstar-energy' }`,
+  - add `dynamicParams = false`,
+  - keep unsupported deals as 404.
+- For future private/live data:
+  - explicitly mark the segment dynamic,
+  - colocate auth checks,
+  - keep response caches private or no-store,
+  - document the rationale in the route loader.
+
+Acceptance criteria:
+
+- The route rendering mode matches the data classification.
+- Static demo routes appear in the prerender manifest.
+- Private live routes have explicit auth and no accidental public caching.
+
+### 6. Deal Data Has No Request Memoization Or Invalidation Model
+
+Evidence:
+
+- `apps/web/app/deals/[dealId]/layout.tsx` calls `getDealOperationsData`.
+- `overview/page.tsx`, `documents/page.tsx`, and `commitments/page.tsx` call it
+  again.
+- `apps/web/app/deals/[dealId]/data.ts` exposes a plain loader function.
+- `server-reference-manifest.json` is empty, matching the absence of Server
+  Actions and invalidation.
+- No route data source uses React `cache()`.
+
+Rationale:
+
+The duplicate fixture reads are cheap today. They will matter once the same
+seam reads from a database, external service, or authorization layer. The repo
+also has no encoded decision about future invalidation: private no-store SSR,
+tagged server cache, or static/ISR route cache.
+
+Recommendation:
+
+- Wrap the route loader with React `cache()` for per-request dedupe.
+- Keep `server-only` on app loaders and deal services.
+- When persistence/mutations arrive, choose one model:
+  - private no-store SSR,
+  - tagged cache with `revalidateTag`/`updateTag`,
+  - static/ISR route cache for public or demo data.
+- Document cache tags next to the loader if tagged caching is chosen.
+
+Acceptance criteria:
+
+- Layout and page reads dedupe within one RSC render.
+- Cache behavior is documented next to the loader.
+- Future mutations have a defined invalidation path.
+
+### 7. Commitments Still Ships All Inspector Detail Before Row Open
+
+Evidence:
+
+- `apps/web/app/deals/[dealId]/commitments/page.tsx` builds and passes both
+  table and inspector props up front.
+- `apps/web/app/deals/[dealId]/deal-commitment-inspector-adapter.ts` builds
   `propsByInvestorId` for every investor.
-- `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx` keeps
-  that full map in the client workspace and selects from it on row open.
+- The adapter repeatedly scans blockers, documents, and activity per investor.
+- `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx` holds the
+  full inspector map and selects from it only when a row opens.
 
 Rationale:
 
-This is acceptable for the current small fixture. It will not scale well when
-investor counts and document evidence grow. The initial commitments route pays
-the RSC payload, serialization, hydration memory, and JavaScript cost for
-inspector content that may never be opened.
+This is acceptable for the current small fixture. It scales poorly with real
+investor counts and document evidence. The initial commitments route pays RSC
+payload, serialization, hydration memory, and JavaScript cost for inspector
+content that may never be opened.
 
 Recommendation:
 
-- Send only table rows and the minimum row-open metadata in the initial route.
-- Fetch or server-render inspector detail on demand:
-  - route segment,
+- Initial commitments payload should contain table rows plus row-open metadata
+  only.
+- Load or render inspector detail on demand:
   - parallel route,
-  - server action,
   - route handler,
-  - or suspense-backed client fetch, depending on the chosen architecture.
-- Add `useDeferredValue` or transitions for search/filter interactions before
-  scaling row counts.
+  - server action,
+  - or Suspense-backed client fetch.
+- Pre-index blockers, documents, and activity by investor id before mapping.
 
 Acceptance criteria:
 
-- Initial commitments payload does not include full inspector props for every
-  investor.
-- Opening a row still feels responsive.
-- Search/filter INP remains within budget on realistic row counts.
+- Initial commitments payload excludes unopened inspector details.
+- Row open remains responsive under a realistic large fixture.
+- Serialized payload size drops or stays within a committed budget.
 
-### 9. Loading And Error Boundaries Participate In First-Load JS
+### 8. Commitments Search And Filter Work Is Synchronous On The Input Path
 
 Evidence:
 
-- `apps/web/app/loading.tsx` and
-  `apps/web/app/deals/[dealId]/loading.tsx` are client components only to call
-  `useTranslations`.
-- Both import `Skeleton` from root `@repo/ui`.
-- Error boundaries must be client components, but they import `Button` from
-  root `@repo/ui`.
+- `deal-commitments-table-toolbar.tsx` calls `onSearchChange` on every
+  keystroke.
+- `deal-commitments-table.tsx` updates state and resets pagination on search
+  changes.
+- `deal-commitments-table.model.ts` recomputes the visible model from the full
+  row set.
+- Search rebuilds normalized joined row text per row.
 
 Rationale:
 
-Loading UI and error UI are supposed to be cheap guardrails. Here they
-participate in the same barrel-driven client graph that pulls in large shared
-dependencies. That increases first-load JS even for simple routes.
+The current fixture is small, so the UI feels fine. The implementation has an
+INP risk once row counts grow because every keystroke can trigger synchronous
+model recomputation and string normalization.
 
 Recommendation:
 
-- Make loading states server/static where possible.
-- Use plain CSS skeletons or direct `Skeleton` subpath imports.
-- Keep error boundaries client, but use direct `Button` subpath imports.
-- Consider route-local fallback text instead of client translations for
-  loading states if it avoids a provider dependency.
+- Add a large-row fixture or benchmark for search and filters.
+- Precompute or memoize normalized search text by row identity.
+- Use `useDeferredValue` or transitions if profiling shows input contention.
+- Track long tasks during search in performance tests.
 
 Acceptance criteria:
 
-- Loading/error fallbacks do not import root `@repo/ui`.
-- `/` no longer includes heavy UI chunks only because of fallback components.
+- No search/filter interaction creates a long task above the agreed threshold.
+- Input remains responsive on a realistic commitments fixture.
+- Search/model recomputation is covered by a performance regression test.
 
-### 10. Performance Measurement Is Functional, Not Web Vitals-Oriented
+### 9. Web Vitals And Bundle Guardrails Are Diagnostic-Only
 
 Evidence:
 
-- `apps/web/tests/e2e/homepage.spec.ts` has useful route behavior and
-  horizontal overflow checks.
-- `apps/web/playwright.config.ts` runs only Desktop Chrome.
-- There are no tests for:
-  - LCP,
-  - CLS,
-  - INP proxy metrics,
-  - long tasks,
-  - navigation timing,
-  - resource count,
-  - route bundle budget.
-- There is no CI workflow in the repo to run and publish these checks.
+- `apps/web/scripts/report-route-bundles.mjs` prints bundle stats but does not
+  enforce thresholds.
+- Playwright defines only Desktop Chrome.
+- E2E tests cover route behavior and overflow but not LCP, CLS, INP proxy
+  metrics, long tasks, resource counts, or route JS budgets.
+- No tracked CI workflow was found.
 
 Rationale:
 
-The current tests would not catch the Recharts regression, a route bundle size
-jump, a font preload regression, a mobile-only CLS issue, or a slow hydration
-path. Functional correctness is necessary but insufficient for a product UI
-that should stay fast while the surface area grows.
+The repo now has enough measurement surface to start enforcing budgets, but the
+checks still require a human to inspect output. This would not block a PR that
+reintroduces Recharts, adds a large charting dependency to a route, or slows
+the commitments input path.
 
 Recommendation:
 
-- Add a production-server performance spec for:
+- Add route bundle thresholds to `bundle:report` or a sibling script.
+- Add production-server Playwright performance specs for:
   - `/`,
   - `/deals/northstar-energy/overview`,
   - `/deals/northstar-energy/commitments`,
   - `/deals/northstar-energy/documents`.
-- Record:
-  - navigation timing,
-  - LCP,
-  - CLS,
-  - long task count/duration,
-  - script/font resource counts,
-  - total JS transfer and uncompressed route JS.
 - Add mobile and desktop projects.
-- Add CI reporters that preserve Playwright traces/screenshots and a machine
-  readable budget report.
+- Add CI that runs typecheck, lint, unit tests, build, E2E, and budget checks.
+- Publish Playwright traces/screenshots, coverage, and bundle summaries.
 
 Acceptance criteria:
 
-- A route bundle increase fails CI when it exceeds the agreed budget.
-- Performance specs run against `next build` + `next start`, not only dev.
-- Mobile viewport is covered.
+- CI fails when route JS, LCP proxy, CLS, long tasks, or resource counts exceed
+  agreed budgets.
+- A failing PR exposes test output and artifacts without rerunning locally.
+
+### 10. Loading And Error Fallbacks Improved But Still Add Client Boundaries
+
+Evidence:
+
+- Root loading and deal loading are client components because they use
+  `useTranslations`.
+- Root error and deal error are client components, as required for reset, but
+  still use translation hooks.
+- They now use direct UI subpath imports, so the root-barrel issue is improved.
+
+Rationale:
+
+The previous root `@repo/ui` import problem is reduced. The remaining issue is
+that cheap fallback UI still adds client references and translation coupling.
+Loading UI should be as static and cheap as possible.
+
+Recommendation:
+
+- Make loading fallbacks static/server-renderable where possible.
+- Use plain CSS skeletons for fallbacks if that avoids client references.
+- Keep error boundaries client but minimal and instrumented.
+
+Acceptance criteria:
+
+- Loading fallbacks do not create unnecessary client chunks.
+- Error boundaries report errors and keep client payload minimal.
 
 ## P3 Findings
 
-### 11. Fonts Are Slightly Over-Provisioned
+### 11. Fonts Are Still Globally Over-Provisioned
 
 Evidence:
 
 - `apps/web/app/layout.tsx` imports Geist, Geist Mono, and Fraunces globally.
 - Fraunces loads four weights.
-- Production search did not find active `font-serif` usage in app code.
-- `.next/static/media` contains about 229.4 KiB of font files.
-- The homepage preloads three font files.
+- The font manifest shows every route preloading the same three font files.
+- The local production browser session loaded 95,820 bytes of fonts for each
+  audited route.
+- Active app usage requires mono in some financial UI, but no active app usage
+  clearly requires global Fraunces preload.
 
 Rationale:
 
-`next/font` with `display: swap` reduces CLS risk, but non-critical preloaded
-fonts still compete for network and preload priority during LCP. The current
-homepage appears to need the sans font, not the global serif family.
+`display: swap` reduces CLS risk, but non-critical preloaded fonts still
+compete for network and preload priority during LCP.
 
 Recommendation:
 
-- Remove Fraunces until it is used, or set it to `preload: false`.
-- Scope display/mono fonts to the routes or components that need them.
+- Remove Fraunces until it is used, or set `preload: false`.
+- Scope display fonts to routes/components that actually need them.
+- Keep mono where tabular financial UI needs it.
 
-### 12. Dependency Footprint Has Avoidable Drift
+### 12. Dependency And Build Drift Remains
 
 Evidence:
 
-- `lucide-react` is a `@repo/kit` dependency and is imported across many kit
-  files.
-- `@repo/tailwind-config` is included in `transpilePackages` even though it is
-  CSS-oriented for the web app.
+- `recharts` no longer appears in emitted app chunks, but remains a
+  `@repo/ui` dependency.
+- `@repo/tailwind-config` is still listed in `transpilePackages`.
+- `lucide-react` remains a kit dependency and contributes a 108.1 KiB matched
+  emitted chunk.
+- Many `packages/kit` internals still import from root `@repo/ui`.
 
 Rationale:
 
-These are not the primary route-size drivers today, but they are easy places
-for future drift. Icon packages and CSS config packages should not become
-hidden reasons for route bundles or build work to grow.
+These are not the same high-impact route-tax problems as the first snapshot,
+but they are drift vectors. Root `@repo/ui` imports inside `@repo/kit` can still
+broaden client graphs. Optional chart support should not be a production app
+dependency unless a route needs it.
 
 Recommendation:
 
-- Add `optimizePackageImports: ['lucide-react']` in `next.config.ts`, or switch
-  to explicit direct icon imports if preferred.
-- Remove `@repo/tailwind-config` from `transpilePackages` unless there is a
-  measured reason it must be transpiled.
+- Convert kit internals to direct `@repo/ui/components/*` and
+  `@repo/ui/lib/utils` imports.
+- Add a lint or contract rule banning root `@repo/ui` imports in production
+  client code.
+- Move chart support to an optional/chart package, or make `recharts` a
+  peer/dev dependency if only Storybook/tests need it.
+- Measure whether `@repo/tailwind-config` must be transpiled.
+- Add `optimizePackageImports: ['lucide-react']` or switch to direct icon
+  imports if measurement supports it.
 
-### 13. `server-only` Boundaries Need To Stay In Place
+### 13. `server-only` Boundaries Improved, But tRPC Server Modules Should Be Explicit
 
 Evidence:
 
-- Route data loaders and server deal entrypoints should import `server-only`.
-- `apps/web/app/deals/[dealId]/data.ts` imports the server deal service.
-- Server deal modules are app-private and should not be imported by client
-  components.
+- Route data loaders and deal service modules now import `server-only`.
+- tRPC context/init/root/router files do not directly import `server-only`.
 
 Rationale:
 
-The current code is mostly correct by convention, but conventions weaken under
-feature pressure. `server-only` provides a build-time guardrail that prevents
-future client imports from pulling server data loaders or sensitive code into
-the client graph.
+The most important server-only path is now guarded. tRPC server modules still
+represent runtime server code and should be explicit, or split shared type-only
+helpers away from server runtime modules.
 
 Recommendation:
 
-- Keep `import 'server-only'` on route data loaders and server deal entrypoints.
-- Keep app services out of `@repo/kit` and `@repo/ui`.
+- Add `import 'server-only'` to server-side tRPC runtime modules that must never
+  enter client graphs.
+- Keep shared types in type-only files when client code needs them.
 
-### 14. Analytics Dimensions Need Canonical Route Params
+### 14. Route Interaction Telemetry Is Narrow
 
 Evidence:
 
-- Deal links and redirects use the raw `dealId` param.
-- Existing planning docs already flag canonical slug risks for permissions,
-  cache keys, and analytics.
+- The event model includes `deal_route_viewed`.
+- Current app usage emits commitment inspector open/close events.
+- Route-view telemetry is not yet emitted on navigation.
+- Core filters/search/actions are not yet instrumented.
 
 Rationale:
 
-Once telemetry is added, raw route params can create high-cardinality or
-duplicated dimensions. For private-market data, raw ids can also leak customer
-or investor context into logs and analytics.
+Once production transport exists, the app should be able to answer basic
+workflow questions without high-cardinality or sensitive payloads. The current
+event model is a start, but coverage is narrow.
 
 Recommendation:
 
-- Add an app-local slug schema/canonicalizer.
-- Use canonical route templates and safe ids for logs, analytics, cache tags,
-  and redirects.
+- Emit route-view events once per navigation.
+- Add safe interaction events for core filters, search, and major workflow
+  controls.
+- Keep route and metadata sanitization mandatory.
 
 ## Current Clean Areas
 
 The audit also found several good signs:
 
 - No production `next/image`, raw `<img>`, `next/script`, or third-party embed
-  problems were found in the audited app paths.
-- The App Router pages and layouts are server components by default.
-- The route adapters keep most app data shaping outside `@repo/kit`.
-- The Playwright suite covers real route behavior and mobile overflow checks.
+  problems were found in audited app paths.
+- App Router pages and layouts are server components by default.
+- Route adapters keep most app data shaping outside `@repo/kit`.
+- Playwright covers real route behavior and mobile overflow checks.
 - `next/font` uses `display: swap`, reducing font-related CLS risk.
 - The app has no global client state library drift for these performance
   concerns.
+- Recharts is no longer present in emitted app route chunks.
+- App imports use kit/UI subpaths more consistently than in the original
+  snapshot.
+- Server-only guards are present on the primary deal data path.
+- Telemetry event shaping and redaction tests now exist.
 
 ## Recommended Implementation Order
 
-1. Remove the Recharts route tax:
-   - stop root `@repo/ui` client imports,
-   - isolate chart exports,
-   - verify `/` no longer loads the chart chunk.
+1. Wire production telemetry and errors:
+   - real Web Vitals/RUM transport,
+   - error-boundary reporting,
+   - `global-error.tsx`,
+   - `instrumentation.ts`,
+   - release/environment/request correlation.
 
-2. Add granular `@repo/kit` exports:
-   - update route imports,
-   - verify overview/documents/commitments have different client graphs.
+2. Close the tRPC production-data gap:
+   - either keep it explicitly demo/local,
+   - or add auth, tenant/deal authorization, private no-store headers, and
+     structured logs.
 
-3. Decide route data classification:
+3. Decide deal route data classification:
    - static demo with `generateStaticParams` and `dynamicParams = false`, or
-   - private live dynamic routes with auth and no-store.
+   - explicit private/live dynamic routes with auth and no-store rationale.
 
-4. Add observability baseline:
-   - error reporting,
-   - structured server logs,
-   - Web Vitals/RUM,
-   - request correlation,
-   - redaction policy.
+4. Split broad client surfaces:
+   - server-render static overview/documents/progress content,
+   - keep only small client islands for active nav, actions, table controls,
+     and drawers,
+   - pass narrow rail props instead of the full DTO.
 
-5. Split RSC/client surfaces:
-   - convert read-only overview/documents sections to server-compatible
-     renderers,
-   - keep small client islands for actions and controls.
+5. Reduce commitments payload and INP risk:
+   - load inspector detail on demand,
+   - pre-index adapter lookups,
+   - memoize/precompute search text,
+   - add large-fixture performance tests.
 
-6. Add guardrails:
-   - route bundle budgets,
-   - mobile performance specs,
-   - CI artifacts,
-   - server-only imports.
+6. Turn diagnostics into guardrails:
+   - enforce route JS budgets,
+   - add mobile/desktop performance specs,
+   - publish CI artifacts.
+
+7. Clean dependency drift:
+   - direct UI imports inside kit internals,
+   - optionalize or isolate chart dependencies,
+   - revisit Fraunces, `lucide-react`, and `@repo/tailwind-config`.
 
 ## Proposed Guardrail Budgets
 
-These are starting budgets, not final product SLOs. They should be tightened
-after the barrel fixes land.
+These remain starting budgets, not final product SLOs. The 2026-05-19 snapshot
+is closer, but still over budget on home, overview, and documents.
 
 | Area | Initial Budget |
 | --- | --- |
@@ -676,10 +755,8 @@ after the barrel fixes land.
 | LCP lab proxy on local production desktop | below 2500 ms |
 | CLS lab proxy | below 0.1 |
 | Long tasks before first interaction | no task above 200 ms |
-
-The JS budgets are intentionally above the ideal because the current baseline
-is near or above 1 MiB. The first step is to make regressions impossible while
-the app works the numbers down.
+| Search/filter long tasks on large commitments fixture | no task above 200 ms |
+| Production Web Vitals transport | non-noop in preview/prod |
 
 ## Proposed `AGENT.md` Addition
 
@@ -695,12 +772,14 @@ components when a narrower subpath export can be used. Keep read-only UI as
 Server Components by default and introduce `'use client'` only for actual
 browser state, effects, refs, or event handling. Any change that adds a new
 client boundary, package barrel export, charting dependency, analytics script,
-font, or route-level data cache must include a short rationale and a measured
-bundle/cache/Web Vitals impact from a production build.
+font, route-level data cache, or public API data path must include a short
+rationale and measured impact from a production build.
 
-Before finalizing frontend changes, run or update the route bundle/performance
+Before finalizing frontend changes, run or update route bundle and performance
 checks for the touched routes. Regressions must either be fixed or documented
-with an explicit budget exception.
+with an explicit budget exception. Production telemetry must stay privacy-safe:
+route templates only, bounded metadata, no raw deal ids, investor names, emails,
+document labels, or financial payloads.
 ```
 
 ## Appendix: Local Evidence Commands
@@ -709,8 +788,12 @@ Useful commands from the audit:
 
 ```bash
 pnpm --filter @repo/web build
+pnpm --filter @repo/web bundle:report
+pnpm --filter @repo/web test
 pnpm --filter @repo/web e2e
 node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('apps/web/.next/diagnostics/route-bundle-stats.json','utf8')); for (const r of j) console.log(r.route, r.firstLoadUncompressedJsBytes)"
 du -sh apps/web/.next/static apps/web/.next/server
 find apps/web/.next/static/chunks -type f -name '*.js' -print0 | xargs -0 du -k | sort -nr | sed -n '1,40p'
+curl -sS -D - -o /tmp/funding_home.html http://127.0.0.1:3000/
+curl -sS -D - -o /tmp/funding_overview.html http://127.0.0.1:3000/deals/northstar-energy/overview
 ```

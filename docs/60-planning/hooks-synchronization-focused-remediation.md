@@ -33,11 +33,11 @@ Other hook-heavy areas remain:
 
 - `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.content.tsx`
   - local ready-state controls
-  - five prop-to-local synchronization effects
+  - render-time controlled/uncontrolled source-of-truth selection
   - model derivation through `useMemo`
 - `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx`
-  - route-owned table/inspector state
-  - selected-row state seeded from table props
+  - table-owned row/detail state exposed through `rowState`
+  - route-composed inspector Sheet content
 - shared kit/UI components using `useId` and chart-local `useContext`
 
 The kit/UI `useId` and `useContext` surfaces are currently clean: hooks are
@@ -250,15 +250,15 @@ Focused tests added:
   callback fires while the UI remains controlled until the parent provides a new
   row state.
 
-### 3. Workspace Selection Is Seeded From The First Render And Can Drift
+### 3. Workspace Selection Was Seeded From The First Render And Could Drift
 
-Severity: P2
+Status: Remediated
 
 File:
 
 - `apps/web/app/deals/[dealId]/commitments/commitments-workspace.tsx`
 
-Current behavior:
+Previous behavior:
 
 The commitments workspace initializes selected rows from the incoming table
 state:
@@ -269,7 +269,7 @@ const [selectedRowIds, setSelectedRowIds] = useState<readonly string[]>(() =>
 )
 ```
 
-It then always injects `selectedRowIds` back into controlled table state.
+It then always injected `selectedRowIds` back into controlled table state.
 
 Why this violates the hooks model:
 
@@ -283,49 +283,27 @@ then ignores later prop changes.
 
 Implemented fix:
 
-Selection remains route-owned for now, preserving the current route/table
-interface and batch-selection behavior. The synchronization rule moved into a
-small pure helper, then the component uses a functional state update so the
-effect never closes over an obsolete selected-row snapshot.
-
-```tsx
-useEffect(() => {
-  setSelectedRowIds((currentSelectedRowIds) =>
-    getSyncedCommitmentsSelection({
-      currentSelectedRowIds,
-      state: table.state,
-    }),
-  )
-}, [table.state])
-```
-
-The helper has three rules:
-
-- if the latest table state is ready and contains `selectedRowIds`, use those
-  values;
-- if the latest table state is ready but leaves selection uncontrolled, preserve
-  the current local selection;
-- if the table leaves the ready lifecycle, clear local selection.
+Selection is now table-local by default. `CommitmentsWorkspace` passes
+`table.state` directly into `DealCommitmentsTableContent` and no longer owns
+`selectedRowIds`, no longer syncs it in an effect, and no longer injects it back
+into table state. The temporary `commitments-workspace-selection` helper and its
+unit test were removed.
 
 Rationale:
 
-State should have one owner. Because the route still owns selected rows in the
-current component structure, route state must synchronize with route data
-changes. The functional updater is the important hook detail: it reads the latest
-React state queue value at effect time instead of closing over the selected rows
-from the render that scheduled the effect.
-
-The helper also keeps a future cleanup path open. If no sibling ultimately needs
-route-level selected rows, the route can stop lifting selection and let
-`DealCommitmentsTable` own selection locally.
+State should have one owner. No current route sibling consumes selected rows, so
+the nearest owner is the table, not the route. If a route-level batch action bar
+or another sibling later needs selected rows, lift selection back to the nearest
+shared owner with an explicit controlled contract.
 
 Focused tests added:
 
-- `commitments-workspace-selection.test.ts` verifies that latest ready-state
-  `selectedRowIds` replace the current snapshot.
-- It verifies that uncontrolled ready state preserves local selection.
-- It verifies that non-ready table state clears selection.
-- It verifies that selection is injected only into ready table state.
+- `deal-commitments-table.test.tsx` verifies that controlled selection callbacks
+  do not leave hidden local selection behind.
+- It verifies that uncontrolled search does not resync from parent rerenders
+  after local edits.
+- Existing table interaction tests cover local selection, controlled search,
+  controlled row-state clearing, and pagination behavior.
 
 ### 4. Package-Level Turbo Lint Does Not Cover Web Or Storybook Hooks
 

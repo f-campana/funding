@@ -47,7 +47,7 @@ The live vertical currently includes:
 
 - `/deals/northstar-energy` redirecting to `/overview`
 - `/overview` rendering `DealOperationalOverview`
-- `/commitments` rendering `DealCommitmentsTable` and a route-owned `DealCommitmentInspector` Sheet
+- `/commitments` rendering `DealCommitmentsTable` and route-composed `DealCommitmentInspector` content inside a Sheet driven by table detail state
 - `/documents` rendering `DealDocumentsEvidence`
 - persistent app shell, entity header, route tabs, left navigation, and right operational rail
 - unsupported deal handling through app not-found UI

@@ -2,6 +2,7 @@
 
 **Status:** Audit findings  
 **Created:** 2026-05-18  
+**Updated:** 2026-05-19
 **Scope:** repo-wide review of where Zod, JSON Schema, or similar runtime
 validation belongs, where it is already used well, and where adding it would be
 drift or unnecessary runtime cost
@@ -24,25 +25,35 @@ The audit covered:
 - `@repo/domain` schemas and exported domain contracts
 - `apps/web` route params, tRPC, DTOs, fixtures, adapters, and server data spine
 - `@repo/kit` and `@repo/ui` component surfaces
-- design token scripts, generated data, config, and contract scripts
+- design token scripts, generated data, config, i18n, package manifests, and
+  contract scripts
+
+The 2026-05-19 refresh used a four-agent split across domain contracts, web/API
+boundaries, kit/UI surfaces, and scripts/config. The refreshed snapshot below
+incorporates both those findings and local verification.
 
 ## Current Repo Truth
 
-The repo already has the right high-level direction:
+The repo has the right high-level direction:
 
 - `@repo/domain` may depend on `zod` and already exports canonical domain
   schemas.
 - `@repo/core` keeps Zod optional through the `@repo/core/adapters/zod` adapter.
-- `apps/web` depends on Zod and already validates the tRPC input for
-  `deal.getOperationalCenter`.
-- `@repo/ui` and `@repo/kit` do not depend on Zod, which is mostly correct.
+- `apps/web` depends on Zod and now validates both the tRPC input for
+  `deal.getOperationalCenter` and the `/deals/[dealId]` route param before route
+  adapters build links or redirects.
+- `apps/web` also validates the current operational-center DTO with service-level
+  invariant checks for money, date strings, capital math, forbidden finance
+  fields, and cross-record graph references.
+- `@repo/ui` and `@repo/kit` do not depend on Zod, which remains correct.
 
 The current read path is:
 
 ```text
-Northstar fixture
+Northstar TypeScript fixture
   -> getDealOperationalCenter()
   -> DealOperationalCenterDTO
+  -> service-level invariant validation
   -> route adapters
   -> kit components
 ```
@@ -59,7 +70,9 @@ database, provider payloads, imports, auth/session context, or CMS
 ```
 
 The important rule is that validation should sit at the first point where data
-leaves a trusted compile-time context.
+leaves a trusted compile-time context. The latest web work moved the route slug
+and service DTO path in that direction. The remaining gap is a strict serialized
+output schema at the tRPC/API boundary and a few non-web runtime data inputs.
 
 ## Decision Rule
 
@@ -67,7 +80,8 @@ Add Zod, JSON Schema, or a similar validator when at least one of these is true:
 
 - Data came from URL params, search params, request bodies, headers, cookies,
   environment variables, local storage, generated JSON, imported JSON, provider
-  APIs, CMS, database records, CSV/XLSX imports, or user forms.
+  APIs, CMS, database records, CSV/XLSX imports, user forms, package manifests,
+  or generated diagnostics files.
 - A TypeScript type describes a serialized DTO crossing an API or server/client
   boundary.
 - A package exports a reusable business contract that should not be redefined by
@@ -91,85 +105,97 @@ Do not add runtime schemas when:
 
 ### P0 - Normalize And Validate Deal Route Params
 
+**Status:** Fixed on 2026-05-19.
+
 Files:
 
 - [operational-center-dto.ts](../../apps/web/server/deals/operational-center-dto.ts)
 - [data.ts](../../apps/web/app/deals/[dealId]/data.ts)
 - [page.tsx](../../apps/web/app/deals/[dealId]/page.tsx)
 - [layout.tsx](../../apps/web/app/deals/[dealId]/layout.tsx)
+- [about/page.tsx](../../apps/web/app/deals/[dealId]/about/page.tsx)
 
 Current state:
 
-`GetOperationalCenterInputSchema` validates `dealId` with `z.string().trim().min(1)`.
-The service trims again before comparing against `northstar-energy`, but route
-code reuses the raw route param when building redirects and links.
+`DealSlugSchema` trims and validates the URL slug with a slug regex, and
+`GetOperationalCenterInputSchema` composes it. `normalizeDealId()` safe-parses
+route params before `getDealOperationsData()` calls the service. The deal route
+now builds redirects and shell links from `data.deal.slug`, not the raw route
+param.
 
 Why this matters:
 
-A route like `/deals/%20northstar-energy%20` can be treated as supported by the
-service while still producing redirects or links containing the non-canonical raw
-value. This is a small bug today and a larger drift risk once more route slugs,
-permissions, cache keys, or analytics events exist.
+The previous path could treat `/deals/%20northstar-energy%20` as supported while
+still generating non-canonical redirects or links. That drift point is now
+closed for the current deal route.
 
-Recommended change:
+Follow-up:
 
-Add an app-local slug schema, for example:
+Keep this pattern for future route params: parse once at the route/data helper
+boundary, then pass only the canonical value downstream. Do not use
+`DealIdSchema` for this route unless the URL changes from human-readable slugs
+to UUID-backed domain IDs.
 
-```ts
-const DealSlugSchema = z
-  .string()
-  .trim()
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+### P0 - Add Strict tRPC Output DTO Validation
 
-const DealRouteParamsSchema = z.object({
-  dealId: DealSlugSchema,
-})
-```
-
-Parse route params once near `getDealOperationsData` or a route helper, then use
-the parsed canonical slug everywhere. Do not use `DealIdSchema` for this route
-unless the URL changes from human-readable slugs to UUID-backed domain IDs.
-
-### P0 - Add tRPC Output DTO Validation
+**Status:** Partially fixed. Service invariants exist; strict API output parsing
+is still open.
 
 Files:
 
 - [deal-router.ts](../../apps/web/server/trpc/routers/deal-router.ts)
 - [operational-center-dto.ts](../../apps/web/server/deals/operational-center-dto.ts)
+- [operational-center-service.ts](../../apps/web/server/deals/operational-center-service.ts)
+- [operational-center-validation.ts](../../apps/web/server/deals/operational-center-validation.ts)
 - [northstar-operational-center-dto-spec.md](../20-specs/northstar-operational-center-dto-spec.md)
 
 Current state:
 
-The tRPC procedure validates input with `GetOperationalCenterInputSchema`, but
-the large `GetDealOperationalCenterOutputDTO` union is type-only. That means
-mapper, fixture, or future repository drift can reach `/api/trpc` without a
-runtime check.
+The tRPC procedure validates input with `GetOperationalCenterInputSchema`.
+`getDealOperationalCenter()` then validates the generated DTO with
+`validateDealOperationalCenter()` before returning. That validation catches
+money shape, non-EUR currency, invalid ISO date-time strings, capital invariant
+failures, forbidden finance fields, and dangling graph references.
+
+The remaining gap is that `GetDealOperationalCenterOutputDTO` is still a
+TypeScript-only output union. `deal.getOperationalCenter` does not yet declare a
+tRPC `.output(...)` schema, and the current service validator is an invariant
+validator over an already-typed DTO rather than a full unknown-payload parser.
+The error result variants are also type-only.
 
 Why this matters:
 
 The DTO is the app-owned serialized API contract. It contains money, dates,
 status enums, readiness dimensions, blockers, documents, investors, and activity
-events. A bad enum or date can break UI formatting. A missing blocker reference
-can understate operational risk. TypeScript catches compile-time code drift, but
-it will not catch database rows, imported JSON, CMS payloads, provider payloads,
-or generated data.
+events. TypeScript catches mapper and fixture drift while the fixture is compiled
+source, and the new service validator catches important invariants. It still
+will not fully protect the `/api/trpc` contract once database rows, imported
+JSON, CMS payloads, provider payloads, or generated data feed the service.
 
 Recommended change:
 
-Create `GetDealOperationalCenterOutputSchema` and add `.output(...)` to the tRPC
-procedure. Compose it from:
+Create a strict `GetDealOperationalCenterOutputSchema` and add `.output(...)` to
+the tRPC procedure. Compose it from:
 
 - existing domain schemas for deal lifecycle, commitment lifecycle, readiness,
   blocker, document, KYC/KYB, signature, wire, and capital statuses
 - app-local DTO schemas for route hints, vehicle/access modes, money DTOs, date
   strings, document groups, activity events, and result union tags
-- graph-level `superRefine` checks for references between investors, blockers,
-  documents, groups, and activity events
+- the existing graph-level and capital invariant validation, either by invoking
+  it from `superRefine` or by sharing lower-level checks
 
 Keep the DTO schema app-owned. Do not move app route shape, route hints, or
 rendering-specific grouping into `@repo/domain`.
 
+One nuance from the refresh: activity relation fields are required by the DTO
+types but probed as optional by the invariant validator. That is fine for a
+typed fixture path, but a strict output schema should require those relation
+keys for each event variant so malformed unknown payloads cannot skip reference
+checks.
+
 ### P0 - Validate Design Token Source Before Generation
+
+**Status:** Open.
 
 Files:
 
@@ -180,17 +206,18 @@ Files:
 
 Current state:
 
-`readTokenSource()` calls `JSON.parse` and returns unchecked data. The generator
-then emits CSS and a TypeScript module from that data. The validator checks many
-required paths and contrast pairs, but it does not validate the full source
-shape, `$schemaVersion`, token `$type`, top-level sections, or all OKLCH color
-values before semantic checks run.
+`readTokenSource()` calls `JSON.parse` and returns unchecked data. The source now
+contains metadata such as `$schemaVersion` and `$type`, and the validator checks
+many required paths and contrast pairs, but the scripts still do not validate the
+full source shape, all required sections, or all OKLCH color values before
+semantic checks run. `validateContrast()` can still throw from `parseOklch()`
+instead of reporting all source-shape problems together.
 
 Why this matters:
 
 Design tokens are generated package output. A malformed source file can produce
-stale, invalid, or misleading runtime exports. The current validator can also
-throw during contrast validation instead of reporting all schema issues together.
+stale, invalid, or misleading runtime exports. This is generated JSON-to-code
+ingress, so TypeScript alone is not the right protection.
 
 Recommended change:
 
@@ -202,7 +229,7 @@ Add a `DesignTokenSourceSchema` using Zod or JSON Schema. It should validate:
 - required semantic token names
 - token objects with `$type` and `$value`
 - base token groups such as radius, font, space, shadow, and motion
-- OKLCH syntax for color token values
+- OKLCH syntax for every color token value
 
 Keep the existing manual checks for generated-file freshness, placeholder
 removal, readiness alias equivalence, and WCAG contrast math. Those checks are
@@ -213,19 +240,23 @@ package exports generated CSS and generated TypeScript, not runtime validators.
 
 ### P1 - Centralize Domain Money JSON Schemas
 
+**Status:** Open.
+
 Files:
 
 - [commitment-flow.ts](../../packages/domain/src/commitment-flow/commitment-flow.ts)
 - [reconciliation.ts](../../packages/domain/src/reconciliation/reconciliation.ts)
 - [investor-operations.ts](../../packages/domain/src/commitments/investor-operations.ts)
 - [euro-cents.ts](../../packages/domain/src/money/euro-cents.ts)
+- [index.ts](../../packages/domain/src/money/index.ts)
 
 Current state:
 
 Several domain modules define local Zod number-to-`EuroCents` schemas. They are
 similar but not identical. For example, commitment flow prefixes some parse
 messages with `money.`, while reconciliation and investor operations use raw
-error tags in the transform guard.
+error tags in the transform guard. `@repo/domain/money` exports money functions
+and types but not canonical JSON-facing schemas.
 
 Why this matters:
 
@@ -246,6 +277,8 @@ DTO ingress paths.
 
 ### P1 - Tighten Commitment Flow Required Text
 
+**Status:** Open.
+
 File:
 
 - [commitment-flow.ts](../../packages/domain/src/commitment-flow/commitment-flow.ts)
@@ -253,14 +286,17 @@ File:
 Current state:
 
 `RequiredTextSchema` uses `z.string().min(1)`, so whitespace-only input passes.
-Other domain schemas use trimmed required strings for documents, blockers,
-reconciliation, and investor operations.
+`amountRaw` also uses `z.string().min(1)`. UBO `fullName` uses
+`z.string().min(2)` without trimming. Several fields still compose the
+non-trimming helper, including uploaded document name, registration number,
+entity tax ID, individual first name, individual last name, and individual tax
+ID.
 
 Why this matters:
 
 The commitment flow is user-facing and will eventually be a form boundary.
-Whitespace-only names, filenames, registration numbers, or tax identifiers
-should not satisfy required business fields.
+Whitespace-only names, filenames, registration numbers, tax identifiers, or raw
+amounts should not satisfy required business fields.
 
 Recommended change:
 
@@ -274,72 +310,46 @@ const RequiredTextSchema = z
   .min(1, { error: 'commitment.text.required' })
 ```
 
-If raw display text must be preserved, use separate raw form state and parse into
+Apply the same canonicalization decision to `amountRaw` and UBO `fullName`. If
+raw display text must be preserved, use separate raw form state and parse into
 canonical domain data before submission.
 
-### P1 - Validate Date Strings In App DTOs
+### P1 - Validate App DTO Money, Dates, And Graph References
+
+**Status:** Fixed for the current service `Ok` path; keep the stricter tRPC
+output schema follow-up under P0.
 
 Files:
 
 - [operational-center-dto.ts](../../apps/web/server/deals/operational-center-dto.ts)
-- [deal-operational-formatting.ts](../../apps/web/app/deals/[dealId]/deal-operational-formatting.ts)
-- [deal-operational-overview-adapter.ts](../../apps/web/app/deals/[dealId]/deal-operational-overview-adapter.ts)
+- [operational-center-validation.ts](../../apps/web/server/deals/operational-center-validation.ts)
+- [operational-center-service.ts](../../apps/web/server/deals/operational-center-service.ts)
+- [operational-center-validation.test.ts](../../apps/web/server/deals/operational-center-validation.test.ts)
 
 Current state:
 
-The DTO uses plain `string` fields for dates such as `generatedAt`,
-`targetCloseDate`, `lastUpdatedAt`, activity `occurredAt`, document `dueDate`,
-and `lastActivityAt`. Later route code formats dates with `new Date(value)` and
-sorts activity-like values lexically.
+The service now validates serialized money with `MoneyMinorUnitsSchema`, date
+strings with `IsoDateTimeStringSchema`, capital math invariants, forbidden
+finance fields, and cross-record references before returning a successful DTO.
+Tests cover valid DTOs, invalid money, non-EUR money, invalid dates, capital
+invariant failures, and dangling references.
 
 Why this matters:
 
-Invalid date strings can create invalid display output or runtime formatting
-errors. Non-ISO date strings can sort incorrectly while still looking like
-strings to TypeScript.
+This closes the highest-risk runtime drift in the current Northstar operational
+center path. Bad values are turned into a typed `ValidationError` result instead
+of silently reaching route adapters and kit components.
 
-Recommended change:
+Follow-up:
 
-Use local DTO schemas with `z.iso.datetime()` for serialized date fields. Reuse
-domain schemas where they already cover a record, such as investor
-`lastActivityAt`, but keep app-only activity and route fields in the web DTO
-schema.
-
-### P1 - Validate Cross-Record References
-
-Files:
-
-- [operational-center-dto.ts](../../apps/web/server/deals/operational-center-dto.ts)
-- [operational-center-investor-mapper.ts](../../apps/web/server/deals/operational-center-investor-mapper.ts)
-- [deal-commitment-inspector-adapter.ts](../../apps/web/app/deals/[dealId]/deal-commitment-inspector-adapter.ts)
-
-Current state:
-
-IDs such as `relatedInvestorIds`, `relatedDocumentIds`, `blockerIds`,
-`documentIds`, and group document IDs are plain strings. Some mapper code drops
-missing references silently.
-
-Why this matters:
-
-Silently missing references can hide blockers, make document counts wrong, or
-understate readiness. That is a business-risk issue, not just a display issue.
-
-Recommended change:
-
-Add graph-level validation with `superRefine` on the app DTO or source fixture
-schema:
-
-- every blocker investor reference points to an existing investor
-- every blocker document reference points to an existing document
-- every investor blocker/document reference points to an existing blocker or
-  document
-- every document group contains existing documents
-- every activity event references existing records appropriate to its event type
-
-Use domain ID schemas only if these become UUID-backed domain IDs. Today these
-are app/local fixture identifiers.
+Do not duplicate this validation inside kit components. The remaining work is to
+wrap the serialized API output with a strict schema so the same guarantees hold
+for unknown payloads and the tRPC contract, not only the typed service path.
 
 ### P2 - Validate Fixture Data When It Becomes External Or Canonical
+
+**Status:** Conditional. Static TypeScript fixture is acceptable today; validate
+at load time when it moves outside compiled source.
 
 File:
 
@@ -348,14 +358,16 @@ File:
 Current state:
 
 The Northstar fixture uses `satisfies`, which is compile-time only. This is
-acceptable while the fixture is TypeScript source owned by the repo, but it is
-already the canonical app data source for the current vertical.
+acceptable while the fixture is TypeScript source owned by the repo, and the
+service now validates the generated DTO before returning success. The fixture is
+still the canonical app data source for the current vertical and is the likely
+replacement point for database, CMS, import, or provider-backed data.
 
 Why this matters:
 
-The fixture is the future replacement point for database, CMS, import, or
-provider-backed data. If it moves to JSON or another external format, TypeScript
-will no longer protect it.
+If the fixture moves to JSON or another external format, TypeScript will no
+longer protect it. At that point source records should be parsed before mapper
+logic runs, not only after DTO construction.
 
 Recommended change:
 
@@ -367,42 +379,9 @@ When the fixture becomes external, validate it at load time using:
 
 Until then, static TypeScript plus targeted service tests is acceptable.
 
-### P2 - Add App Money DTO Schema
-
-Files:
-
-- [operational-center-dto.ts](../../apps/web/server/deals/operational-center-dto.ts)
-- [operational-center-money.ts](../../apps/web/server/deals/operational-center-money.ts)
-- [deal-operational-formatting.ts](../../apps/web/app/deals/[dealId]/deal-operational-formatting.ts)
-
-Current state:
-
-Domain money is serialized through `serializeEuroCentsToNumber`, which checks
-safe integer conversion. The resulting DTO is a plain object:
-
-```ts
-{
-  amountMinor: number
-  currency: 'EUR'
-}
-```
-
-Why this matters:
-
-The production path is currently safe, but DTO consumers still trust
-`amountMinor` and `currency`. Output validation should prove the serialized API
-contract remains JSON-safe and EUR-only.
-
-Recommended change:
-
-Add an app-local `MoneyMinorUnitsDTOSchema` with:
-
-- `amountMinor`: integer, safe number
-- `currency`: literal `"EUR"`
-
-Keep raw money parsing and branding in `@repo/domain`.
-
 ### P2 - Add Schemas For Exported Domain Helper Inputs
+
+**Status:** Open where helpers become raw JSON/repository boundaries.
 
 Files:
 
@@ -438,6 +417,8 @@ then pass branded or schema-validated values into the helper.
 
 ### P2 - Export Commitment Sub-Schemas When Needed
 
+**Status:** Conditional.
+
 File:
 
 - [commitment-flow.ts](../../packages/domain/src/commitment-flow/commitment-flow.ts)
@@ -460,7 +441,34 @@ Export the component schemas once there is a real consumer. Avoid exporting
 every private schema preemptively if it would create unnecessary public API
 surface.
 
+### P2 - Validate Route Bundle Diagnostics JSON
+
+**Status:** Open.
+
+File:
+
+- [report-route-bundles.mjs](../../apps/web/scripts/report-route-bundles.mjs)
+
+Current state:
+
+The script parses `.next/diagnostics/route-bundle-stats.json` with unchecked
+`JSON.parse`, then assumes each row has a `route`, numeric
+`firstLoadUncompressedJsBytes`, and optional `firstLoadChunkPaths`.
+
+Why this matters:
+
+This is generated diagnostics JSON outside the TypeScript compiler. A changed
+Next.js diagnostics format could make bundle reports misleading or crash with a
+low-signal error.
+
+Recommended change:
+
+Add a small schema or explicit structured guard for the diagnostics shape. This
+does not need a large domain abstraction; a local script-level parser is enough.
+
 ### P3 - Kit View Models Should Be Validated Upstream
+
+**Status:** No Zod needed in kit today.
 
 Files:
 
@@ -474,7 +482,8 @@ Current state:
 
 Kit exports rich view-model types. These include table controls, readiness
 records, pagination, sort state, progress segments, activity items, document
-groups, blockers, and discriminated UI state unions.
+groups, blockers, evidence rows, and discriminated UI state unions. Current app
+routes validate upstream before feeding these models.
 
 Why this matters:
 
@@ -490,29 +499,76 @@ ever hydrated directly from URL search params, local storage, CMS, or API JSON,
 validate at that adapter boundary. Do not import Zod into normal render
 components just to re-check props every render.
 
-### P3 - Documentation And Export Drift
+### P3 - Documentation, Export, And Package Drift
+
+**Status:** Partially fixed.
 
 Files:
 
 - [packages/domain/README.md](../../packages/domain/README.md)
 - [package-exports.test.ts](../../packages/domain/src/package-exports.test.ts)
 - [packages/domain/package.json](../../packages/domain/package.json)
+- [packages/domain/src/index.ts](../../packages/domain/src/index.ts)
+- [packages/domain/src/commitment-flow/index.ts](../../packages/domain/src/commitment-flow/index.ts)
+- [packages/ui/package.json](../../packages/ui/package.json)
+- [globals.css](../../packages/ui/src/styles/globals.css)
+- [package-boundaries.md](../10-architecture/package-boundaries.md)
 
 Current state:
 
-The domain README export list is stale compared with `package.json`; the package
-now also exports `deals`, `commitments`, `documents`, and `status-tone`.
-Package-export tests smoke-test only a subset of exported schemas.
+Package export smoke tests now exercise a broader set of domain subpaths,
+including commitment flow, commitments, deals, documents, IDs, money,
+reconciliation, SPV, and status tone. The domain README is still stale compared
+with `package.json`; it does not clearly document newer exports such as
+`deals`, `commitments`, `documents`, and `status-tone`.
+
+The refresh also found a type-only export drift: `commitment-flow/index.ts`
+exports the `AmountStep` type, while the package root exports
+`AmountStepSchema` but not the corresponding `AmountStep` type. Runtime export
+smoke tests will not catch that class of type-only drift.
+
+Separately, `packages/ui/src/styles/globals.css` imports
+`@repo/tailwind-config/shared-styles.css`, and the architecture docs allow that
+dependency, but `packages/ui/package.json` does not declare
+`@repo/tailwind-config`.
 
 Why this matters:
 
-This is not primarily a Zod issue, but it affects schema discoverability. If the
-canonical schema surface is unclear, app code is more likely to redefine
-contracts locally.
+This is not primarily a Zod issue, but it affects schema discoverability and
+package-boundary correctness. If canonical schema surfaces and package
+dependencies are unclear, app code is more likely to redefine contracts locally
+or depend on undeclared workspace packages.
 
 Recommended change:
 
-Update docs and expand export smoke tests when schema work lands.
+Update the domain README when the next schema work lands, add a type-level
+export assertion for root exports where practical, and declare the UI dependency
+if the shared styles import is intentional.
+
+### P3 - I18n Message Shape
+
+**Status:** Low-risk follow-up; Zod optional.
+
+File:
+
+- [request.ts](../../apps/web/i18n/request.ts)
+
+Current state:
+
+`apps/web/i18n/request.ts` imports `fr-FR.json`. TypeScript
+`resolveJsonModule` proves the file can be imported, but it does not prove key
+completeness if more locales are added.
+
+Why this matters:
+
+This becomes a runtime drift issue when multiple locale files or externalized
+messages exist. A missing key can show up only at render time.
+
+Recommended change:
+
+Prefer a lightweight message-key completeness test if another locale is added.
+Use a schema only if messages move to externally loaded JSON or need richer
+metadata validation.
 
 ## Things That Should Not Get Zod Now
 
@@ -523,6 +579,9 @@ Files:
 - [button.tsx](../../packages/ui/src/components/button.tsx)
 - [badge.tsx](../../packages/ui/src/components/badge.tsx)
 - [field.tsx](../../packages/ui/src/components/field.tsx)
+- [input.tsx](../../packages/ui/src/components/input.tsx)
+- [textarea.tsx](../../packages/ui/src/components/textarea.tsx)
+- [checkbox.tsx](../../packages/ui/src/components/checkbox.tsx)
 - [progress.tsx](../../packages/ui/src/components/progress.tsx)
 
 These are typed React/Radix/CVA component props. Adding schemas would duplicate
@@ -535,10 +594,24 @@ File:
 
 - [chart.tsx](../../packages/ui/src/components/chart.tsx)
 
-The chart component already treats third-party Recharts payloads as `unknown`
-and uses small defensive guards. That is the right level of validation for this
-boundary. Zod would only be relevant if `ChartConfig` starts coming from
-external JSON or CMS data.
+The chart component treats third-party Recharts payloads as `unknown` and uses
+small defensive guards. That is the right level of validation for this boundary.
+Zod would only be relevant if `ChartConfig` starts coming from external JSON or
+CMS data.
+
+### Observability Dev Flag And Telemetry Guards
+
+Files:
+
+- [telemetry-transport.ts](../../apps/web/observability/telemetry-transport.ts)
+- [web-vitals.ts](../../apps/web/observability/web-vitals.ts)
+- [telemetry-events.ts](../../apps/web/observability/telemetry-events.ts)
+
+The local storage development flag is guarded with `try/catch` and an exact
+`"true"` check, and the telemetry helpers use small explicit guards or
+sanitizers. That is clearer than adding Zod today. Schemas become relevant only
+if telemetry config, vendor payloads, or persisted settings move to JSON-backed
+runtime inputs.
 
 ### Pure Branded-Value Helpers
 
@@ -578,24 +651,29 @@ interpreting these configs directly.
 
 ## Suggested Implementation Order
 
-1. Add route-param schema and canonical slug handling for `/deals/[dealId]`.
-2. Add `GetDealOperationalCenterOutputSchema` and tRPC `.output(...)`.
-3. Add app DTO schemas for money, dates, activity, document groups, vehicle,
-   access, and result unions.
-4. Add graph-level reference validation with `superRefine`.
-5. Centralize domain money JSON schemas.
-6. Tighten commitment-flow required text.
-7. Add design-token source schema before generation and before semantic
+1. Add strict `GetDealOperationalCenterOutputSchema` and tRPC `.output(...)`,
+   composing the existing service invariant validation.
+2. Add a local schema or structured guard for route bundle diagnostics JSON.
+3. Add a design-token source schema before generation and before semantic
    validation.
-8. Add helper input schemas in `@repo/domain` when those helpers receive raw
+4. Centralize domain money JSON schemas in `@repo/domain/money`.
+5. Tighten commitment-flow required text, including `amountRaw` and UBO
+   `fullName`.
+6. Add helper input schemas in `@repo/domain` when those helpers receive raw
    JSON or repository data.
-9. Update schema docs and export smoke tests.
+7. Keep fixture validation conditional until the source moves outside compiled
+   TypeScript; add source-record schemas before replacing the fixture with DB,
+   CMS, import, or provider data.
+8. Fix domain documentation and type-only export drift.
+9. Declare the `@repo/ui` package dependency on `@repo/tailwind-config` if the
+   shared styles import is intentional.
 
 ## Proposed AGENT.md Addition
 
-No `AGENT.md` or `AGENTS.md` file was found during this audit. If the repo adds
-one, or if this guidance belongs in an existing agent instruction file, use a
-short rule like this:
+No repo-owned `AGENT.md` or `AGENTS.md` file was found during the 2026-05-19
+refresh; the only match was inside `node_modules`. If the repo adds one, or if
+this guidance belongs in an existing agent instruction file, use a short rule
+like this:
 
 ```md
 ## Runtime Validation
@@ -604,11 +682,11 @@ Before adding or changing a data boundary, decide whether the value is trusted
 compiled code or untrusted runtime data. Use canonical `@repo/domain` schemas
 for business/domain invariants, app-local DTO schemas for serialized route/API
 shapes, and schema validation at URL, request, import, generated JSON, provider,
-database, environment, form-submission, and storage boundaries. Do not add Zod
-inside ordinary React render components or generic UI primitives just to
-duplicate TypeScript props. When introducing a new DTO or external data source,
-add or reuse a schema in the owning layer and document why validation lives
-there.
+database, environment, form-submission, storage, package-manifest, and generated
+diagnostics boundaries. Do not add Zod inside ordinary React render components
+or generic UI primitives just to duplicate TypeScript props. When introducing a
+new DTO or external data source, add or reuse a schema in the owning layer and
+document why validation lives there.
 ```
 
 ## Enforcement Checklist For Future Work
@@ -618,7 +696,8 @@ the PR or implementation note:
 
 - Does this code accept URL params, search params, request bodies, headers,
   cookies, environment variables, imported/generated JSON, external API data,
-  database records, local storage, or submitted form data?
+  database records, local storage, submitted form data, package manifests, or
+  generated diagnostics?
 - If yes, which schema validates it, and where is that schema owned?
 - If the data is a domain concept, does it reuse `@repo/domain` rather than
   redefining states, money, IDs, or business rules locally?
@@ -626,4 +705,3 @@ the PR or implementation note:
   discriminated unions, result tags, and cross-record references?
 - If validation was intentionally not added, is the value produced by trusted
   compiled code in the same layer?
-

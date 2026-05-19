@@ -1,8 +1,9 @@
 # React Composition Audit
 
-Status: Audit findings
+Status: Current audit snapshot
 Created: 2026-05-18
 Last updated: 2026-05-19
+Last implementation sync: 2026-05-19 after commit `c91b327`
 Scope: React code under `apps/web`, `packages/ui`, and `packages/kit`
 Principle: prefer composition, `children`, and compound components over prop-driven UI structure
 
@@ -14,23 +15,25 @@ The codebase has a clear split.
 `Card`, `Field`, `Table`, `DropdownMenu`, `Tooltip`, `Button`, and `Sheet`
 generally expose small primitive props and accept caller-owned children.
 
-`@repo/kit` is where the drift has happened. Several exported business
-components take large `state + labels` objects and then internally author whole
-screens or panels. That makes consumers configure implementation details
-instead of composing UI descriptions. The result is prop-heavy APIs that are
-hard to extend without adding more labels, flags, render branches, and nested
-configuration objects.
+`@repo/kit` was where the drift happened. Several exported business components
+originally took large `state + labels` objects and then internally authored
+whole screens or panels. The current snapshot has remediated the prioritized
+deal, commitment, and document surfaces by exposing compound parts, route-owned
+composition, and compatibility wrappers around those parts.
 
-The highest-priority correction is to move kit components toward compound APIs:
-small, styled, reusable parts that accept children, while keeping domain records
-as data only at the leaves that truly render repeated business records.
+The current guardrail is to preserve that direction: exported kit product
+surfaces should keep exposing small, styled, reusable parts that accept
+children, while keeping domain records as data only at the leaves that truly
+render repeated business records.
 
 ## Current Snapshot
 
 Snapshot date: 2026-05-19
+Snapshot basis: current `main` after the extra-mile kit split pass.
 
-A fresh six-lane audit confirms the original composition concern. The priority
-order has changed in two places:
+A fresh six-lane audit confirmed the original composition concern. The current
+post-remediation snapshot has no known P1, P2, or P3 findings in the audited
+priority surfaces. The priority order changed in two places during the work:
 
 - `DealDocumentsEvidence` is no longer an untracked/new surface. It is now
   tracked, exported from `@repo/kit`, covered by tests/stories, consumed by the
@@ -59,14 +62,22 @@ Remediated in this pass:
   `NextAction`, `Readiness`, `ReadinessItem`, `Blockers`, `Blocker`,
   `Documents`, `Document`, `Activity`, `ActivityItem`, `Loading`, `Error`, and
   `Empty`) while keeping the original pre-composed component as a compatibility
-  wrapper.
+  wrapper. The follow-up split now keeps the wrapper/export surface in
+  `deal-commitment-inspector.tsx`, ready-state sections in
+  `deal-commitment-inspector.content.tsx`, lifecycle states in
+  `deal-commitment-inspector.lifecycle.tsx`, and shared local display parts in
+  `deal-commitment-inspector.parts.tsx`.
 - The commitments workspace now composes the commitment inspector inside the
   sheet instead of rendering the full configured inspector widget.
 - `DealCommitmentsTable` now exposes composable `Root`, `Content`, granular
   toolbar/grid/footer parts, `Detail`, `RowActionButton`, and `Model` render-prop
   boundaries, preserving the existing table model and pre-composed wrapper while
   letting the commitments route own the table surface shell, part ordering, row
-  detail composition, and row action rendering.
+  detail composition, and row action rendering. The follow-up split now keeps
+  the wrapper/export surface in `deal-commitments-table.tsx`, state/context
+  orchestration in `deal-commitments-table.content.tsx` and
+  `deal-commitments-table.context.tsx`, and UI presets in toolbar, grid, footer,
+  and detail modules.
 - `DealProgressPanel` now exposes composable `Root`, `Header`, `Capital`,
   `DataQuality`, `Actions`, `ActionButton`, `Loading`, `Error`, and
   `ReadyContent` parts, preserving the existing pre-composed wrapper while
@@ -120,12 +131,17 @@ Post-remediation verification update:
   so blocking document issues render as `danger`.
 - `pnpm --filter @repo/web e2e` passed after those fixes: 13/13 Playwright
   tests. The composition snapshot is current with the implemented work.
+- After commit `c91b327`, the extra-mile split pass also passed the full quality
+  gate requested for this audit thread: kit typecheck, kit lint, targeted
+  inspector/table/package-export tests, kit coverage, Storybook build, web
+  build, full web e2e, bundle report, route screenshots, package export review,
+  app-route root import regression check, and RSC static-property usage check.
 
 ## Kit Component Split Review
 
-The composition pass intentionally exposed more compound parts. That made a few
-kit entry files longer than ideal even though the public APIs moved in the
-right direction.
+The composition pass intentionally exposed more compound parts. The follow-up
+split pass has now moved the remaining large production entry files into
+focused modules while preserving their public APIs and compatibility wrappers.
 
 Current split decisions from the 2026-05-19 follow-up:
 
@@ -137,17 +153,29 @@ Current split decisions from the 2026-05-19 follow-up:
   This was the lowest-risk split because it preserved all public exports and did
   not move stateful context.
 - `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.tsx`
-  remains the largest production candidate. It should be split next around a
-  dedicated context/content module, then toolbar, grid/model, footer, and detail
-  modules. Do this deliberately because the controlled/uncontrolled table state
-  and render-prop model all share one context.
+  has been split. The public wrapper now owns root, compatibility component, and
+  aggregate exports. `deal-commitments-table.context.tsx` owns the private
+  compound context. `deal-commitments-table.content.tsx` owns controlled and
+  uncontrolled table orchestration plus the default preset assembly.
+  `deal-commitments-table-toolbar.tsx`, `deal-commitments-table-grid.tsx`,
+  `deal-commitments-table-footer.tsx`, and
+  `deal-commitments-table-detail.tsx` own their corresponding compound parts.
+  Current production module sizes are 188 lines for the wrapper, 277 for
+  content, 55 for context, 203 for toolbar, 116 for grid/model, 187 for footer,
+  and 12 for detail.
 - `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.tsx`
-  is the second production candidate. A safe split would mirror the document
-  evidence shape: root/wrapper exports, ready sections, lifecycle states, and
-  shared local parts. It is less urgent than the table because it has no local
-  controlled state.
+  has been split. The public wrapper now owns root, compatibility component, and
+  aggregate exports. `deal-commitment-inspector.content.tsx` owns the ready
+  sections, `deal-commitment-inspector.lifecycle.tsx` owns loading/error/empty
+  states, and `deal-commitment-inspector.parts.tsx` owns shared local display
+  parts. Current production module sizes are 161 lines for the wrapper, 474 for
+  ready content, 74 for lifecycle, and 100 for shared parts.
 - Large fixture and test files are acceptable for now. Split them only when a
   production module split makes test setup difficult to navigate.
+- No remaining kit split is required by this composition audit. The only size
+  watch item is `deal-commitment-inspector.content.tsx`; it is cohesive today
+  because it owns one ready-state panel body, but split individual sections if
+  new product variation makes that file harder to navigate.
 
 ## Audited Principle
 
@@ -215,8 +243,14 @@ but they are now replaceable presets rather than the only public rendering path.
 
 Evidence:
 
-- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.types.ts:159`
-- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.tsx:263`
+- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.types.ts:162`
+- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.tsx:126`
+- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.tsx:154`
+- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.content.tsx:23`
+- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.content.tsx:239`
+- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table-toolbar.tsx:189`
+- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table-grid.tsx:78`
+- `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table-detail.tsx:6`
 - `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.stories.tsx:53`
 - `packages/kit/src/commitment/deal-commitments-table/deal-commitments-table.test.tsx:81`
 
@@ -301,8 +335,12 @@ below is retained as rationale and historical context.
 
 Evidence:
 
-- `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.types.ts:85`
-- `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.tsx:112`
+- `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.types.ts:94`
+- `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.tsx:89`
+- `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.tsx:111`
+- `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.tsx:144`
+- `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.content.tsx:47`
+- `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.content.tsx:121`
 - `packages/kit/src/commitment/deal-commitment-inspector/deal-commitment-inspector.stories.tsx:181`
 
 `DealCommitmentInspector` receives `state`, `labels`, and `onAction`, then
