@@ -153,6 +153,31 @@ describe('validateDealOperationalCenter', () => {
     })
   })
 
+  it('rejects impossible investor lifecycle, signature, and wire combinations', () => {
+    const data = getNorthstarData()
+    const investor = firstOf(data.investors, 'investor')
+    const invalid = {
+      ...data,
+      investors: data.investors.map((candidate) =>
+        candidate.id === investor.id
+          ? {
+              ...candidate,
+              commitmentStatus: 'active',
+              signatureStatus: 'not_sent',
+              wireStatus: 'not_requested',
+            }
+          : candidate,
+      ),
+    } as unknown as DealOperationalCenterDTO
+
+    const error = expectValidationError(invalid, 'InvestorInvariantViolation')
+
+    expect(error).toMatchObject({
+      investorId: investor.id,
+      message: 'active commitment requires completed signature status',
+    })
+  })
+
   it('rejects dangling investor graph references', () => {
     const data = getNorthstarData()
     const blocker = firstOf(data.blockers, 'blocker')

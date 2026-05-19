@@ -13,14 +13,23 @@ import {
 
 const allowedTransitions = [
   ['draft', 'internal_review'],
+  ['draft', 'cancelled'],
   ['internal_review', 'open_for_preview'],
+  ['internal_review', 'cancelled'],
   ['open_for_preview', 'open_for_interests'],
+  ['open_for_preview', 'cancelled'],
   ['open_for_interests', 'collecting_commitments'],
+  ['open_for_interests', 'cancelled'],
   ['collecting_commitments', 'reviewing_commitments'],
+  ['collecting_commitments', 'cancelled'],
   ['reviewing_commitments', 'contracting'],
+  ['reviewing_commitments', 'cancelled'],
   ['contracting', 'awaiting_wires'],
+  ['contracting', 'cancelled'],
   ['awaiting_wires', 'closing_review'],
+  ['awaiting_wires', 'cancelled'],
   ['closing_review', 'closed'],
+  ['closing_review', 'cancelled'],
   ['closed', 'portfolio_active'],
   ['portfolio_active', 'partially_exited'],
   ['portfolio_active', 'exited'],
@@ -69,6 +78,16 @@ describe('deal lifecycle helpers', () => {
 
     for (const state of DEAL_LIFECYCLE_STATES) {
       expect(canTransitionDealLifecycle(state, state)).toBe(false)
+    }
+  })
+
+  it('has explicit behavior for every possible transition pair', () => {
+    const explicitPairs = new Set(allowedTransitions.map(([from, to]) => `${from}:${to}`))
+
+    for (const from of DEAL_LIFECYCLE_STATES) {
+      for (const to of DEAL_LIFECYCLE_STATES) {
+        expect(canTransitionDealLifecycle(from, to)).toBe(explicitPairs.has(`${from}:${to}`))
+      }
     }
   })
 

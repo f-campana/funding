@@ -18,7 +18,8 @@ bundle/RSC optimization.
 - `/deals/northstar-energy/about` redirects to `/deals/northstar-energy/overview`
   for compatibility and remains reserved for the future investor lens.
 - `/deals/northstar-energy/commitments` renders the operator commitments table
-  and opens the route-owned commitment inspector in a Sheet drawer.
+  and composes the commitment inspector inside a Sheet drawer driven by the
+  table detail state.
 - `/deals/northstar-energy/documents` renders the operator documents and
   evidence readiness surface with `DealDocumentsEvidence`.
 - Visible operator tabs are Overview, Commitments, and Documents.
@@ -72,9 +73,12 @@ bundle/RSC optimization.
 - `DealCommitmentsTable` remains the commitments list and batch-selection
   surface.
 - `DealCommitmentInspector` is composed from selected investor DTO data plus
-  related blockers, evidence, and activity.
-- Row open state, inspector open state, and checkbox selection are owned by the
-  route and kept separate.
+  related blockers, evidence, and activity, and renders through
+  `DealCommitmentsTableDetail`.
+- Row/detail open state is table-owned by default through `rowState`; lift it
+  only if another route sibling needs ownership.
+- Checkbox selection is table-local unless a route-level batch action bar or
+  another sibling consumes it.
 - The inspector is no longer persistent inline route content; it renders inside
   `@repo/ui` `SheetContent` when an investor row opener is activated.
 - The documents route uses an app-owned adapter from

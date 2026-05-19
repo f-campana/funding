@@ -16,6 +16,7 @@ import { Children, useId } from 'react'
 import {
   documentEvidenceToneBadgeClasses,
   getDocumentEvidenceItemTone,
+  getDocumentsEvidenceSummary,
   getDocumentsEvidenceTone,
 } from './deal-documents-evidence.model'
 import {
@@ -39,13 +40,22 @@ export const DealDocumentsEvidenceReadyContent = ({
   labels,
   state,
   titleId,
-}: DealDocumentsEvidenceReadyContentProps) => (
-  <>
-    <DealDocumentsEvidenceHeader labels={labels} state={state} titleId={titleId} />
-    <DealDocumentsEvidenceSummarySection labels={labels} metrics={state.summary.metrics} />
-    <DealDocumentsEvidenceGroups groups={state.groups} labels={labels} />
-  </>
-)
+}: DealDocumentsEvidenceReadyContentProps) => {
+  const summary = getDocumentsEvidenceSummary(state.groups)
+
+  return (
+    <>
+      <DealDocumentsEvidenceHeader
+        headline={summary.headlineLabel}
+        labels={labels}
+        state={state}
+        titleId={titleId}
+      />
+      <DealDocumentsEvidenceSummarySection labels={labels} metrics={summary.metrics} />
+      <DealDocumentsEvidenceGroups groups={state.groups} labels={labels} />
+    </>
+  )
+}
 
 export const DealDocumentsEvidenceHeader = ({
   headline,
@@ -56,7 +66,8 @@ export const DealDocumentsEvidenceHeader = ({
   titleId,
   tone,
 }: DealDocumentsEvidenceHeaderProps) => {
-  const headlineContent = headline ?? state?.summary.headlineLabel
+  const headlineContent =
+    headline ?? (state ? getDocumentsEvidenceSummary(state.groups).headlineLabel : undefined)
   const subtitleContent = subtitle ?? labels?.subtitle
   const titleContent = title ?? labels?.title
   const badgeTone = tone ?? (state ? getDocumentsEvidenceTone(state) : 'neutral')

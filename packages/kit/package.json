@@ -12,6 +12,10 @@
       "types": "./src/deal/deal-operational-overview/index.ts",
       "import": "./src/deal/deal-operational-overview/index.ts"
     },
+    "./deal-operational-overview/model": {
+      "types": "./src/deal/deal-operational-overview/deal-operational-overview.model.ts",
+      "import": "./src/deal/deal-operational-overview/deal-operational-overview.model.ts"
+    },
     "./deal-progress-panel": {
       "types": "./src/deal/deal-progress-panel/index.ts",
       "import": "./src/deal/deal-progress-panel/index.ts"
@@ -27,6 +31,10 @@
     "./deal-documents-evidence": {
       "types": "./src/document/deal-documents-evidence/index.ts",
       "import": "./src/document/deal-documents-evidence/index.ts"
+    },
+    "./deal-documents-evidence/model": {
+      "types": "./src/document/deal-documents-evidence/deal-documents-evidence.model.ts",
+      "import": "./src/document/deal-documents-evidence/deal-documents-evidence.model.ts"
     }
   },
   "dependencies": {

@@ -12,7 +12,10 @@ import type {
 } from '@repo/kit/deal-commitment-inspector'
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
-
+import {
+  getActivityTypeLabel,
+  getCommitmentInspectorActivityTone,
+} from './deal-operational-activity-metadata'
 import {
   isFinanceAcceptedInvestor,
   isMatchedPendingFinanceAcceptance,
@@ -124,30 +127,6 @@ const documentStatusRank = {
   uploaded: 4,
   approved: 5,
 } as const satisfies Record<DocumentRequirementDTO['status'], number>
-
-const activityTypeLabel = {
-  blocker_created: 'Blockers',
-  blocker_resolved: 'Blockers',
-  commitment_updated: 'Commitments',
-  document_rejected: 'Documents',
-  document_uploaded: 'Documents',
-  signature_completed: 'Signatures',
-  signature_sent: 'Signatures',
-  wire_flagged: 'Wires',
-  wire_matched: 'Wires',
-} as const satisfies Record<ActivityEventDTO['eventType'], string>
-
-const activityTone = {
-  blocker_created: 'attention',
-  blocker_resolved: 'success',
-  commitment_updated: 'info',
-  document_rejected: 'attention',
-  document_uploaded: 'info',
-  signature_completed: 'success',
-  signature_sent: 'info',
-  wire_flagged: 'attention',
-  wire_matched: 'success',
-} as const satisfies Record<ActivityEventDTO['eventType'], DealCommitmentInspectorTone>
 
 export const mapDealCommitmentInspectorViewModel = (
   data: DealOperationalCenterDTO,
@@ -599,8 +578,8 @@ const mapActivity = (activity: ActivityEventDTO): DealCommitmentActivityItem => 
   id: activity.id,
   summary: activity.summary,
   timestampLabel: formatDateTimeLabel(activity.occurredAt),
-  tone: activityTone[activity.eventType],
-  typeLabel: activityTypeLabel[activity.eventType],
+  tone: getCommitmentInspectorActivityTone(activity.eventType),
+  typeLabel: getActivityTypeLabel(activity.eventType),
 })
 
 const getNextAction = (

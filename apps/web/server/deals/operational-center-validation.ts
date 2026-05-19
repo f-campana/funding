@@ -2,6 +2,7 @@ import 'server-only'
 
 import { Result } from '@repo/core'
 import { fromZod } from '@repo/core/adapters/zod'
+import { validateCommitmentOperationalSnapshot } from '@repo/domain'
 
 import type {
   CapitalReconciliationDTO,
@@ -53,6 +54,12 @@ export const validateDealOperationalCenter = (
 
   if (documentError !== null) {
     return Result.Error(documentError)
+  }
+
+  const investorError = validateInvestorOperationalSnapshots(data)
+
+  if (investorError !== null) {
+    return Result.Error(investorError)
   }
 
   const graphError = findDanglingReference(data)
@@ -283,6 +290,24 @@ const validateDocuments = (
         _tag: 'DocumentInvariantViolation',
         documentId: document.id,
         message: 'approved documents cannot block closing',
+      }
+    }
+  }
+
+  return null
+}
+
+const validateInvestorOperationalSnapshots = (
+  data: DealOperationalCenterDTO,
+): DealOperationalCenterValidationErrorDTO | null => {
+  for (const investor of data.investors) {
+    const result = validateCommitmentOperationalSnapshot(investor)
+
+    if (result.isError()) {
+      return {
+        _tag: 'InvestorInvariantViolation',
+        investorId: investor.id,
+        message: result.error.message,
       }
     }
   }

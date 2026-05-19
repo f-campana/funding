@@ -2,6 +2,7 @@ import type {
   DealDocumentsEvidenceProps,
   DealDocumentsEvidenceReadyState,
 } from '@repo/kit/deal-documents-evidence'
+import { getDocumentsEvidenceSummary } from '@repo/kit/deal-documents-evidence/model'
 import { describe, expect, it } from 'vitest'
 import { getDealOperationalCenter } from '../../../server/deals'
 import { mapDealDocumentsEvidenceProps } from './deal-documents-evidence-adapter'
@@ -16,8 +17,9 @@ describe('mapDealDocumentsEvidenceProps', () => {
       'Closing evidence across generated documents, investor evidence, and vehicle setup.',
     )
     expect('onAction' in props).toBe(false)
-    expect(state.summary.headlineLabel).toBe('9 documents · 4 blocking close · 4 document issues')
-    expect(state.summary.metrics).toMatchObject([
+    const summary = getDocumentsEvidenceSummary(state.groups)
+    expect(summary.headlineLabel).toBe('9 documents · 4 blocking close · 4 document issues')
+    expect(summary.metrics).toMatchObject([
       { id: 'total', value: '9' },
       { id: 'blocking', tone: 'danger', value: '4' },
       { id: 'missing', tone: 'danger', value: '1' },

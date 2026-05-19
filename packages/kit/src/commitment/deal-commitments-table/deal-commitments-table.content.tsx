@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { DealCommitmentsTableContext } from './deal-commitments-table.context'
 import {
@@ -60,56 +60,27 @@ export const DealCommitmentsTableContent = (props: DealCommitmentsTableContentPr
   const readyActiveFilterIds = state.kind === 'ready' ? state.activeFilterIds : undefined
   const readyPage = state.kind === 'ready' ? state.pagination?.page : undefined
   const readyPageSize = state.kind === 'ready' ? state.pagination?.pageSize : undefined
-  const readyRowState = state.kind === 'ready' ? state.rowState : undefined
   const readySearchValue = state.kind === 'ready' ? state.searchValue : undefined
   const readySelectedRowIds = state.kind === 'ready' ? state.selectedRowIds : undefined
+  const activeFilterIdsControlled =
+    onActiveFilterIdsChange !== undefined && readyActiveFilterIds !== undefined
+  const pageControlled = onPageChange !== undefined && readyPage !== undefined
+  const pageSizeControlled = onPageSizeChange !== undefined && readyPageSize !== undefined
+  const rowStateControlled = onRowStateChange !== undefined
+  const searchValueControlled = onSearchValueChange !== undefined && readySearchValue !== undefined
+  const selectedRowIdsControlled =
+    onSelectedRowIdsChange !== undefined && readySelectedRowIds !== undefined
 
-  useEffect(() => {
-    if (onActiveFilterIdsChange === undefined && readyActiveFilterIds) {
-      setLocalActiveFilterIds(readyActiveFilterIds)
-    }
-  }, [onActiveFilterIdsChange, readyActiveFilterIds])
-
-  useEffect(() => {
-    if (onPageChange === undefined && readyPage !== undefined) {
-      setLocalPage(readyPage)
-    }
-  }, [onPageChange, readyPage])
-
-  useEffect(() => {
-    if (onPageSizeChange === undefined && readyPageSize !== undefined) {
-      setLocalPageSize(readyPageSize)
-    }
-  }, [onPageSizeChange, readyPageSize])
-
-  useEffect(() => {
-    if (onRowStateChange === undefined && readyRowState !== undefined) {
-      setLocalRowState(readyRowState)
-    }
-  }, [onRowStateChange, readyRowState])
-
-  useEffect(() => {
-    if (onSearchValueChange === undefined && readySearchValue !== undefined) {
-      setLocalSearchValue(readySearchValue)
-    }
-  }, [onSearchValueChange, readySearchValue])
-
-  useEffect(() => {
-    if (onSelectedRowIdsChange === undefined && readySelectedRowIds) {
-      setLocalSelectedRowIds(readySelectedRowIds)
-    }
-  }, [onSelectedRowIdsChange, readySelectedRowIds])
-
-  // Ready-state controls are controlled only when the matching callback is present. Without the
-  // callback, provided values seed local state so interactive controls do not become frozen.
+  // Ready-state values are controlled only when a caller provides both the value and its change
+  // callback. Row state treats `undefined` as a controlled idle clear when its callback is present.
   const controls = getReadyControls({
     controlled: {
-      activeFilterIds: onActiveFilterIdsChange !== undefined,
-      page: onPageChange !== undefined,
-      pageSize: onPageSizeChange !== undefined,
-      rowState: onRowStateChange !== undefined,
-      searchValue: onSearchValueChange !== undefined,
-      selectedRowIds: onSelectedRowIdsChange !== undefined,
+      activeFilterIds: activeFilterIdsControlled,
+      page: pageControlled,
+      pageSize: pageSizeControlled,
+      rowState: rowStateControlled,
+      searchValue: searchValueControlled,
+      selectedRowIds: selectedRowIdsControlled,
     },
     local: {
       activeFilterIds: localActiveFilterIds,
@@ -133,7 +104,7 @@ export const DealCommitmentsTableContent = (props: DealCommitmentsTableContentPr
   const isReady = state.kind === 'ready'
 
   const setPage = (page: number) => {
-    setLocalPage(page)
+    setLocalValueUnlessControlled(pageControlled, setLocalPage, page)
     onPageChange?.(page)
   }
 
@@ -142,19 +113,19 @@ export const DealCommitmentsTableContent = (props: DealCommitmentsTableContentPr
   }
 
   const setSearchValue = (value: string) => {
-    setLocalSearchValue(value)
+    setLocalValueUnlessControlled(searchValueControlled, setLocalSearchValue, value)
     onSearchValueChange?.(value)
     resetPage()
   }
 
   const setActiveFilterIds = (ids: readonly CommitmentTableFilterId[]) => {
-    setLocalActiveFilterIds(ids)
+    setLocalValueUnlessControlled(activeFilterIdsControlled, setLocalActiveFilterIds, ids)
     onActiveFilterIdsChange?.(ids)
     resetPage()
   }
 
   const setSelectedRowIds = (rowIds: readonly string[]) => {
-    setLocalSelectedRowIds(rowIds)
+    setLocalValueUnlessControlled(selectedRowIdsControlled, setLocalSelectedRowIds, rowIds)
     onSelectedRowIdsChange?.(rowIds)
   }
 
@@ -167,7 +138,7 @@ export const DealCommitmentsTableContent = (props: DealCommitmentsTableContentPr
   }
 
   const setPageSize = (pageSize: number) => {
-    setLocalPageSize(pageSize)
+    setLocalValueUnlessControlled(pageSizeControlled, setLocalPageSize, pageSize)
     onPageSizeChange?.(pageSize)
     resetPage()
   }
@@ -282,3 +253,13 @@ const isExportEnabled = (
   props: DealCommitmentsTableContentProps,
 ): props is DealCommitmentsTableExportContentProps =>
   props.onExportSelected !== undefined && props.onExportVisible !== undefined
+
+const setLocalValueUnlessControlled = <Value,>(
+  controlled: boolean,
+  setLocalValue: (value: Value) => void,
+  value: Value,
+) => {
+  if (!controlled) {
+    setLocalValue(value)
+  }
+}

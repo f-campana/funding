@@ -8,7 +8,6 @@ import type { DealOperationalCenterDTO } from '@/server/deals'
 
 import { mapOperationalActivity } from './deal-operational-activity-helpers'
 import {
-  getBlockerSummary,
   getUnresolvedBlockerCounts,
   mapOperationalBlocker,
   selectPriorityBlockers,
@@ -79,7 +78,6 @@ const mapDealOperationalOverviewState = (
       .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt))
       .slice(0, 4)
       .map(mapOperationalActivity),
-    blockerSummary: getBlockerSummary(data),
     blockers: selectPriorityBlockers(data).map((blocker) => mapOperationalBlocker(blocker, data)),
     capital: {
       economics: [],

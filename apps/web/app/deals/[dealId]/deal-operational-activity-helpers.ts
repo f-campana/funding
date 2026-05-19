@@ -2,8 +2,11 @@ import type { DealOperationalActivityItem } from '@repo/kit/deal-operational-ove
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
 
+import {
+  getActivityTypeLabel,
+  getOperationalActivityTone,
+} from './deal-operational-activity-metadata'
 import { formatDateTimeLabel } from './deal-operational-formatting'
-import { activityTone, activityTypeLabel } from './deal-operational-labels'
 
 export const mapOperationalActivity = (
   activity: DealOperationalCenterDTO['activity'][number],
@@ -13,6 +16,6 @@ export const mapOperationalActivity = (
   id: activity.id,
   summary: activity.summary,
   timestampLabel: formatDateTimeLabel(activity.occurredAt),
-  tone: activityTone(activity.eventType),
-  typeLabel: activityTypeLabel(activity.eventType),
+  tone: getOperationalActivityTone(activity.eventType),
+  typeLabel: getActivityTypeLabel(activity.eventType),
 })

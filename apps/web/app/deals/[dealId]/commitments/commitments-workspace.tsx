@@ -55,16 +55,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@repo/ui/components/sheet'
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 
 import { createRouteInteractionTelemetryEvent } from '@/observability/telemetry-events'
 import { emitTelemetryEvent } from '@/observability/telemetry-transport'
 import type { DealCommitmentInspectorViewModel } from '../deal-commitment-inspector-adapter'
 import type { DealCommitmentsTableViewModel } from '../deal-commitments-table-adapter'
-import {
-  getControlledTableSelectionState,
-  getSyncedCommitmentsSelection,
-} from './commitments-workspace-selection'
 
 type CommitmentsWorkspaceProps = {
   readonly inspector: DealCommitmentInspectorViewModel
@@ -124,24 +120,6 @@ const commitmentsTableLabels = {
 } satisfies DealCommitmentsTableLabels
 
 export function CommitmentsWorkspace({ inspector, table }: CommitmentsWorkspaceProps) {
-  const [selectedRowIds, setSelectedRowIds] = useState<readonly string[]>(() =>
-    table.state.kind === 'ready' ? (table.state.selectedRowIds ?? []) : [],
-  )
-
-  useEffect(() => {
-    setSelectedRowIds((currentSelectedRowIds) =>
-      getSyncedCommitmentsSelection({
-        currentSelectedRowIds,
-        state: table.state,
-      }),
-    )
-  }, [table.state])
-
-  const controlledTableState = useMemo(
-    () => getControlledTableSelectionState(table.state, selectedRowIds),
-    [selectedRowIds, table.state],
-  )
-
   const openInspector = () => {
     emitTelemetryEvent(
       createRouteInteractionTelemetryEvent({
@@ -158,14 +136,12 @@ export function CommitmentsWorkspace({ inspector, table }: CommitmentsWorkspaceP
       className="min-w-0"
       data-slot="deal-commitments-workspace"
     >
-      <DealCommitmentsTableRoot className="min-w-0" state={controlledTableState}>
+      <DealCommitmentsTableRoot className="min-w-0" state={table.state}>
         <DealCommitmentsTableContent
           {...table}
           labels={commitmentsTableLabels}
           onRowOpen={openInspector}
-          onSelectedRowIdsChange={setSelectedRowIds}
           renderRowAction={(action) => <DealCommitmentsTableRowActionButton {...action} />}
-          state={controlledTableState}
         >
           <DealCommitmentsTableToolbarRoot>
             <DealCommitmentsTableToolbarHeading />

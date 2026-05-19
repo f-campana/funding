@@ -29,6 +29,8 @@ export {
 export type {
   CommitmentLifecycleState,
   CommitmentOperationalActivityInput,
+  CommitmentOperationalSnapshot,
+  CommitmentOperationalSnapshotError,
   InvestorOperationsRecord,
   KybOperationalStatus,
   KycOperationalStatus,
@@ -57,6 +59,7 @@ export {
   KycOperationalStatusSchema,
   SIGNATURE_OPERATIONAL_STATUSES,
   SignatureOperationalStatusSchema,
+  validateCommitmentOperationalSnapshot,
   WIRE_OPERATIONAL_STATUSES,
   WireOperationalStatusSchema,
 } from './commitments'

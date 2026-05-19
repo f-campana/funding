@@ -16,6 +16,7 @@ import {
   KycOperationalStatusSchema,
   SIGNATURE_OPERATIONAL_STATUSES,
   SignatureOperationalStatusSchema,
+  validateCommitmentOperationalSnapshot,
   WIRE_OPERATIONAL_STATUSES,
   WireOperationalStatusSchema,
 } from './investor-operations'
@@ -77,6 +78,68 @@ describe('investor operations schemas', () => {
       InvestorOperationsRecordSchema.safeParse({ ...validRecord, commitmentAmountCents: -1 })
         .success,
     ).toBe(false)
+  })
+})
+
+describe('commitment operational snapshot validation', () => {
+  it('accepts coherent lifecycle, signature, and wire status axes', () => {
+    expect(
+      validateCommitmentOperationalSnapshot({
+        commitmentStatus: 'wire_received',
+        signatureStatus: 'completed',
+        wireStatus: 'received',
+      }).isOk(),
+    ).toBe(true)
+    expect(
+      validateCommitmentOperationalSnapshot({
+        commitmentStatus: 'signature_sent',
+        signatureStatus: 'sent',
+        wireStatus: 'not_requested',
+      }).isOk(),
+    ).toBe(true)
+    expect(
+      validateCommitmentOperationalSnapshot({
+        commitmentStatus: 'wire_received',
+        signatureStatus: 'completed',
+        wireStatus: 'unmatched',
+      }).isOk(),
+    ).toBe(true)
+  })
+
+  it('rejects impossible lifecycle drift across signature and wire axes', () => {
+    expect(
+      validateCommitmentOperationalSnapshot({
+        commitmentStatus: 'active',
+        signatureStatus: 'not_sent',
+        wireStatus: 'not_requested',
+      }),
+    ).toMatchObject({
+      error: {
+        _tag: 'SignatureLifecycleMismatch',
+      },
+    })
+    expect(
+      validateCommitmentOperationalSnapshot({
+        commitmentStatus: 'wire_received',
+        signatureStatus: 'completed',
+        wireStatus: 'pending',
+      }),
+    ).toMatchObject({
+      error: {
+        _tag: 'WireLifecycleMismatch',
+      },
+    })
+    expect(
+      validateCommitmentOperationalSnapshot({
+        commitmentStatus: 'active',
+        signatureStatus: 'completed',
+        wireStatus: 'matched',
+      }),
+    ).toMatchObject({
+      error: {
+        _tag: 'WireLifecycleMismatch',
+      },
+    })
   })
 })
 

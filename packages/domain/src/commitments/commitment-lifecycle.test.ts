@@ -13,20 +13,34 @@ import {
 
 const allowedTransitions = [
   ['draft', 'submitted'],
+  ['draft', 'cancelled'],
   ['submitted', 'pending_review'],
+  ['submitted', 'withdrawn'],
+  ['submitted', 'cancelled'],
   ['pending_review', 'approved'],
   ['pending_review', 'rejected'],
+  ['pending_review', 'withdrawn'],
   ['approved', 'contracting'],
+  ['approved', 'cancelled'],
   ['contracting', 'signature_sent'],
+  ['contracting', 'cancelled'],
   ['signature_sent', 'part_signed'],
   ['signature_sent', 'signed'],
+  ['signature_sent', 'cancelled'],
   ['part_signed', 'signed'],
+  ['part_signed', 'cancelled'],
   ['signed', 'wire_instructions_sent'],
+  ['signed', 'cancelled'],
   ['wire_instructions_sent', 'wire_pending'],
+  ['wire_instructions_sent', 'cancelled'],
   ['wire_pending', 'wire_received'],
+  ['wire_pending', 'cancelled'],
   ['wire_received', 'wire_matched'],
+  ['wire_received', 'refunded'],
   ['wire_matched', 'reconciled'],
+  ['wire_matched', 'refunded'],
   ['reconciled', 'active'],
+  ['reconciled', 'refunded'],
   ['active', 'refunded'],
 ] as const satisfies readonly (readonly [CommitmentLifecycleState, CommitmentLifecycleState])[]
 
@@ -55,6 +69,16 @@ describe('commitment lifecycle helpers', () => {
 
     for (const state of COMMITMENT_LIFECYCLE_STATES) {
       expect(canTransitionCommitmentLifecycle(state, state)).toBe(false)
+    }
+  })
+
+  it('has explicit behavior for every possible transition pair', () => {
+    const explicitPairs = new Set(allowedTransitions.map(([from, to]) => `${from}:${to}`))
+
+    for (const from of COMMITMENT_LIFECYCLE_STATES) {
+      for (const to of COMMITMENT_LIFECYCLE_STATES) {
+        expect(canTransitionCommitmentLifecycle(from, to)).toBe(explicitPairs.has(`${from}:${to}`))
+      }
     }
   })
 

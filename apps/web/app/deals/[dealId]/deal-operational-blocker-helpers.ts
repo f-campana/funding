@@ -2,7 +2,7 @@ import type { DealOperationalBlocker } from '@repo/kit/deal-operational-overview
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
 
-import { countLabel, formatDateTimeLabel, pluralize } from './deal-operational-formatting'
+import { countLabel, formatDateTimeLabel } from './deal-operational-formatting'
 import { blockerSurfaceLabel, ownerLabel, severityLabel } from './deal-operational-labels'
 
 export const selectPriorityBlockers = (
@@ -45,21 +45,6 @@ export const mapOperationalBlocker = (
     ...(dueLabel === undefined ? {} : { dueLabel }),
     ...(investorCountLabel === undefined ? {} : { investorCountLabel }),
   }
-}
-
-export const getBlockerSummary = (data: DealOperationalCenterDTO): string => {
-  const blockerCounts = getUnresolvedBlockerCounts(data)
-  const unresolvedBlockerCount = blockerCounts.critical + blockerCounts.warning + blockerCounts.info
-
-  if (unresolvedBlockerCount === 0) {
-    return 'All close-critical blockers are resolved.'
-  }
-
-  const blockerNoun = pluralize(unresolvedBlockerCount, 'blocker')
-  const criticalQualifier =
-    blockerCounts.critical > 0 ? ' Critical identity and wire blockers remain in view.' : ''
-
-  return `${unresolvedBlockerCount} close-impacting ${blockerNoun} remain. Capital and timing blockers are shown first.${criticalQualifier}`
 }
 
 export const getUnresolvedBlockerCounts = (

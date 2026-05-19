@@ -3,7 +3,6 @@ import type {
   DealDocumentsEvidenceLabels,
   DealDocumentsEvidenceReadyState,
   DealDocumentsEvidenceState,
-  DealDocumentsEvidenceSummaryMetric,
 } from './deal-documents-evidence'
 
 export const dealDocumentsEvidenceLabels = {
@@ -25,35 +24,6 @@ export const dealDocumentsEvidenceLabels = {
   summaryTitle: 'Evidence summary',
   title: 'Documents',
 } as const satisfies DealDocumentsEvidenceLabels
-
-const metricSet = ({
-  approved,
-  blocking,
-  missing,
-  rejectedExpired,
-  total,
-  underReview,
-}: {
-  readonly approved: string
-  readonly blocking: string
-  readonly missing: string
-  readonly rejectedExpired: string
-  readonly total: string
-  readonly underReview: string
-}) =>
-  [
-    { id: 'total', label: 'Total', value: total },
-    { id: 'blocking', label: 'Blocking close', tone: 'danger', value: blocking },
-    { id: 'missing', label: 'Missing', tone: 'attention', value: missing },
-    { id: 'under-review', label: 'Under review', tone: 'pending', value: underReview },
-    { id: 'approved', label: 'Approved', tone: 'success', value: approved },
-    {
-      id: 'rejected-expired',
-      label: 'Rejected/expired',
-      tone: 'danger',
-      value: rejectedExpired,
-    },
-  ] as const satisfies readonly DealDocumentsEvidenceSummaryMetric[]
 
 const defaultEvidenceGroups = [
   {
@@ -217,17 +187,6 @@ const defaultEvidenceGroups = [
 export const defaultDocumentsEvidenceState = {
   groups: defaultEvidenceGroups,
   kind: 'ready',
-  summary: {
-    headlineLabel: '9 documents · 4 blocking close · 4 need attention',
-    metrics: metricSet({
-      approved: '3',
-      blocking: '4',
-      missing: '1',
-      rejectedExpired: '2',
-      total: '9',
-      underReview: '1',
-    }),
-  },
 } as const satisfies DealDocumentsEvidenceReadyState
 
 export const readyDocumentsEvidenceState = {
@@ -314,17 +273,6 @@ export const readyDocumentsEvidenceState = {
     },
   ],
   kind: 'ready',
-  summary: {
-    headlineLabel: '5 documents · 0 blocking close · 0 need attention',
-    metrics: metricSet({
-      approved: '5',
-      blocking: '0',
-      missing: '0',
-      rejectedExpired: '0',
-      total: '5',
-      underReview: '0',
-    }),
-  },
 } as const satisfies DealDocumentsEvidenceReadyState
 
 export const missingEvidenceState = {
@@ -372,17 +320,6 @@ export const missingEvidenceState = {
     },
   ],
   kind: 'ready',
-  summary: {
-    headlineLabel: '2 documents · 2 blocking close · 2 need attention',
-    metrics: metricSet({
-      approved: '0',
-      blocking: '2',
-      missing: '2',
-      rejectedExpired: '0',
-      total: '2',
-      underReview: '0',
-    }),
-  },
 } as const satisfies DealDocumentsEvidenceReadyState
 
 export const rejectedExpiredEvidenceState = {
@@ -430,17 +367,6 @@ export const rejectedExpiredEvidenceState = {
     },
   ],
   kind: 'ready',
-  summary: {
-    headlineLabel: '2 documents · 2 blocking close · 2 need attention',
-    metrics: metricSet({
-      approved: '0',
-      blocking: '2',
-      missing: '0',
-      rejectedExpired: '2',
-      total: '2',
-      underReview: '0',
-    }),
-  },
 } as const satisfies DealDocumentsEvidenceReadyState
 
 export const underReviewEvidenceState = {
@@ -499,33 +425,11 @@ export const underReviewEvidenceState = {
     },
   ],
   kind: 'ready',
-  summary: {
-    headlineLabel: '3 documents · 1 blocking close · 3 need attention',
-    metrics: metricSet({
-      approved: '0',
-      blocking: '1',
-      missing: '0',
-      rejectedExpired: '0',
-      total: '3',
-      underReview: '3',
-    }),
-  },
 } as const satisfies DealDocumentsEvidenceReadyState
 
 export const noDocumentsEvidenceState = {
   groups: [],
   kind: 'ready',
-  summary: {
-    headlineLabel: '0 documents · 0 blocking close · 0 need attention',
-    metrics: metricSet({
-      approved: '0',
-      blocking: '0',
-      missing: '0',
-      rejectedExpired: '0',
-      total: '0',
-      underReview: '0',
-    }),
-  },
 } as const satisfies DealDocumentsEvidenceReadyState
 
 export const longTextDocumentsEvidenceState = {
@@ -563,18 +467,6 @@ export const longTextDocumentsEvidenceState = {
     },
   ],
   kind: 'ready',
-  summary: {
-    headlineLabel:
-      '1 document · 1 blocking close · 1 item needs attention across a long investor name',
-    metrics: metricSet({
-      approved: '0',
-      blocking: '1',
-      missing: '0',
-      rejectedExpired: '0',
-      total: '1',
-      underReview: '1',
-    }),
-  },
 } as const satisfies DealDocumentsEvidenceReadyState
 
 export const loadingDocumentsEvidenceState = {

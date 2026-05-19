@@ -4,7 +4,6 @@ import type {
   DealDocumentsEvidenceLabels,
   DealDocumentsEvidenceProps,
   DealDocumentsEvidenceReadyState,
-  DealDocumentsEvidenceSummaryMetric,
 } from '@repo/kit/deal-documents-evidence'
 
 import type { DealOperationalCenterDTO } from '@/server/deals'
@@ -95,7 +94,6 @@ const mapDocumentsEvidenceReadyState = (
     .map((group) => mapDocumentGroup(group, data))
     .filter((group) => group.documents.length > 0),
   kind: 'ready',
-  summary: mapSummary(data.documents.requirements),
 })
 
 const mapDocumentGroup = (
@@ -155,40 +153,6 @@ const mapDocumentItem = (
       }
     : {}),
 })
-
-const mapSummary = (
-  documents: readonly DocumentRequirementDTO[],
-): DealDocumentsEvidenceReadyState['summary'] => {
-  const total = documents.length
-  const blocking = documents.filter(isDocumentBlocking).length
-  const missing = countByStatus(documents, 'missing')
-  const underReview = countByStatus(documents, 'under_review')
-  const approved = countByStatus(documents, 'approved')
-  const rejectedExpired = countByStatus(documents, 'rejected') + countByStatus(documents, 'expired')
-  const issueCount = missing + underReview + rejectedExpired
-
-  return {
-    headlineLabel: `${total} ${pluralize(total, 'document')} · ${blocking} blocking close · ${issueCount} document ${pluralize(issueCount, 'issue')}`,
-    metrics: [
-      { id: 'total', label: 'Total', value: String(total) },
-      { id: 'blocking', label: 'Blocking close', tone: 'danger', value: String(blocking) },
-      { id: 'missing', label: 'Missing', tone: 'danger', value: String(missing) },
-      { id: 'under-review', label: 'Under review', tone: 'pending', value: String(underReview) },
-      { id: 'approved', label: 'Approved', tone: 'success', value: String(approved) },
-      {
-        id: 'rejected-expired',
-        label: 'Rejected/expired',
-        tone: 'attention',
-        value: String(rejectedExpired),
-      },
-    ] satisfies readonly DealDocumentsEvidenceSummaryMetric[],
-  }
-}
-
-const countByStatus = (
-  documents: readonly DocumentRequirementDTO[],
-  status: DocumentRequirementDTO['status'],
-): number => documents.filter((document) => document.status === status).length
 
 const getBlockingLabel = (document: DocumentRequirementDTO): string => {
   switch (document.closingImpact.kind) {

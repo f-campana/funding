@@ -18,8 +18,9 @@ implemented workspace layers into a real route:
 - `/deals/northstar-energy/about` — compatibility redirect to `/overview`;
   reserved for a future investor lens.
 - `/deals/northstar-energy/commitments` — DTO-backed operator commitments
-  workflow using `DealCommitmentsTable` and a route-owned
-  `DealCommitmentInspector` Sheet drawer.
+  workflow using `DealCommitmentsTable`, with route-composed
+  `DealCommitmentInspector` content rendered in a Sheet driven by table detail
+  state.
 - `/deals/northstar-energy/documents` — DTO-backed operator documents and
   evidence readiness surface using `DealDocumentsEvidence`.
 - `/deals/unknown` — unsupported deal route, expected to render the app

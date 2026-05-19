@@ -215,7 +215,7 @@ describe('ChartContainer', () => {
 describe('ChartTooltipContent', () => {
   it('renders the ChartTooltip wrapper slot', () => {
     const renderContent = getTooltipContentRenderer()
-    const { container } = render(
+    const { container } = renderWithChart(
       renderContent({
         accessibilityLayer: true,
         active: true,
@@ -228,6 +228,14 @@ describe('ChartTooltipContent', () => {
 
     expect(container.querySelector('[data-slot="chart-tooltip"]')).toBeInTheDocument()
     expect(container.querySelector('[data-slot="chart-tooltip-content"]')).toBeInTheDocument()
+  })
+
+  it('throws a targeted error when rendered outside ChartContainer', () => {
+    expect(() =>
+      render(<ChartTooltipContent active payload={tooltipPayload} />),
+    ).toThrowErrorMatchingInlineSnapshot(
+      `[Error: Chart components must be rendered inside ChartContainer.]`,
+    )
   })
 
   it('renders label and payload names from chart config', () => {
@@ -310,7 +318,7 @@ describe('ChartTooltipContent', () => {
 describe('ChartLegendContent', () => {
   it('renders the ChartLegend wrapper slot', () => {
     const renderContent = getLegendContentRenderer()
-    const { container } = render(
+    const { container } = renderWithChart(
       renderContent({
         payload: legendPayload,
         verticalAlign: 'bottom',
@@ -319,6 +327,14 @@ describe('ChartLegendContent', () => {
 
     expect(container.querySelector('[data-slot="chart-legend"]')).toBeInTheDocument()
     expect(container.querySelector('[data-slot="chart-legend-content"]')).toBeInTheDocument()
+  })
+
+  it('throws a targeted error when rendered outside ChartContainer', () => {
+    expect(() =>
+      render(<ChartLegendContent payload={legendPayload} />),
+    ).toThrowErrorMatchingInlineSnapshot(
+      `[Error: Chart components must be rendered inside ChartContainer.]`,
+    )
   })
 
   it('renders configured labels with stable slots', () => {

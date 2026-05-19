@@ -112,7 +112,7 @@ The custom design tokens on top of Tailwind is a significant signal: the platfor
 ### Key UI Patterns to Understand
 
 **Multi-step onboarding flows**
-KYC/KYB, deal creation, and fund launch are all multi-step, multi-entity flows. State machines under the hood. The UI must communicate progress, validate at each boundary (Zod), and handle async states (pending KYC, pending signature, pending wire) gracefully.
+KYC/KYB, deal creation, and fund launch are multi-step, multi-entity flows. Simple step progression should stay local or form-library-owned; use XState only when a workflow has explicit events, guarded transitions, async effects, replay/reconciliation, or parallel states.
 
 **Real-time status UIs**
 Deal pages show live commitment tracking. Fund dashboards show portfolio valuations. These are not static — they update as investors commit, sign, and wire. Optimistic updates matter here.

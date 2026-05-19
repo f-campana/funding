@@ -341,6 +341,11 @@ export type DealOperationalCenterValidationErrorDTO =
       readonly message: string
     }
   | {
+      readonly _tag: 'InvestorInvariantViolation'
+      readonly investorId: string
+      readonly message: string
+    }
+  | {
       readonly _tag: 'DanglingReference'
       readonly path: string
       readonly target: string
@@ -783,6 +788,13 @@ const DealOperationalCenterValidationErrorSchema = z.discriminatedUnion('_tag', 
     .object({
       _tag: z.literal('DocumentInvariantViolation'),
       documentId: NonEmptyStringSchema,
+      message: NonEmptyStringSchema,
+    })
+    .strict(),
+  z
+    .object({
+      _tag: z.literal('InvestorInvariantViolation'),
+      investorId: NonEmptyStringSchema,
       message: NonEmptyStringSchema,
     })
     .strict(),

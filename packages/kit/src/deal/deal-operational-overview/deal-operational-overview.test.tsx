@@ -6,6 +6,7 @@ import { axe } from '../../test/axe'
 import { DealOperationalOverview } from './deal-operational-overview'
 import {
   clampOperationalProgressValue,
+  getOperationalBlockerSummary,
   getOperationalBlockerTotal,
   getOperationalProgressValue,
 } from './deal-operational-overview.model'
@@ -150,7 +151,7 @@ describe('DealOperationalOverview', () => {
           <DealOperationalOverview.Blockers
             blockers={blockedOperationalOverviewState.blockers}
             labels={dealOperationalOverviewLabels}
-            summary={blockedOperationalOverviewState.blockerSummary}
+            summary={getOperationalBlockerSummary(blockedOperationalOverviewState.readiness)}
           />
           <DealOperationalOverview.Activity
             activity={blockedOperationalOverviewState.activity}
@@ -349,6 +350,12 @@ describe('DealOperationalOverview', () => {
     expect(
       getOperationalBlockerTotal(blockedOperationalOverviewState.readiness.blockerCounts),
     ).toBe(6)
+    expect(getOperationalBlockerSummary(blockedOperationalOverviewState.readiness)).toBe(
+      '6 close-impacting blockers remain. Capital and timing blockers are shown first. Critical identity and wire blockers remain in view.',
+    )
+    expect(getOperationalBlockerSummary(readyOperationalOverviewState.readiness)).toBe(
+      'All close-critical blockers are resolved.',
+    )
   })
 
   it.each([

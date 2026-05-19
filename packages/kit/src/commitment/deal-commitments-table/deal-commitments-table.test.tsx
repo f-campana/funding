@@ -616,6 +616,32 @@ describe('DealCommitmentsTable', () => {
     expect(screen.queryByText('1 selected')).not.toBeInTheDocument()
   })
 
+  it('does not retain hidden local selection after a controlled selection callback', async () => {
+    const user = userEvent.setup()
+    const onSelectedRowIdsChange = vi.fn()
+    const { rerender } = renderCommitmentsTable({
+      onSelectedRowIdsChange,
+      state: readyTableState({ selectedRowIds: [] }),
+    })
+
+    await user.click(screen.getByRole('checkbox', { name: 'Select Pine Point Capital' }))
+
+    expect(onSelectedRowIdsChange).toHaveBeenLastCalledWith(['pine-point-capital'])
+    expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-batch-selected', 'false')
+
+    rerender(
+      <DealCommitmentsTable
+        {...getCommitmentsTableProps({
+          onSelectedRowIdsChange,
+          state: readyTableState({ selectedRowIds: undefined }),
+        })}
+      />,
+    )
+
+    expect(getInvestorRow('Pine Point Capital')).toHaveAttribute('data-batch-selected', 'false')
+    expect(screen.queryByText('1 selected')).not.toBeInTheDocument()
+  })
+
   it('selects all visible enabled rows, supports indeterminate state, and clears visible rows', async () => {
     const user = userEvent.setup()
     const onSelectedRowIdsChange = vi.fn()
@@ -1061,6 +1087,31 @@ describe('DealCommitmentsTable', () => {
     await user.clear(searchInput)
 
     expect(searchInput).toHaveValue('')
+    expect(screen.getByText('Tailwind Partners')).toBeInTheDocument()
+  })
+
+  it('does not resync uncontrolled search from parent rerenders after local edits', async () => {
+    const user = userEvent.setup()
+    const { rerender } = renderCommitmentsTable({
+      state: readyTableState({ searchValue: 'Pine' }),
+    })
+
+    const searchInput = screen.getByRole('textbox', { name: 'Search investors' })
+
+    await user.clear(searchInput)
+
+    expect(searchInput).toHaveValue('')
+    expect(screen.getByText('Tailwind Partners')).toBeInTheDocument()
+
+    rerender(
+      <DealCommitmentsTable
+        {...getCommitmentsTableProps({
+          state: readyTableState({ searchValue: 'Pine' }),
+        })}
+      />,
+    )
+
+    expect(screen.getByRole('textbox', { name: 'Search investors' })).toHaveValue('')
     expect(screen.getByText('Tailwind Partners')).toBeInTheDocument()
   })
 

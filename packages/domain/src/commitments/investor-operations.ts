@@ -1,3 +1,4 @@
+import { Result } from '@repo/core'
 import { z } from 'zod'
 import type { EuroCents } from '../money'
 import { euroCentsFromNumberMinorUnits } from '../money'
@@ -61,6 +62,21 @@ export type InvestorOperationsRecord = {
   readonly blockerIds: readonly string[]
   readonly lastActivityAt?: string
 }
+
+export type CommitmentOperationalSnapshot = Pick<
+  InvestorOperationsRecord,
+  'commitmentStatus' | 'signatureStatus' | 'wireStatus'
+>
+
+export type CommitmentOperationalSnapshotError =
+  | {
+      readonly _tag: 'SignatureLifecycleMismatch'
+      readonly message: string
+    }
+  | {
+      readonly _tag: 'WireLifecycleMismatch'
+      readonly message: string
+    }
 
 export const KycOperationalStatusSchema = z.enum(KYC_OPERATIONAL_STATUSES)
 export const KybOperationalStatusSchema = KycOperationalStatusSchema
@@ -203,3 +219,124 @@ export const getSignatureOperationalStatusTone = (status: SignatureOperationalSt
 
 export const getWireOperationalStatusTone = (status: WireOperationalStatus): StatusTone =>
   WIRE_OPERATIONAL_STATUS_TONES[status]
+
+export const validateCommitmentOperationalSnapshot = <
+  Snapshot extends CommitmentOperationalSnapshot,
+>(
+  snapshot: Snapshot,
+): Result<Snapshot, CommitmentOperationalSnapshotError> => {
+  const signatureError = validateSignatureLifecycle(snapshot)
+
+  if (signatureError !== null) {
+    return Result.Error(signatureError)
+  }
+
+  const wireError = validateWireLifecycle(snapshot)
+
+  if (wireError !== null) {
+    return Result.Error(wireError)
+  }
+
+  return Result.Ok(snapshot)
+}
+
+const validateSignatureLifecycle = (
+  snapshot: CommitmentOperationalSnapshot,
+): CommitmentOperationalSnapshotError | null => {
+  if (snapshot.commitmentStatus === 'signature_sent' && snapshot.signatureStatus === 'not_sent') {
+    return {
+      _tag: 'SignatureLifecycleMismatch',
+      message: 'signature_sent commitment requires signature delivery to have started',
+    }
+  }
+
+  if (snapshot.commitmentStatus === 'part_signed' && snapshot.signatureStatus === 'not_sent') {
+    return {
+      _tag: 'SignatureLifecycleMismatch',
+      message: 'part_signed commitment requires signature progress',
+    }
+  }
+
+  if (
+    SIGNED_OR_LATER_COMMITMENT_STATUSES.some((status) => status === snapshot.commitmentStatus) &&
+    snapshot.signatureStatus !== 'completed'
+  ) {
+    return {
+      _tag: 'SignatureLifecycleMismatch',
+      message: `${snapshot.commitmentStatus} commitment requires completed signature status`,
+    }
+  }
+
+  return null
+}
+
+const validateWireLifecycle = (
+  snapshot: CommitmentOperationalSnapshot,
+): CommitmentOperationalSnapshotError | null => {
+  if (
+    WIRE_REQUESTED_OR_LATER_COMMITMENT_STATUSES.some(
+      (status) => status === snapshot.commitmentStatus,
+    ) &&
+    snapshot.wireStatus === 'not_requested'
+  ) {
+    return {
+      _tag: 'WireLifecycleMismatch',
+      message: `${snapshot.commitmentStatus} commitment requires wire instructions or later wire status`,
+    }
+  }
+
+  if (
+    WIRE_RECEIVED_OR_LATER_COMMITMENT_STATUSES.some(
+      (status) => status === snapshot.commitmentStatus,
+    ) &&
+    (snapshot.wireStatus === 'not_requested' ||
+      snapshot.wireStatus === 'instructions_sent' ||
+      snapshot.wireStatus === 'pending')
+  ) {
+    return {
+      _tag: 'WireLifecycleMismatch',
+      message: `${snapshot.commitmentStatus} commitment requires received funds or later wire status`,
+    }
+  }
+
+  if (
+    (snapshot.commitmentStatus === 'reconciled' || snapshot.commitmentStatus === 'active') &&
+    snapshot.wireStatus !== 'reconciled'
+  ) {
+    return {
+      _tag: 'WireLifecycleMismatch',
+      message: `${snapshot.commitmentStatus} commitment requires reconciled wire status`,
+    }
+  }
+
+  return null
+}
+
+const SIGNED_OR_LATER_COMMITMENT_STATUSES = [
+  'signed',
+  'wire_instructions_sent',
+  'wire_pending',
+  'wire_received',
+  'wire_matched',
+  'reconciled',
+  'active',
+  'refunded',
+] as const satisfies readonly CommitmentLifecycleState[]
+
+const WIRE_REQUESTED_OR_LATER_COMMITMENT_STATUSES = [
+  'wire_instructions_sent',
+  'wire_pending',
+  'wire_received',
+  'wire_matched',
+  'reconciled',
+  'active',
+  'refunded',
+] as const satisfies readonly CommitmentLifecycleState[]
+
+const WIRE_RECEIVED_OR_LATER_COMMITMENT_STATUSES = [
+  'wire_received',
+  'wire_matched',
+  'reconciled',
+  'active',
+  'refunded',
+] as const satisfies readonly CommitmentLifecycleState[]

@@ -23,3 +23,24 @@ external systems rather than lifecycle events. Use functional state updates when
 the next value depends on queued state, and use refs only to bridge stable
 callbacks to latest values without resubscribing external observers. Controlled
 and uncontrolled hook state must have one clear owner.
+
+## React State Ownership Guardrail
+
+Default to colocated `useState`. Lift state only to the nearest common owner when
+siblings genuinely share it. Treat Context as dependency injection for stable or
+infrequently changing values, not as a state-management layer; split providers
+by update frequency and avoid fresh provider objects that broadcast every
+render.
+
+Do not introduce Zustand, Redux, XState, or another external state tool unless
+the change includes a short rationale proving local state, lifted state, URL
+state, server/cache state, and Context DI are insufficient. Use XState only for
+real domain workflows with explicit events, guarded transitions, async effects,
+replay/reconciliation, or parallel states, not for ordinary component or form
+progression.
+
+For reusable components, make controlled/uncontrolled ownership explicit with
+`value/defaultValue/onChange` semantics or a local controllable-state helper. Do
+not mirror props into local state with `useEffect` when the rendered value can
+be chosen from the current source of truth during render. Avoid accepting both
+raw inputs and independently derived summaries unless one is clearly canonical.

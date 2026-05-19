@@ -8,6 +8,7 @@ import { axe } from '../../test/axe'
 import { DealDocumentsEvidence } from './deal-documents-evidence'
 import {
   getDocumentEvidenceItemTone,
+  getDocumentsEvidenceSummary,
   getDocumentsEvidenceTone,
   getDocumentsEvidenceTotals,
   isDocumentEvidenceIssueStatus,
@@ -62,8 +63,8 @@ const expectRequirementKind = (_requirement: DealDocumentsEvidenceRequirementKin
 // @ts-expect-error Loading state cannot carry ready group data.
 expectLifecycleState({ groups: defaultDocumentsEvidenceState.groups, kind: 'loading' })
 
-// @ts-expect-error Ready state requires summary.
-expectLifecycleState({ groups: defaultDocumentsEvidenceState.groups, kind: 'ready' })
+// @ts-expect-error Ready state requires groups.
+expectLifecycleState({ kind: 'ready' })
 
 // @ts-expect-error Retryable error state requires an action handler.
 expectDocumentsEvidenceProps({
@@ -102,7 +103,7 @@ describe('DealDocumentsEvidence', () => {
       ),
     ).toBeInTheDocument()
     expect(
-      screen.getByText('9 documents · 4 blocking close · 4 need attention'),
+      screen.getByText('9 documents · 4 blocking close · 4 document issues'),
     ).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Evidence summary' })).toBeInTheDocument()
     expect(screen.getByText('Blocking close')).toBeInTheDocument()
@@ -212,7 +213,7 @@ describe('DealDocumentsEvidence', () => {
     )
 
     expect(
-      screen.getByText('0 documents · 0 blocking close · 0 need attention'),
+      screen.getByText('0 documents · 0 blocking close · 0 document issues'),
     ).toBeInTheDocument()
     expect(screen.getByText('No document evidence is ready for display.')).toBeInTheDocument()
   })
@@ -240,17 +241,24 @@ describe('DealDocumentsEvidence', () => {
     }
 
     const titleId = 'composed-documents-title'
+    const summary = getDocumentsEvidenceSummary(defaultDocumentsEvidenceState.groups)
+    const firstMetric = summary.metrics[0]
+
+    if (firstMetric === undefined) {
+      throw new Error('Expected default documents evidence summary to include a metric')
+    }
+
     const { container } = render(
       <DealDocumentsEvidence.Root aria-labelledby={titleId} state={defaultDocumentsEvidenceState}>
         <DealDocumentsEvidence.Header
-          headline={defaultDocumentsEvidenceState.summary.headlineLabel}
+          headline={summary.headlineLabel}
           state={defaultDocumentsEvidenceState}
           subtitle={dealDocumentsEvidenceLabels.subtitle}
           title="Composed documents"
           titleId={titleId}
         />
         <DealDocumentsEvidence.Summary title="Composed summary">
-          <DealDocumentsEvidence.Metric metric={defaultDocumentsEvidenceState.summary.metrics[0]} />
+          <DealDocumentsEvidence.Metric metric={firstMetric} />
         </DealDocumentsEvidence.Summary>
         <DealDocumentsEvidence.Groups
           emptyLabel={dealDocumentsEvidenceLabels.noGroupsLabel}
@@ -280,6 +288,17 @@ describe('DealDocumentsEvidence', () => {
       blocking: 4,
       issues: 4,
       total: 9,
+    })
+    expect(getDocumentsEvidenceSummary(defaultDocumentsEvidenceState.groups)).toMatchObject({
+      headlineLabel: '9 documents · 4 blocking close · 4 document issues',
+      metrics: [
+        { id: 'total', value: '9' },
+        { id: 'blocking', tone: 'danger', value: '4' },
+        { id: 'missing', tone: 'danger', value: '1' },
+        { id: 'under-review', tone: 'pending', value: '1' },
+        { id: 'approved', tone: 'success', value: '3' },
+        { id: 'rejected-expired', tone: 'attention', value: '2' },
+      ],
     })
     expect(getDocumentsEvidenceTone(defaultDocumentsEvidenceState)).toBe('danger')
     expect(getDocumentsEvidenceTone(readyDocumentsEvidenceState)).toBe('success')

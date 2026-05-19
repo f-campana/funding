@@ -1,7 +1,4 @@
-import type {
-  DealOperationalActivityTone,
-  DealOperationalReadinessState,
-} from '@repo/kit/deal-operational-overview'
+import type { DealOperationalReadinessState } from '@repo/kit/deal-operational-overview'
 import type { DealProgressStatus } from '@repo/kit/deal-progress-panel'
 
 import type { ClosingReadinessDTO, DealOperationalCenterDTO } from '@/server/deals'
@@ -77,38 +74,3 @@ export const blockerSurfaceLabel = (
     signature: 'Signatures',
     wire: 'Wire operations',
   })[type]
-
-export const activityTypeLabel = (
-  eventType: DealOperationalCenterDTO['activity'][number]['eventType'],
-): string =>
-  ({
-    blocker_created: 'Blockers',
-    blocker_resolved: 'Blockers',
-    commitment_updated: 'Commitments',
-    document_rejected: 'Documents',
-    document_uploaded: 'Documents',
-    signature_completed: 'Signatures',
-    signature_sent: 'Signatures',
-    wire_flagged: 'Wires',
-    wire_matched: 'Wires',
-  })[eventType]
-
-export const activityTone = (
-  eventType: DealOperationalCenterDTO['activity'][number]['eventType'],
-): DealOperationalActivityTone =>
-  (
-    ({
-      blocker_created: 'attention',
-      blocker_resolved: 'success',
-      commitment_updated: 'neutral',
-      document_rejected: 'attention',
-      document_uploaded: 'info',
-      signature_completed: 'success',
-      signature_sent: 'info',
-      wire_flagged: 'attention',
-      wire_matched: 'success',
-    }) as const satisfies Record<
-      DealOperationalCenterDTO['activity'][number]['eventType'],
-      DealOperationalActivityTone
-    >
-  )[eventType]

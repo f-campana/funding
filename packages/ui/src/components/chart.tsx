@@ -1,7 +1,7 @@
 'use client'
 
 import type { ComponentProps, ComponentType, CSSProperties, ReactElement, ReactNode } from 'react'
-import { cloneElement, createContext, isValidElement, useContext, useId } from 'react'
+import { cloneElement, createContext, isValidElement, useContext, useId, useMemo } from 'react'
 import type {
   DefaultLegendContentProps,
   LegendPayload,
@@ -47,7 +47,15 @@ type ChartContextValue = {
 
 const ChartContext = createContext<ChartContextValue | null>(null)
 
-const useChart = () => useContext(ChartContext) ?? { config: {} }
+const useChartContext = () => useContext(ChartContext)
+
+const requireChartContext = (context: ChartContextValue | null) => {
+  if (!context) {
+    throw new Error('Chart components must be rendered inside ChartContainer.')
+  }
+
+  return context
+}
 
 const normalizeChartId = (value: string) => value.replace(/[^A-Za-z0-9_-]/g, '')
 
@@ -168,9 +176,10 @@ export const ChartContainer = ({
 }: ChartContainerProps) => {
   const uniqueId = useId()
   const chartId = `chart-${normalizeChartId(id ?? uniqueId)}`
+  const contextValue = useMemo(() => ({ config }), [config])
 
   return (
-    <ChartContext.Provider value={{ config }}>
+    <ChartContext.Provider value={contextValue}>
       <div
         className={cn(
           'flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line]:stroke-border [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot]:stroke-border [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_line]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none',
@@ -415,12 +424,13 @@ export const ChartTooltipContent = ({
   labelKey,
   ...props
 }: ChartTooltipContentProps) => {
-  const { config } = useChart()
+  const chartContext = useChartContext()
 
   if (!active || !payload?.length) {
     return null
   }
 
+  const { config } = requireChartContext(chartContext)
   const [firstItem] = payload
   const labelConfigKey = `${labelKey ?? firstItem?.dataKey ?? firstItem?.name ?? 'value'}`
   const labelConfig = getPayloadConfigFromPayload(config, firstItem, labelConfigKey)
@@ -571,11 +581,13 @@ export const ChartLegendContent = ({
   nameKey,
   ...props
 }: ChartLegendContentProps) => {
-  const { config } = useChart()
+  const chartContext = useChartContext()
 
   if (!payload?.length) {
     return null
   }
+
+  const { config } = requireChartContext(chartContext)
 
   return (
     <ChartLegendContentRoot className={className} verticalAlign={verticalAlign} {...props}>

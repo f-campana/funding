@@ -169,11 +169,11 @@ must be explicit and hard.
 ### 4.1 Layer map
 
 ```
-Server state             →  tRPC + TanStack Query
-Real-time event stream   →  tRPC subscriptions → XState
-SPV / fund lifecycle     →  XState
+Server state             →  server components or tRPC + TanStack Query when client caching is needed
+Real-time event stream   →  tRPC subscriptions; local reducer/projection first; XState only with explicit workflow complexity
+SPV / fund lifecycle     →  pure domain reducers/validators; XState only when long-lived runtime orchestration is justified
 Form state               →  React Hook Form
-UI state                 →  Zustand
+UI state                 →  colocated useState by default; lift to nearest common owner; URL/search params for navigable state; external store only with written justification
 Domain rendering logic   →  ts-pattern
 ```
 
@@ -188,53 +188,30 @@ Key disciplines:
 - `staleTime` should be set per query based on the expected change frequency of the data
   (deal terms: long; KYC status: short; portfolio valuations: medium)
 - Optimistic updates are permitted but must be reconciled against the event stream (§5.3)
-- No server-derived data ever enters Zustand
+- No server-derived data ever enters an ordinary client UI store
 
-### 4.3 SPV and fund lifecycle — XState
+### 4.3 Lifecycle projections — pure reducers first, XState by exception
 
-The SPV lifecycle and fund lifecycle are not simple UI toggles. They are finite state
-machines with defined states, guarded transitions, and side effects. XState makes these
-machines explicit, typed, and testable without a DOM.
+SPV and fund lifecycle states are domain vocabulary with legal transitions. Model the
+canonical states, allowed transitions, guards, and validation as pure domain functions
+first. Add XState only when the frontend needs a long-lived runtime workflow with explicit
+events, guarded transitions, async effects, replay/reconciliation, or parallel states.
 
-**SPV states:**
-```
-draft → open → kyc_in_progress → e_signatures → collecting → incorporated → closed
-```
-Guarded transitions examples:
-- `open → kyc_in_progress` only if at least one investor has committed
-- `kyc_in_progress → e_signatures` only if all committed investors have completed KYC
-- `collecting → incorporated` only after wire confirmation received
+Backend state and the event log remain the source of truth. A client machine, if introduced,
+is a local runtime projection for orchestration and UX, not the authoritative lifecycle
+record.
 
-The machine encodes the backend's aggregate invariants as guard conditions. The UI never
-presents an action the backend would reject. This is not validation duplication — it is
-defensive UX design.
-
-XState is scoped to these lifecycle machines only. It does not replace Zustand for general
-UI state and does not replace TanStack Query for server state.
-
-**With tRPC subscriptions (v11+):**
-```ts
-trpc.deals.events.useSubscription({ dealId }, {
-  onData: (event) => dealMachine.send(event),
-})
-```
-Backend domain events drive machine transitions directly. The machine's current state is a
-live projection of the event stream.
-
-### 4.4 UI state — Zustand
+### 4.4 UI state — local first, lift only when shared
 
 Expanded table rows, collapsed sidebar sections, active tabs, open modals, filter selections,
-theme preference. State that is local to the session, not persisted, not shared with the
-server.
+and theme preference are not automatically global state. Keep them colocated with the
+component that renders them. Lift them only to the nearest common owner when sibling surfaces
+genuinely need shared ownership. Use route/search params for navigable or shareable UI state.
 
-Zustand is chosen over React Context for global UI state because:
-- No provider tree to maintain
-- Direct store access from anywhere without component hierarchy coupling
-- Minimal boilerplate
-- Selective subscription prevents unnecessary re-renders
-
-Hard rule: **no server data in Zustand**. If a piece of state could be described as "the
-current value of X from the server", it belongs in TanStack Query.
+Do not introduce Zustand for ordinary UI state. Use an external store only when state must
+live outside the React tree or a measured Context broadcast problem requires selector-based
+subscriptions. Server-derived data stays in server components or TanStack Query/tRPC where
+client caching is justified.
 
 ### 4.5 Form state — React Hook Form
 
@@ -257,7 +234,7 @@ changes quarterly wastes resources and complicates connection lifecycle manageme
 | New commitment received | Seconds | tRPC subscription |
 | Wire confirmation | User is watching | tRPC subscription |
 | KYC status update | Minutes acceptable | `refetchInterval: 30_000` |
-| SPV state transitions | Seconds | tRPC subscription → XState |
+| SPV state transitions | Seconds | tRPC subscription → pure reducer/projection; XState only if runtime orchestration is justified |
 | Fund NAV | Daily / on trigger | Manual invalidation |
 | Deal terms | Static after creation | No polling |
 
@@ -342,9 +319,10 @@ The frontend maintains a local projection of deal state, driven by events receiv
 subscriptions. The projection is a pure function from `(currentState, event)` to `nextState`.
 This function is tested independently of React (§10.3).
 
-The XState machine is the projection host. Events emitted by the backend feed directly into
-machine transitions. The machine's current state is the authoritative local representation
-of the deal's lifecycle.
+The projection host should be a pure reducer first. Events emitted by the backend feed into
+that reducer, and backend state remains the source of truth. Add XState only if the frontend
+needs long-lived runtime orchestration with explicit events, guarded transitions, async
+effects, replay/reconciliation, or parallel states.
 
 ### 6.3 Optimistic updates and reconciliation
 
@@ -579,15 +557,15 @@ projection is worth more than ten snapshot tests.
 
 ### 10.2 Layer-by-layer approach
 
-**XState machine tests (Vitest, no DOM):**
+**Lifecycle projection tests (Vitest, no DOM):**
 ```ts
 it('stays in kyc_in_progress if pendingKyc > 0 after KycVerified', () => {
-  const nextState = dealMachine.transition(
-    { value: 'kyc_in_progress', context: { pendingKyc: 2 } },
+  const nextState = transitionDealLifecycle(
+    { state: 'kyc_in_progress', pendingKyc: 2 },
     { type: 'KycVerified', payload: { investorId: 'a' } }
   )
-  expect(nextState.value).toBe('kyc_in_progress')
-  expect(nextState.context.pendingKyc).toBe(1)
+  expect(nextState.state).toBe('kyc_in_progress')
+  expect(nextState.pendingKyc).toBe(1)
 })
 ```
 
@@ -792,7 +770,7 @@ Flow:
 4. Yousign sends webhook to backend
 5. Backend emits `DocumentSigned` event to the event log
 6. Event arrives at the frontend via tRPC subscription
-7. XState machine transitions to the next state
+7. Frontend projection updates from the backend event; XState is only added if runtime orchestration is justified
 
 The frontend never assumes a signature is complete based on a UI interaction alone.
 The event is the source of truth.
@@ -844,10 +822,11 @@ security incidents on comparable platforms.
 │                        Browser                                   │
 │                                                                 │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │  React UI    │  │   XState     │  │   Zustand            │  │
-│  │  Components  │  │   Machines   │  │   UI Store           │  │
-│  │  (Shadcn/    │  │   (SPV/Fund  │  │   (tabs, modals,     │  │
-│  │   Radix)     │  │   lifecycle) │  │    filters)          │  │
+│  │  React UI    │  │ Lifecycle    │  │ Local/lifted/URL     │  │
+│  │  Components  │  │ Projections  │  │ UI State             │  │
+│  │  (Shadcn/    │  │ (pure first; │  │ (external store by   │  │
+│  │   Radix)     │  │ XState by    │  │  rationale only)     │  │
+│  │              │  │ exception)   │  │                      │  │
 │  └──────┬───────┘  └──────┬───────┘  └──────────────────────┘  │
 │         │                  │ events                              │
 │  ┌──────▼───────────────────▼─────────────────────────────────┐ │

@@ -12,6 +12,7 @@ import {
   DealOperationalOverviewRoot,
   DealOperationalOverviewSecondaryGrid,
 } from '@repo/kit/deal-operational-overview'
+import { getOperationalBlockerSummary } from '@repo/kit/deal-operational-overview/model'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
 
@@ -94,7 +95,7 @@ const renderOperationalOverviewContent = ({
             <DealOperationalOverviewBlockers
               blockers={state.blockers}
               labels={labels}
-              summary={state.blockerSummary}
+              summary={getOperationalBlockerSummary(state.readiness)}
             />
             <DealOperationalOverviewActivity activity={state.activity} labels={labels} />
           </DealOperationalOverviewSecondaryGrid>

@@ -260,8 +260,6 @@ const latestActivity = [
 
 export const blockedOperationalOverviewState = {
   activity: latestActivity,
-  blockerSummary:
-    'Six close-impacting items remain. The critical path is investor identity plus wire matching.',
   blockers: [
     {
       description: 'Beneficial owner evidence is missing for two subscription entities.',
@@ -304,8 +302,6 @@ export const blockedOperationalOverviewState = {
 
 export const attentionOperationalOverviewState = {
   ...blockedOperationalOverviewState,
-  blockerSummary:
-    'No critical blockers remain. Final signature release and economics review are on the close path.',
   blockers: [
     {
       description: 'Sponsor countersignature package is approved but not released.',
@@ -366,7 +362,6 @@ export const readyOperationalOverviewState = {
       typeLabel: 'Capital',
     },
   ],
-  blockerSummary: 'All close-critical blockers are resolved.',
   blockers: [],
   capital: readyCapital,
   readiness: readyReadiness,
@@ -374,8 +369,6 @@ export const readyOperationalOverviewState = {
 
 export const longTextOperationalOverviewState = {
   ...blockedOperationalOverviewState,
-  blockerSummary:
-    'The close can proceed only after a cross-functional exception review resolves the longest-running investor identity, capital matching, and document evidence issues in the final closing cohort.',
   blockers: [
     {
       description:

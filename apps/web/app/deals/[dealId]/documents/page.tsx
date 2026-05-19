@@ -10,6 +10,7 @@ import {
   DealDocumentsEvidenceRoot,
   DealDocumentsEvidenceSummarySection,
 } from '@repo/kit/deal-documents-evidence'
+import { getDocumentsEvidenceSummary } from '@repo/kit/deal-documents-evidence/model'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
 
@@ -75,18 +76,20 @@ const renderDocumentsEvidenceContent = ({
       )
     case 'empty':
       return <DealDocumentsEvidenceEmpty state={state} titleId={documentsEvidenceTitleId} />
-    case 'ready':
+    case 'ready': {
+      const summary = getDocumentsEvidenceSummary(state.groups)
+
       return (
         <>
           <DealDocumentsEvidenceHeader
-            headline={state.summary.headlineLabel}
+            headline={summary.headlineLabel}
             state={state}
             subtitle={labels.subtitle}
             title={labels.title}
             titleId={documentsEvidenceTitleId}
           />
           <DealDocumentsEvidenceSummarySection
-            metrics={state.summary.metrics}
+            metrics={summary.metrics}
             title={labels.summaryTitle}
           />
           <DealDocumentsEvidenceGroups emptyLabel={labels.noGroupsLabel} title={labels.groupsTitle}>
@@ -104,5 +107,6 @@ const renderDocumentsEvidenceContent = ({
           </DealDocumentsEvidenceGroups>
         </>
       )
+    }
   }
 }

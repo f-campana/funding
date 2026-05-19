@@ -12,6 +12,8 @@ export {
   isTerminalCommitmentLifecycleState,
 } from './commitment-lifecycle'
 export type {
+  CommitmentOperationalSnapshot,
+  CommitmentOperationalSnapshotError,
   InvestorOperationsRecord,
   KybOperationalStatus,
   KycOperationalStatus,
@@ -33,6 +35,7 @@ export {
   KycOperationalStatusSchema,
   SIGNATURE_OPERATIONAL_STATUSES,
   SignatureOperationalStatusSchema,
+  validateCommitmentOperationalSnapshot,
   WIRE_OPERATIONAL_STATUSES,
   WireOperationalStatusSchema,
 } from './investor-operations'

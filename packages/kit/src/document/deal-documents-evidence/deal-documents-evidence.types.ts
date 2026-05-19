@@ -60,7 +60,6 @@ export type DealDocumentsEvidenceGroup = {
 
 export type DealDocumentsEvidenceReadyState = {
   readonly kind: 'ready'
-  readonly summary: DealDocumentsEvidenceSummary
   readonly groups: readonly DealDocumentsEvidenceGroup[]
 }
 

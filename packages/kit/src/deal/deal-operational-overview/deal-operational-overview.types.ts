@@ -87,7 +87,6 @@ export type DealOperationalOverviewReadyState = {
   readonly kind: 'ready'
   readonly readiness: DealOperationalReadinessSummary
   readonly capital: DealOperationalCapitalSummary
-  readonly blockerSummary: string
   readonly blockers: readonly DealOperationalBlocker[]
   readonly activity: readonly DealOperationalActivityItem[]
 }

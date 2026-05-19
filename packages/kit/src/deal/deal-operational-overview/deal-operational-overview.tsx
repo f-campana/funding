@@ -57,7 +57,6 @@ export type {
   DealOperationalReadinessState,
   DealOperationalReadinessSummary,
 } from './deal-operational-overview.types'
-
 export {
   DealOperationalOverviewActivity,
   DealOperationalOverviewBlockers,

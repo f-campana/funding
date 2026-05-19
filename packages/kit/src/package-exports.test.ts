@@ -35,6 +35,7 @@ import {
   DealDocumentsEvidenceRoot,
   DealDocumentsEvidenceSummarySection,
 } from '@repo/kit/deal-documents-evidence'
+import { getDocumentsEvidenceSummary } from '@repo/kit/deal-documents-evidence/model'
 import {
   DealOperationalOverview,
   DealOperationalOverviewHeader,
@@ -42,6 +43,7 @@ import {
   DealOperationalOverviewReadiness,
   DealOperationalOverviewRoot,
 } from '@repo/kit/deal-operational-overview'
+import { getOperationalBlockerSummary } from '@repo/kit/deal-operational-overview/model'
 import {
   DealProgressPanel,
   DealProgressPanelActions,
@@ -117,5 +119,10 @@ describe('@repo/kit package exports', () => {
     expect(DealProgressPanelHeader).toBeTypeOf('function')
     expect(DealProgressPanelCapital).toBeTypeOf('function')
     expect(DealProgressPanelActions).toBeTypeOf('function')
+  })
+
+  it('supports model-only subpath imports for server-safe derivation helpers', () => {
+    expect(getDocumentsEvidenceSummary).toBeTypeOf('function')
+    expect(getOperationalBlockerSummary).toBeTypeOf('function')
   })
 })

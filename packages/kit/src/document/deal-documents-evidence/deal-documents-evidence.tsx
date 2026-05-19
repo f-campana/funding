@@ -55,7 +55,6 @@ export type {
   DealDocumentsEvidenceSummaryProps,
   DealDocumentsEvidenceTone,
 } from './deal-documents-evidence.types'
-
 export {
   DealDocumentsEvidenceDocument,
   DealDocumentsEvidenceEmpty,

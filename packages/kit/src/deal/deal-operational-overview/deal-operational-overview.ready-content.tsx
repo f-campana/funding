@@ -3,6 +3,7 @@ import { Badge, cn } from '@repo/ui'
 import { ActivitySection } from './deal-operational-overview.activity-section'
 import { BlockersSection } from './deal-operational-overview.blockers-section'
 import { CapitalSection } from './deal-operational-overview.capital-section'
+import { getOperationalBlockerSummary } from './deal-operational-overview.model'
 import { ReadinessSection } from './deal-operational-overview.readiness-section'
 import { readinessToneClasses } from './deal-operational-overview.styles'
 import type {
@@ -23,7 +24,11 @@ export const DealOperationalOverviewReadyContent = ({
       <CapitalSection capital={state.capital} labels={labels} />
     </DealOperationalOverviewPrimaryGrid>
     <DealOperationalOverviewSecondaryGrid>
-      <BlockersSection blockers={state.blockers} labels={labels} summary={state.blockerSummary} />
+      <BlockersSection
+        blockers={state.blockers}
+        labels={labels}
+        summary={getOperationalBlockerSummary(state.readiness)}
+      />
       <ActivitySection activity={state.activity} labels={labels} />
     </DealOperationalOverviewSecondaryGrid>
   </>
