@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { DocumentIdSchema } from '../ids'
-import { euroCentsFromNumberMinorUnits } from '../money'
+import { createEuroCentsJsonSchema } from '../money'
 
 export const EU_EUVECA_COUNTRIES = [
   'AT',
@@ -62,33 +62,17 @@ const IsoCountryCodeSchema = z
   .length(2, { error: 'commitment.country.iso_alpha_2_required' })
   .regex(/^[A-Za-z]{2}$/, { error: 'commitment.country.iso_alpha_2_required' })
   .transform((value) => value.toUpperCase())
-const RequiredTextSchema = z.string().min(1, { error: 'commitment.text.required' })
+const RequiredTextSchema = z.string().trim().min(1, { error: 'commitment.text.required' })
 const RequiredTrueSchema = (message: string) => z.literal(true, { error: message })
 
-const AmountCentsSchema = z
-  .number({ error: 'money.InvalidFormat' })
-  .int({ error: 'money.InvalidFormat' })
-  .safe({ error: 'money.UnsafeNumber' })
-  .positive({ error: 'commitment.amount.positive_required' })
-  .transform((value, ctx) => {
-    const result = euroCentsFromNumberMinorUnits(value)
-
-    /* v8 ignore next 7 -- the preceding Zod checks keep this defensive guard unreachable. */
-    if (result.isError()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `money.${result.error._tag}`,
-      })
-
-      return z.NEVER
-    }
-
-    return result.value
-  })
+const AmountCentsSchema = createEuroCentsJsonSchema({
+  minimum: 'positive',
+  minimumError: 'commitment.amount.positive_required',
+})
 
 export const AmountStepSchema = z.object({
   amountCents: AmountCentsSchema,
-  amountRaw: z.string().min(1, { error: 'commitment.amount.raw_required' }),
+  amountRaw: z.string().trim().min(1, { error: 'commitment.amount.raw_required' }),
 })
 
 export type AmountStep = z.infer<typeof AmountStepSchema>
@@ -178,7 +162,7 @@ const IndividualKycSchema = z.object({
 })
 
 const UboSchema = z.object({
-  fullName: z.string().min(2, { error: 'commitment.ubo.full_name_required' }),
+  fullName: z.string().trim().min(2, { error: 'commitment.ubo.full_name_required' }),
   idDocument: UploadedDocumentSchema,
   nationality: IsoCountryCodeSchema,
   ownershipPercentage: z

@@ -5,6 +5,7 @@ export type {
 export {
   COMMITMENT_LIFECYCLE_STATES,
   CommitmentLifecycleStateSchema,
+  CommitmentOperationalActivityInputSchema,
   canTransitionCommitmentLifecycle,
   getCommitmentLifecycleLabel,
   getCommitmentLifecycleTone,

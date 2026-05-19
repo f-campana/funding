@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { ClosingBlocker } from './closing-blocker'
 import {
   CLOSING_READINESS_STATES,
+  ClosingReadinessInputSchema,
   ClosingReadinessStateSchema,
   summarizeClosingReadiness,
 } from './deal-readiness'
@@ -26,6 +27,26 @@ describe('ClosingReadinessStateSchema', () => {
 
   it('rejects unknown readiness states', () => {
     expect(ClosingReadinessStateSchema.safeParse('almost_ready').success).toBe(false)
+  })
+})
+
+describe('ClosingReadinessInputSchema', () => {
+  it('parses raw blocker input before readiness helpers run', () => {
+    const parsed = ClosingReadinessInputSchema.parse({
+      blockers: [{ ...blocker('warning'), title: '  Subscription package missing  ' }],
+      hasOperationalInputs: true,
+    })
+
+    expect(parsed.blockers[0]?.title).toBe('Subscription package missing')
+    expect(summarizeClosingReadiness(parsed).state).toBe('attention')
+  })
+
+  it('rejects invalid blocker input', () => {
+    expect(
+      ClosingReadinessInputSchema.safeParse({
+        blockers: [{ ...blocker('critical'), severity: 'urgent' }],
+      }).success,
+    ).toBe(false)
   })
 })
 

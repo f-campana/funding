@@ -34,6 +34,15 @@ describe('AmountStepSchema', () => {
     expect(euroCentsToMinorUnits(parsed.amountCents)).toBe(500_000n)
   })
 
+  it('trims display amount text and rejects whitespace-only text', () => {
+    expect(
+      AmountStepSchema.parse({ ...validAmountStep, amountRaw: '  5 000,00 €  ' }),
+    ).toMatchObject({
+      amountRaw: '5 000,00 €',
+    })
+    expect(AmountStepSchema.safeParse({ ...validAmountStep, amountRaw: '   ' }).success).toBe(false)
+  })
+
   it('rejects unsafe, non-integer, and non-positive amount cents', () => {
     expect(
       AmountStepSchema.safeParse({
@@ -114,7 +123,10 @@ describe('KycStepSchema', () => {
   })
 
   it('accepts valid legal entity KYB and uppercases UBO country codes', () => {
-    const parsed = KycStepSchema.parse(validKybLegalEntity)
+    const parsed = KycStepSchema.parse({
+      ...validKybLegalEntity,
+      ubos: [{ ...validKybLegalEntity.ubos[0], fullName: '  Ada Lovelace  ' }],
+    })
 
     expect(parsed.entityType).toBe('legal_entity')
     if (parsed.entityType !== 'legal_entity') {
@@ -122,7 +134,17 @@ describe('KycStepSchema', () => {
     }
 
     expect(parsed.registrationCountry).toBe('FR')
+    expect(parsed.ubos[0]?.fullName).toBe('Ada Lovelace')
     expect(parsed.ubos[0]?.nationality).toBe('GB')
+  })
+
+  it('rejects whitespace-only UBO full names', () => {
+    expect(
+      KycStepSchema.safeParse({
+        ...validKybLegalEntity,
+        ubos: [{ ...validKybLegalEntity.ubos[0], fullName: '   ' }],
+      }).success,
+    ).toBe(false)
   })
 
   it('rejects documents larger than 10 MB', () => {

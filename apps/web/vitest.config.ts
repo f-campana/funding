@@ -15,6 +15,7 @@ export default mergeConfig(
       include: [
         'app/**/*.test.{ts,tsx}',
         'observability/**/*.test.{ts,tsx}',
+        'scripts/**/*.test.{js,mjs,ts}',
         'server/**/*.test.{ts,tsx}',
       ],
     },

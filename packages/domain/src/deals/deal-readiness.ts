@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import {
   type ClosingBlocker,
+  ClosingBlockerSchema,
   countClosingBlockersBySeverity,
   getUnresolvedClosingBlockers,
 } from './closing-blocker'
@@ -24,6 +25,25 @@ export type ClosingReadinessInput = {
   readonly blockers: readonly ClosingBlocker[]
   readonly hasOperationalInputs?: boolean
 }
+
+export const ClosingReadinessInputSchema = z
+  .object({
+    blockers: z.array(ClosingBlockerSchema),
+    hasOperationalInputs: z.boolean().optional(),
+  })
+  .strict()
+  .transform((input): ClosingReadinessInput => {
+    if (input.hasOperationalInputs === undefined) {
+      return {
+        blockers: input.blockers,
+      }
+    }
+
+    return {
+      blockers: input.blockers,
+      hasOperationalInputs: input.hasOperationalInputs,
+    }
+  })
 
 const NEXT_ACTION_LABELS = {
   attention: 'Review warning blockers before close',

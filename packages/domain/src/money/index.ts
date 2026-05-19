@@ -1,5 +1,7 @@
 export type {
   EuroCents,
+  EuroCentsJsonSchemaMinimum,
+  EuroCentsJsonSchemaOptions,
   FormatEuroCentsOptions,
   MoneyFormatError,
   MoneyParseError,
@@ -7,6 +9,8 @@ export type {
 export {
   addEuroCents,
   compareEuroCents,
+  createEuroCentsJsonSchema,
+  EuroCentsJsonSchema,
   euroCentsFromMinorUnits,
   euroCentsFromNumberMinorUnits,
   euroCentsToMinorUnits,
@@ -14,7 +18,9 @@ export {
   isNegativeEuroCents,
   isPositiveEuroCents,
   isZeroEuroCents,
+  NonNegativeEuroCentsJsonSchema,
   negateEuroCents,
+  PositiveEuroCentsJsonSchema,
   parseEuroCents,
   serializeEuroCentsToNumber,
   subtractEuroCents,

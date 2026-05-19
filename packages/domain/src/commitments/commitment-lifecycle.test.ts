@@ -4,6 +4,7 @@ import {
   COMMITMENT_LIFECYCLE_STATES,
   type CommitmentLifecycleState,
   CommitmentLifecycleStateSchema,
+  CommitmentOperationalActivityInputSchema,
   canTransitionCommitmentLifecycle,
   getCommitmentLifecycleLabel,
   getCommitmentLifecycleTone,
@@ -53,6 +54,38 @@ describe('CommitmentLifecycleStateSchema', () => {
 
   it('rejects unknown commitment lifecycle states', () => {
     expect(CommitmentLifecycleStateSchema.safeParse('funded').success).toBe(false)
+  })
+})
+
+describe('CommitmentOperationalActivityInputSchema', () => {
+  it('parses raw activity input before operational helpers run', () => {
+    const parsed = CommitmentOperationalActivityInputSchema.parse({
+      lifecycleState: 'reconciled',
+      reconciliationComplete: true,
+      signatureComplete: true,
+      wireMatchedOrReconciled: true,
+    })
+
+    expect(isCommitmentOperationallyActive(parsed)).toBe(true)
+  })
+
+  it('rejects invalid lifecycle state and non-boolean flags', () => {
+    expect(
+      CommitmentOperationalActivityInputSchema.safeParse({
+        lifecycleState: 'funded',
+        reconciliationComplete: true,
+        signatureComplete: true,
+        wireMatchedOrReconciled: true,
+      }).success,
+    ).toBe(false)
+    expect(
+      CommitmentOperationalActivityInputSchema.safeParse({
+        lifecycleState: 'reconciled',
+        reconciliationComplete: 'yes',
+        signatureComplete: true,
+        wireMatchedOrReconciled: true,
+      }).success,
+    ).toBe(false)
   })
 })
 

@@ -1,4 +1,5 @@
 import { Result } from '@repo/core'
+import { z } from 'zod'
 
 declare const euroCentsBrand: unique symbol
 
@@ -20,6 +21,13 @@ export type MoneyFormatError = {
 export type FormatEuroCentsOptions = {
   readonly locale?: string
   readonly currencyDisplay?: 'symbol' | 'code' | 'name'
+}
+
+export type EuroCentsJsonSchemaMinimum = 'none' | 'nonnegative' | 'positive'
+
+export type EuroCentsJsonSchemaOptions = {
+  readonly minimum?: EuroCentsJsonSchemaMinimum
+  readonly minimumError?: string
 }
 
 const CENTS_PER_EURO = 100n
@@ -52,6 +60,34 @@ export const euroCentsFromNumberMinorUnits = (
 
   return Result.Ok(euroCentsFromMinorUnits(BigInt(value)))
 }
+
+export const createEuroCentsJsonSchema = ({
+  minimum = 'none',
+  minimumError,
+}: EuroCentsJsonSchemaOptions = {}) =>
+  euroCentsJsonNumberSchema(minimum, minimumError).transform((value, ctx) => {
+    const result = euroCentsFromNumberMinorUnits(value)
+
+    /* v8 ignore next 7 -- the preceding Zod checks keep this defensive guard unreachable. */
+    if (result.isError()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `money.${result.error._tag}`,
+      })
+
+      return z.NEVER
+    }
+
+    return result.value
+  })
+
+export const EuroCentsJsonSchema = createEuroCentsJsonSchema()
+export const NonNegativeEuroCentsJsonSchema = createEuroCentsJsonSchema({
+  minimum: 'nonnegative',
+})
+export const PositiveEuroCentsJsonSchema = createEuroCentsJsonSchema({
+  minimum: 'positive',
+})
 
 export const euroCentsToMinorUnits = (value: EuroCents): bigint => value
 
@@ -142,6 +178,30 @@ export const compareEuroCents = (left: EuroCents, right: EuroCents): -1 | 0 | 1 
 export const isZeroEuroCents = (value: EuroCents): boolean => value === 0n
 export const isPositiveEuroCents = (value: EuroCents): boolean => value > 0n
 export const isNegativeEuroCents = (value: EuroCents): boolean => value < 0n
+
+function euroCentsJsonBaseNumberSchema() {
+  return z
+    .number({ error: 'money.InvalidFormat' })
+    .int({ error: 'money.InvalidFormat' })
+    .safe({ error: 'money.UnsafeNumber' })
+}
+
+function euroCentsJsonNumberSchema(
+  minimum: EuroCentsJsonSchemaMinimum,
+  minimumError: string | undefined,
+) {
+  const baseSchema = euroCentsJsonBaseNumberSchema()
+
+  if (minimum === 'nonnegative') {
+    return baseSchema.nonnegative({ error: minimumError ?? 'money.NegativeAmount' })
+  }
+
+  if (minimum === 'positive') {
+    return baseSchema.positive({ error: minimumError ?? 'money.PositiveAmount' })
+  }
+
+  return baseSchema
+}
 
 const parseDecimalParts = (
   normalized: string,

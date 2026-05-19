@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addEuroCents,
   compareEuroCents,
+  EuroCentsJsonSchema,
   euroCentsFromMinorUnits,
   euroCentsFromNumberMinorUnits,
   euroCentsToMinorUnits,
@@ -11,7 +12,9 @@ import {
   isNegativeEuroCents,
   isPositiveEuroCents,
   isZeroEuroCents,
+  NonNegativeEuroCentsJsonSchema,
   negateEuroCents,
+  PositiveEuroCentsJsonSchema,
   parseEuroCents,
   serializeEuroCentsToNumber,
   subtractEuroCents,
@@ -78,6 +81,26 @@ describe('EuroCents constructors and serialization', () => {
       _tag: 'Error',
       error: { _tag: 'UnsafeNumber', value: -9_007_199_254_740_992n },
     })
+  })
+})
+
+describe('EuroCents JSON schemas', () => {
+  it('brands JSON-safe integer minor units', () => {
+    const parsed = EuroCentsJsonSchema.parse(-123)
+
+    expect(euroCentsToMinorUnits(parsed)).toBe(-123n)
+  })
+
+  it('enforces reusable non-negative and positive amount variants', () => {
+    expect(NonNegativeEuroCentsJsonSchema.safeParse(0).success).toBe(true)
+    expect(NonNegativeEuroCentsJsonSchema.safeParse(-1).success).toBe(false)
+    expect(PositiveEuroCentsJsonSchema.safeParse(0).success).toBe(false)
+    expect(PositiveEuroCentsJsonSchema.safeParse(1).success).toBe(true)
+  })
+
+  it('rejects non-integer and unsafe JSON number inputs', () => {
+    expect(EuroCentsJsonSchema.safeParse(12.34).success).toBe(false)
+    expect(EuroCentsJsonSchema.safeParse(Number.MAX_SAFE_INTEGER + 1).success).toBe(false)
   })
 })
 

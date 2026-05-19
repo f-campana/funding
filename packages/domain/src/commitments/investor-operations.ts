@@ -1,7 +1,6 @@
 import { Result } from '@repo/core'
 import { z } from 'zod'
-import type { EuroCents } from '../money'
-import { euroCentsFromNumberMinorUnits } from '../money'
+import { type EuroCents, NonNegativeEuroCentsJsonSchema } from '../money'
 import type { StatusTone } from '../status-tone'
 import {
   type CommitmentLifecycleState,
@@ -83,27 +82,6 @@ export const KybOperationalStatusSchema = KycOperationalStatusSchema
 export const SignatureOperationalStatusSchema = z.enum(SIGNATURE_OPERATIONAL_STATUSES)
 export const WireOperationalStatusSchema = z.enum(WIRE_OPERATIONAL_STATUSES)
 
-const euroCentsJsonSchema = z
-  .number({ error: 'money.InvalidFormat' })
-  .int({ error: 'money.InvalidFormat' })
-  .safe({ error: 'money.UnsafeNumber' })
-  .nonnegative({ error: 'money.NegativeAmount' })
-  .transform((value, ctx) => {
-    const result = euroCentsFromNumberMinorUnits(value)
-
-    /* v8 ignore next 7 -- the preceding Zod checks keep this defensive guard unreachable. */
-    if (result.isError()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: result.error._tag,
-      })
-
-      return z.NEVER
-    }
-
-    return result.value
-  })
-
 const RequiredTrimmedStringSchema = z
   .string()
   .trim()
@@ -111,7 +89,7 @@ const RequiredTrimmedStringSchema = z
 
 export const InvestorOperationsRecordSchema = z.object({
   blockerIds: z.array(RequiredTrimmedStringSchema).readonly(),
-  commitmentAmountCents: euroCentsJsonSchema,
+  commitmentAmountCents: NonNegativeEuroCentsJsonSchema,
   commitmentStatus: CommitmentLifecycleStateSchema,
   id: RequiredTrimmedStringSchema,
   investorEmail: z.email({ error: 'investorOperations.email.invalid' }).optional(),

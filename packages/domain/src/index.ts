@@ -1,5 +1,6 @@
 export type { Brand } from './brand'
 export type {
+  AmountStep,
   CommitmentFormData,
   EuEuvecaCountry,
   IndividualKyc,
@@ -40,6 +41,7 @@ export type {
 export {
   COMMITMENT_LIFECYCLE_STATES,
   CommitmentLifecycleStateSchema,
+  CommitmentOperationalActivityInputSchema,
   canTransitionCommitmentLifecycle,
   getCommitmentLifecycleLabel,
   getCommitmentLifecycleTone,
@@ -83,6 +85,7 @@ export {
   ClosingBlockerSchema,
   ClosingBlockerSeveritySchema,
   ClosingBlockerTypeSchema,
+  ClosingReadinessInputSchema,
   ClosingReadinessStateSchema,
   canTransitionDealLifecycle,
   countClosingBlockersBySeverity,
@@ -139,6 +142,8 @@ export {
 } from './ids'
 export type {
   EuroCents,
+  EuroCentsJsonSchemaMinimum,
+  EuroCentsJsonSchemaOptions,
   FormatEuroCentsOptions,
   MoneyFormatError,
   MoneyParseError,
@@ -146,6 +151,8 @@ export type {
 export {
   addEuroCents,
   compareEuroCents,
+  createEuroCentsJsonSchema,
+  EuroCentsJsonSchema,
   euroCentsFromMinorUnits,
   euroCentsFromNumberMinorUnits,
   euroCentsToMinorUnits,
@@ -153,7 +160,9 @@ export {
   isNegativeEuroCents,
   isPositiveEuroCents,
   isZeroEuroCents,
+  NonNegativeEuroCentsJsonSchema,
   negateEuroCents,
+  PositiveEuroCentsJsonSchema,
   parseEuroCents,
   serializeEuroCentsToNumber,
   subtractEuroCents,
@@ -170,6 +179,7 @@ export type {
   ReconciliationFixtures,
 } from './reconciliation'
 export {
+  CapitalReconciliationInputSchema,
   CapitalStageSchema,
   PaymentRecordSchema,
   PaymentStatusSchema,

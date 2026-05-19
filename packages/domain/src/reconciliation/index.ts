@@ -10,6 +10,7 @@ export type {
   PaymentStatus,
 } from './reconciliation'
 export {
+  CapitalReconciliationInputSchema,
   CapitalStageSchema,
   PaymentRecordSchema,
   PaymentStatusSchema,

@@ -35,6 +35,7 @@ export type {
 } from './deal-readiness'
 export {
   CLOSING_READINESS_STATES,
+  ClosingReadinessInputSchema,
   ClosingReadinessStateSchema,
   summarizeClosingReadiness,
 } from './deal-readiness'

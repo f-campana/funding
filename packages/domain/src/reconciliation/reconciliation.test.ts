@@ -10,6 +10,7 @@ import {
 import { paymentRecordFixtures, reconciliationFixtures } from './fixtures'
 import {
   type CapitalReconciliationInput,
+  CapitalReconciliationInputSchema,
   CapitalStageSchema,
   PaymentRecordSchema,
   PaymentStatusSchema,
@@ -104,6 +105,33 @@ describe('PaymentRecordSchema', () => {
     ['unknown payment status', { ...validInput, status: 'settled' }],
   ])('rejects %s', (_label, input) => {
     expect(PaymentRecordSchema.safeParse(input).success).toBe(false)
+  })
+})
+
+describe('CapitalReconciliationInputSchema', () => {
+  it('brands JSON-safe capital inputs', () => {
+    const parsed = CapitalReconciliationInputSchema.parse({
+      committedAmountCents: 3,
+      matchedAmountCents: 1,
+      receivedAmountCents: 1,
+      signedAmountCents: 2,
+      targetAmountCents: 5,
+    })
+
+    expect(euroCentsToMinorUnits(parsed.targetAmountCents)).toBe(5n)
+    expect(summarizeCapitalReconciliation(parsed).isOk()).toBe(true)
+  })
+
+  it('rejects invalid raw capital inputs before summary helpers run', () => {
+    expect(
+      CapitalReconciliationInputSchema.safeParse({
+        committedAmountCents: 3,
+        matchedAmountCents: 1,
+        receivedAmountCents: 1,
+        signedAmountCents: 2,
+        targetAmountCents: -1,
+      }).success,
+    ).toBe(false)
   })
 })
 

@@ -28,7 +28,8 @@ import { canTransitionSpvStatus } from '@repo/domain/spv'
 
 ## Modules
 
-- `money` — `EuroCents`, safe parsing/formatting, exact `bigint` arithmetic.
+- `money` — `EuroCents`, safe parsing/formatting, reusable JSON schemas, and
+  exact `bigint` arithmetic.
 - `ids` — branded UUID domain IDs.
 - `commitment-flow` — Zod schemas for amount, qualification, KYC/KYB, review,
   and final submittable commitment payloads.
@@ -42,9 +43,11 @@ import { canTransitionSpvStatus } from '@repo/domain/spv'
 import {
   addEuroCents,
   formatEuroCents,
+  NonNegativeEuroCentsJsonSchema,
   parseEuroCents,
 } from '@repo/domain/money'
 
+const amountFromJson = NonNegativeEuroCentsJsonSchema.parse(500_000)
 const first = parseEuroCents('5 000,00 €')
 const second = parseEuroCents('2 500,00 €')
 
@@ -52,6 +55,7 @@ if (first.isOk() && second.isOk()) {
   const total = addEuroCents(first.value, second.value)
   const rendered = formatEuroCents(total, { locale: 'fr-FR' })
 
+  void amountFromJson
   void rendered
 }
 ```

@@ -6,7 +6,7 @@ import {
   compareEuroCents,
   type EuroCents,
   euroCentsFromMinorUnits,
-  euroCentsFromNumberMinorUnits,
+  NonNegativeEuroCentsJsonSchema,
   subtractEuroCents,
 } from '../money'
 
@@ -42,6 +42,16 @@ export type CapitalReconciliationInput = {
   readonly matchedAmountCents: EuroCents
 }
 
+export const CapitalReconciliationInputSchema = z
+  .object({
+    committedAmountCents: NonNegativeEuroCentsJsonSchema,
+    matchedAmountCents: NonNegativeEuroCentsJsonSchema,
+    receivedAmountCents: NonNegativeEuroCentsJsonSchema,
+    signedAmountCents: NonNegativeEuroCentsJsonSchema,
+    targetAmountCents: NonNegativeEuroCentsJsonSchema,
+  })
+  .strict()
+
 export type CapitalReconciliationSummary = CapitalReconciliationInput & {
   readonly remainingToTargetCents: EuroCents
   readonly overTargetCents: EuroCents
@@ -76,27 +86,6 @@ export type CapitalReconciliationError =
 
 const ZERO_CENTS = euroCentsFromMinorUnits(0n)
 
-const euroCentsJsonSchema = z
-  .number({ error: 'money.InvalidFormat' })
-  .int({ error: 'money.InvalidFormat' })
-  .safe({ error: 'money.UnsafeNumber' })
-  .nonnegative({ error: 'money.NegativeAmount' })
-  .transform((value, ctx) => {
-    const result = euroCentsFromNumberMinorUnits(value)
-
-    /* v8 ignore next 7 -- the preceding Zod checks keep this defensive guard unreachable. */
-    if (result.isError()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: result.error._tag,
-      })
-
-      return z.NEVER
-    }
-
-    return result.value
-  })
-
 const RequiredTrimmedStringSchema = z
   .string()
   .trim()
@@ -105,9 +94,9 @@ const RequiredTrimmedStringSchema = z
 export const PaymentRecordSchema = z
   .object({
     commitmentId: CommitmentIdSchema,
-    expectedAmountCents: euroCentsJsonSchema,
+    expectedAmountCents: NonNegativeEuroCentsJsonSchema,
     payerName: RequiredTrimmedStringSchema,
-    receivedAmountCents: euroCentsJsonSchema,
+    receivedAmountCents: NonNegativeEuroCentsJsonSchema,
     reference: RequiredTrimmedStringSchema.optional(),
     status: PaymentStatusSchema,
     subscriberName: RequiredTrimmedStringSchema,

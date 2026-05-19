@@ -44,3 +44,17 @@ For reusable components, make controlled/uncontrolled ownership explicit with
 not mirror props into local state with `useEffect` when the rendered value can
 be chosen from the current source of truth during render. Avoid accepting both
 raw inputs and independently derived summaries unless one is clearly canonical.
+
+## Runtime Validation Guardrail
+
+Before adding or changing a data boundary, decide whether the value is trusted
+compiled code or untrusted runtime data. Use canonical `@repo/domain` schemas
+for business invariants, app-local DTO schemas for serialized route/API shapes,
+and validation at URL, request, import, generated JSON, provider, database,
+environment, form-submission, storage, package-manifest, and generated
+diagnostics boundaries.
+
+Do not add Zod inside ordinary React render components or generic UI primitives
+just to duplicate TypeScript props. When introducing a new DTO or external data
+source, add or reuse a schema in the owning layer and document why validation
+lives there.

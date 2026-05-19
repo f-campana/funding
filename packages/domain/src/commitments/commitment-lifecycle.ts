@@ -34,6 +34,15 @@ export type CommitmentOperationalActivityInput = {
   readonly reconciliationComplete: boolean
 }
 
+export const CommitmentOperationalActivityInputSchema = z
+  .object({
+    lifecycleState: CommitmentLifecycleStateSchema,
+    reconciliationComplete: z.boolean(),
+    signatureComplete: z.boolean(),
+    wireMatchedOrReconciled: z.boolean(),
+  })
+  .strict()
+
 const ALLOWED_TRANSITIONS = {
   active: ['refunded'],
   approved: ['contracting', 'cancelled'],
